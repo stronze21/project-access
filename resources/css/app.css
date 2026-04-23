@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none;
+}
+
+.dropdown-z-fix {
+    z-index: 50 !important; /* High z-index to ensure it's always on top */
+    max-height: 300px; /* Limit height to prevent excessive dropdown size */
+    overflow-y: auto; /* Allow scrolling if content is too tall */
+}
