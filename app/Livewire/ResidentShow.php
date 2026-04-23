@@ -88,8 +88,8 @@ class ResidentShow extends Component
         ];
 
         if ($this->resetPassword) {
-            $rules['portalPassword'] = 'required|min:8|confirmed';
-            $rules['portalPasswordConfirmation'] = 'required';
+            $rules['portalPassword'] = 'required|min:8|same:portalPasswordConfirmation';
+            $rules['portalPasswordConfirmation'] = 'required|min:8';
         }
 
         $this->validate($rules, [
@@ -98,7 +98,7 @@ class ResidentShow extends Component
             'portalEmail.unique' => 'This email is already in use',
             'portalPassword.required' => 'Password is required',
             'portalPassword.min' => 'Password must be at least 8 characters',
-            'portalPassword.confirmed' => 'Password confirmation does not match',
+            'portalPassword.same' => 'Password confirmation does not match',
         ]);
 
         try {
@@ -126,7 +126,8 @@ class ResidentShow extends Component
     public function resetPortalPassword()
     {
         $this->validate([
-            'portalPassword' => 'required|min:8|confirmed',
+            'portalPassword' => 'required|min:8|same:portalPasswordConfirmation',
+            'portalPasswordConfirmation' => 'required|min:8',
         ]);
 
         try {
