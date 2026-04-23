@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    :root {
+        --brand-primary: #2f6b9f;
+        --brand-primary-strong: #24557f;
+        --brand-secondary: #27aaa9;
+        --brand-secondary-strong: #1b8d8b;
+        --brand-accent: #f0bc72;
+        --brand-ink: #16344c;
+        --brand-mist: #edf8f8;
+    }
+
+    html {
+        background:
+            radial-gradient(circle at top left, rgba(39, 170, 169, 0.16), transparent 28%),
+            radial-gradient(circle at top right, rgba(47, 107, 159, 0.18), transparent 30%),
+            linear-gradient(180deg, #f9fdfd 0%, #eef8f8 100%);
+    }
+
+    body {
+        color: var(--brand-ink);
+    }
+
+    ::selection {
+        background: rgba(39, 170, 169, 0.24);
+        color: var(--brand-ink);
+    }
+}
+
 [x-cloak] {
     display: none;
 }
@@ -10,4 +38,115 @@
     z-index: 50 !important; /* High z-index to ensure it's always on top */
     max-height: 300px; /* Limit height to prevent excessive dropdown size */
     overflow-y: auto; /* Allow scrolling if content is too tall */
+}
+
+@layer components {
+    .brand-shell {
+        background:
+            radial-gradient(circle at top left, rgba(39, 170, 169, 0.14), transparent 24%),
+            radial-gradient(circle at top right, rgba(47, 107, 159, 0.14), transparent 26%),
+            linear-gradient(180deg, #f8fcfc 0%, #eef7f7 100%);
+    }
+
+    .brand-auth-shell {
+        background:
+            linear-gradient(135deg, rgba(47, 107, 159, 0.1), rgba(39, 170, 169, 0.14)),
+            linear-gradient(180deg, #f7fbfb 0%, #edf8f8 100%);
+    }
+
+    .brand-panel {
+        @apply border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 backdrop-blur;
+    }
+
+    .brand-link {
+        color: var(--brand-primary);
+    }
+
+    .brand-link:hover {
+        color: var(--brand-secondary-strong);
+    }
+
+    .brand-wordmark {
+        color: var(--brand-ink);
+    }
+
+    .brand-navbar {
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .brand-navbar-shell {
+        @apply rounded-[1.45rem] border border-slate-200/70 bg-white/90 px-4 py-3 shadow-md shadow-slate-200/25;
+        backdrop-filter: blur(16px);
+    }
+
+    .brand-navbar-logo {
+        @apply flex min-w-0 items-center gap-3 rounded-2xl px-0 py-0 transition duration-200;
+    }
+
+    .brand-navbar-logo:hover {
+        background: transparent;
+    }
+
+    .brand-navbar-mark {
+        box-shadow: 0 10px 24px -18px rgba(47, 107, 159, 0.7);
+    }
+
+    .brand-navbar-title {
+        @apply text-sm font-semibold leading-tight;
+        color: var(--brand-ink);
+    }
+
+    .brand-navbar-subtitle {
+        @apply mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em];
+        color: var(--brand-secondary-strong);
+    }
+
+    .brand-navbar-nav {
+        @apply items-center;
+    }
+
+    .brand-navbar-menu {
+        @apply rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-300/20 backdrop-blur;
+    }
+
+    .brand-navbar-menu-link {
+        @apply block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition duration-150;
+    }
+
+    .brand-navbar-menu-link:hover {
+        background: var(--brand-mist);
+        color: var(--brand-primary);
+    }
+
+    .brand-navbar-kicker {
+        @apply rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em];
+        background: rgba(240, 188, 114, 0.18);
+        color: #7b5621;
+    }
+
+    .brand-user-trigger {
+        @apply flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/80 px-3 py-1.5 text-left transition duration-200 shadow-sm shadow-slate-200/35;
+    }
+
+    .brand-user-trigger:hover {
+        border-color: rgba(39, 170, 169, 0.28);
+        background: rgba(237, 248, 248, 0.92);
+    }
+
+    .brand-user-avatar {
+        @apply flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold text-white;
+        background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+        box-shadow: 0 12px 24px -18px rgba(39, 170, 169, 0.9);
+    }
+
+    .brand-user-role {
+        @apply rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em];
+        background: rgba(47, 107, 159, 0.1);
+        color: var(--brand-primary);
+    }
+
+    .brand-mobile-panel {
+        @apply mt-3 rounded-[1.5rem] border border-white/80 bg-white/90 px-3 pb-3 pt-2 shadow-xl shadow-slate-200/50 backdrop-blur;
+    }
 }

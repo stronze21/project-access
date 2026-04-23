@@ -1,5 +1,3 @@
-@if (isset($settings['app_logo']))
-    <a href="/">
-        <img src="{{ Storage::url($settings['app_logo']) }}" alt="Logo" class="w-auto mr-2 h-36">
-    </a>
-@endif
+<a href="/" class="inline-flex items-center justify-center">
+    <img src="{{ asset('logo.png') }}" alt="{{ config('app.name') }}" class="w-auto h-32 sm:h-36">
+</a>

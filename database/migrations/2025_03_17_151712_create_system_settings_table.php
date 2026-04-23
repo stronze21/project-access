@@ -40,18 +40,18 @@ return new class extends Migration
     {
         $settings = [
             // Application information
-            ['key' => 'app_name_1', 'value' => 'Ayuda', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
-            ['key' => 'app_name_2', 'value' => 'Hub', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
+            ['key' => 'app_name_1', 'value' => 'Alaminos City E-Services', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
+            ['key' => 'app_name_2', 'value' => 'Solutions', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
             ['key' => 'app_logo', 'value' => 'logo.png', 'group' => 'appearance', 'type' => 'file', 'is_public' => true],
             ['key' => 'app_favicon', 'value' => 'favicon.ico', 'group' => 'appearance', 'type' => 'file', 'is_public' => true],
 
             // Location settings
-            ['key' => 'municipality', 'value' => 'Default Municipality', 'group' => 'location', 'type' => 'text', 'is_public' => true],
-            ['key' => 'province', 'value' => 'Default Province', 'group' => 'location', 'type' => 'text', 'is_public' => true],
-            ['key' => 'region', 'value' => 'Default Region', 'group' => 'location', 'type' => 'text', 'is_public' => true],
-            ['key' => 'region_code', 'value' => null, 'group' => 'location', 'type' => 'text', 'is_public' => false],
-            ['key' => 'province_code', 'value' => null, 'group' => 'location', 'type' => 'text', 'is_public' => false],
-            ['key' => 'municipality_code', 'value' => null, 'group' => 'location', 'type' => 'text', 'is_public' => false],
+            ['key' => 'municipality', 'value' => 'Alaminos City', 'group' => 'location', 'type' => 'text', 'is_public' => true],
+            ['key' => 'province', 'value' => 'Pangasinan', 'group' => 'location', 'type' => 'text', 'is_public' => true],
+            ['key' => 'region', 'value' => 'Region I', 'group' => 'location', 'type' => 'text', 'is_public' => true],
+            ['key' => 'region_code', 'value' => '01', 'group' => 'location', 'type' => 'text', 'is_public' => false],
+            ['key' => 'province_code', 'value' => '0155', 'group' => 'location', 'type' => 'text', 'is_public' => false],
+            ['key' => 'municipality_code', 'value' => '015503', 'group' => 'location', 'type' => 'text', 'is_public' => false],
 
             // Contact information
             ['key' => 'contact_email', 'value' => 'contact@ayudahub.example', 'group' => 'contact', 'type' => 'email', 'is_public' => true],

@@ -15,7 +15,7 @@
                         @elserole('reporting-user')
                         Reports & Analytics Dashboard
                     @else
-                        Welcome to AyudaHub
+                        Welcome to {{ config('app.name') }}
                     @endrole
                 </h1>
                 <p class="mt-1 text-gray-600">
@@ -223,7 +223,7 @@
                                         <span>{{ $program->beneficiary_progress }}%</span>
                                     </div>
                                     <div class="w-full h-2 rounded-full bg-base-200">
-                                        <div class="h-2 bg-blue-600 rounded-full"
+                                        <div class="h-2 rounded-full bg-[var(--brand-primary)]"
                                             style="width: {{ $program->beneficiary_progress }}%"></div>
                                     </div>
                                 </div>
@@ -238,7 +238,7 @@
                                         <span>{{ $program->budget_progress }}%</span>
                                     </div>
                                     <div class="w-full h-2 rounded-full bg-base-200">
-                                        <div class="h-2 bg-green-600 rounded-full"
+                                        <div class="h-2 rounded-full bg-[var(--brand-secondary)]"
                                             style="width: {{ $program->budget_progress }}%"></div>
                                     </div>
                                 </div>
@@ -279,7 +279,7 @@
                                 <tr class="border-b bg-base hover:bg-base-50">
                                     <td class="px-4 py-2 font-medium">
                                         <a href="{{ route('distributions.show', $distribution->id) }}"
-                                            class="text-blue-600 hover:underline">
+                                            class="brand-link hover:underline">
                                             {{ $distribution->reference_number }}
                                         </a>
                                     </td>
@@ -415,7 +415,7 @@
                                     <div class="font-medium">{{ $barangayStat->count }}</div>
                                 </div>
                                 <div class="w-full h-2 rounded-full bg-base-200">
-                                    <div class="h-2 bg-blue-600 rounded-full"
+                                    <div class="h-2 rounded-full bg-[var(--brand-primary)]"
                                         style="width: {{ $barangayStat->percentage }}%"></div>
                                 </div>
                             @endforeach
@@ -460,16 +460,16 @@
                         datasets: [{
                                 label: 'Number of Distributions',
                                 data: counts,
-                                backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                                borderColor: 'rgba(59, 130, 246, 1)',
+                                backgroundColor: 'rgba(47, 107, 159, 0.65)',
+                                borderColor: 'rgba(47, 107, 159, 1)',
                                 borderWidth: 1,
                                 yAxisID: 'y'
                             },
                             {
                                 label: 'Total Amount (₱)',
                                 data: amounts,
-                                backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                                borderColor: 'rgba(16, 185, 129, 1)',
+                                backgroundColor: 'rgba(39, 170, 169, 0.55)',
+                                borderColor: 'rgba(39, 170, 169, 1)',
                                 borderWidth: 1,
                                 type: 'line',
                                 yAxisID: 'y1'
@@ -559,16 +559,16 @@
                         datasets: [{
                                 label: 'Distributions',
                                 data: counts,
-                                backgroundColor: 'rgba(249, 115, 22, 0.6)',
-                                borderColor: 'rgba(249, 115, 22, 1)',
+                                backgroundColor: 'rgba(240, 188, 114, 0.65)',
+                                borderColor: 'rgba(240, 188, 114, 1)',
                                 borderWidth: 1,
                                 yAxisID: 'y'
                             },
                             {
                                 label: 'Households Reached',
                                 data: households,
-                                backgroundColor: 'rgba(139, 92, 246, 0.6)',
-                                borderColor: 'rgba(139, 92, 246, 1)',
+                                backgroundColor: 'rgba(39, 170, 169, 0.45)',
+                                borderColor: 'rgba(39, 170, 169, 1)',
                                 borderWidth: 1,
                                 type: 'line',
                                 yAxisID: 'y'
@@ -648,8 +648,8 @@
                         datasets: [{
                                 label: 'Number of Distributions',
                                 data: counts,
-                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                                borderColor: 'rgba(59, 130, 246, 1)',
+                                backgroundColor: 'rgba(47, 107, 159, 0.22)',
+                                borderColor: 'rgba(47, 107, 159, 1)',
                                 borderWidth: 2,
                                 fill: true,
                                 tension: 0.3,
@@ -658,8 +658,8 @@
                             {
                                 label: 'Daily Amount (₱)',
                                 data: amounts,
-                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                                borderColor: 'rgba(16, 185, 129, 1)',
+                                backgroundColor: 'rgba(39, 170, 169, 0.2)',
+                                borderColor: 'rgba(39, 170, 169, 1)',
                                 borderWidth: 2,
                                 fill: true,
                                 tension: 0.3,
@@ -734,11 +734,11 @@
                 const labels = data.map(item => item.name);
                 const counts = data.map(item => item.count);
                 const colors = [
-                    'rgba(59, 130, 246, 0.8)', // Blue
-                    'rgba(16, 185, 129, 0.8)', // Green
-                    'rgba(249, 115, 22, 0.8)', // Orange
-                    'rgba(139, 92, 246, 0.8)', // Purple
-                    'rgba(236, 72, 153, 0.8)' // Pink
+                    'rgba(47, 107, 159, 0.82)',
+                    'rgba(39, 170, 169, 0.82)',
+                    'rgba(240, 188, 114, 0.82)',
+                    'rgba(22, 52, 76, 0.82)',
+                    'rgba(104, 176, 174, 0.82)'
                 ];
 
                 // Create chart

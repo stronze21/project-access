@@ -119,10 +119,13 @@ class Distribution extends Model
      *
      * @return string
      */
-    public static function generateReferenceNumber(): string
+    public static function generateReferenceNumber($date = null): string
     {
-        $prefix = 'D-' . now()->format('Ymd') . '-';
-        $lastDistribution = self::where('reference_number', 'like', $prefix . '%')
+        $referenceDate = $date ? Carbon::parse($date) : now();
+        $prefix = 'D-' . $referenceDate->format('Ymd') . '-';
+
+        $lastDistribution = self::withTrashed()
+            ->where('reference_number', 'like', $prefix . '%')
             ->orderBy('id', 'desc')
             ->first();
 

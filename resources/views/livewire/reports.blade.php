@@ -1,7 +1,7 @@
 <div>
     <div class="mb-6">
         <h1 class="text-2xl font-semibold text-gray-900">Reports</h1>
-        <p class="mt-1 text-sm text-gray-600">Generate and analyze various reports for AyudaPortal</p>
+        <p class="mt-1 text-sm text-gray-600">Generate and analyze reports for {{ config('app.name') }}</p>
     </div>
 
     <!-- Report Control Panel -->
@@ -313,7 +313,7 @@
                                             @if ($program->utilization !== null)
                                                 <div class="flex items-center">
                                                     <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                                        <div class="bg-blue-600 h-2.5 rounded-full"
+                                                        <div class="h-2.5 rounded-full bg-[var(--brand-primary)]"
                                                             style="width: {{ min($program->utilization, 100) }}%">
                                                         </div>
                                                     </div>
@@ -399,7 +399,7 @@
 
                                                 @if ($resident->is_lactating)
                                                     <span
-                                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--brand-mist)] text-[var(--brand-primary)]">
                                                         Lactating
                                                     </span>
                                                 @endif
@@ -461,7 +461,7 @@
                                         <td class="px-4 py-3">
                                             <div class="flex items-center">
                                                 <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                                    <div class="bg-blue-600 h-2.5 rounded-full"
+                                                    <div class="h-2.5 rounded-full bg-[var(--brand-primary)]"
                                                         style="width: {{ min($barangayData['coverage_percentage'], 100) }}%">
                                                     </div>
                                                 </div>

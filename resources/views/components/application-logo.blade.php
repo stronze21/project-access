@@ -1,3 +1,1 @@
-@if (isset($settings['app_logo']))
-    <img src="{{ Storage::url($settings['app_logo']) }}" alt="Logo">
-@endif
+<img src="{{ asset('logo.png') }}" alt="{{ config('app.name') }}" {{ $attributes->merge(['class' => 'w-auto']) }}>

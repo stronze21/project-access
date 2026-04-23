@@ -11,6 +11,7 @@ use Database\Seeders\ProvinceSeeder;
 use Database\Seeders\ResidentSeeder;
 use Database\Seeders\HouseholdSeeder;
 use Database\Seeders\LocationsSeeder;
+use Database\Seeders\SystemSettingsSeeder;
 use Database\Seeders\AyudaProgramSeeder;
 use Database\Seeders\DefaultAdminSeeder;
 use Database\Seeders\DistributionSeeder;
@@ -27,23 +28,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // // Create admin user
-        // $this->call(UserSeeder::class);
-
-        // // Create locations
-        // $this->call(LocationsSeeder::class);
-
-        // // Create residents and households
-        // $this->call(HouseholdSeeder::class);
-        // $this->call(ResidentSeeder::class);
-
-        // // Create ayuda programs and eligibility criteria
-        // $this->call(AyudaProgramSeeder::class);
-        // $this->call(EligibilityCriteriaSeeder::class);
-
-        // Create distributions and batches
-        // $this->call(DistributionBatchSeeder::class);
-        // $this->call(DistributionSeeder::class);
+        // Create admin user
+        $this->call(UserSeeder::class);
 
         $this->call([
             RegionSeeder::class,
@@ -51,6 +37,22 @@ class DatabaseSeeder extends Seeder
             CityMunicipalitySeeder::class,
             BarangaySeeder::class,
         ]);
+
+        // Create locations
+        $this->call(LocationsSeeder::class);
+        $this->call(SystemSettingsSeeder::class);
+
+        // Create residents and households
+        $this->call(HouseholdSeeder::class);
+        $this->call(ResidentSeeder::class);
+
+        // Create ayuda programs and eligibility criteria
+        $this->call(AyudaProgramSeeder::class);
+        $this->call(EligibilityCriteriaSeeder::class);
+
+        // Create distributions and batches
+        $this->call(DistributionBatchSeeder::class);
+        $this->call(DistributionSeeder::class);
 
         $this->call([
             RolesAndPermissionsSeeder::class,

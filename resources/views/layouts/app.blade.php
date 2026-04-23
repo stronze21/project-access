@@ -1,15 +1,45 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@php
+    $configuredBrandName = trim((string) config('app.name', 'Alaminos City E-Services Solutions'));
+    $settingsBrandName = trim(collect([
+        $settings['app_name_1'] ?? null,
+        $settings['app_name_2'] ?? null,
+    ])->filter(fn ($value) => filled($value))->implode(' '));
+    $legacyBrandNames = ['Ayuda Hub', 'Ayuda Hub1', 'Ayuda Portal', 'AyudaPortal', 'AyudaHub'];
+    $brandName = $settingsBrandName && !in_array($settingsBrandName, $legacyBrandNames, true)
+        ? $settingsBrandName
+        : $configuredBrandName;
+    $brandLocation = trim(collect([
+        $settings['municipality'] ?? null,
+        $settings['province'] ?? null,
+        $settings['region'] ?? null,
+    ])->filter(fn ($value) => filled($value))->implode(', '));
+    $legacyLocationLabels = ['Default Municipality', 'Default Province', 'Default Region'];
+    $brandLocation = collect(explode(',', $brandLocation))
+        ->map(fn ($value) => trim($value))
+        ->reject(fn ($value) => in_array($value, $legacyLocationLabels, true))
+        ->implode(', ');
+    $currentRoleLabel = auth()->check()
+        ? collect(auth()->user()->getRoleNames())
+            ->map(fn ($role) => str($role)->replace('-', ' ')->title()->toString())
+            ->first()
+        : null;
+    $currentRoleLabel = $currentRoleLabel ?: 'Authorized User';
+    $userInitials = auth()->check()
+        ? collect(explode(' ', trim(auth()->user()->name)))
+            ->filter()
+            ->take(2)
+            ->map(fn ($part) => strtoupper(substr($part, 0, 1)))
+            ->implode('')
+        : 'AU';
+@endphp
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>
-        {{ isset($settings['app_name_1']) && isset($settings['app_name_2'])
-            ? $settings['app_name_1'] . ' ' . $settings['app_name_2']
-            : config('app.name', 'Laravel') }}
-    </title>
+    <title>{{ $brandName }}</title>
     @if (isset($settings['app_favicon']))
         <link rel="icon" href="{{ Storage::url($settings['app_favicon']) }}" type="image/x-icon">
     @endif
@@ -78,30 +108,91 @@
     @livewireStyles
 </head>
 
-<body class="font-sans antialiased bg-base-300">
+<body class="font-sans antialiased brand-shell bg-base-300">
     <div class="min-h-screen">
         <!-- Navigation -->
-        <nav class="bg-white border-b border-gray-100" x-data="{ open: false }">
-            <div class="px-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex">
+        <nav class="sticky top-0 z-40 brand-navbar" x-data="{ open: false }">
+            <div class="px-4 pt-3 pb-1 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
+                <div class="brand-navbar-shell">
+                    <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                         <!-- Logo -->
-                        <div class="flex items-center flex-shrink-0">
-                            <a href="{{ route('dashboard') }}" class="flex items-center">
-                                @if (isset($settings['app_logo']))
-                                    <img src="{{ Storage::url($settings['app_logo']) }}" alt="Logo"
-                                        class="w-auto h-8 mr-2">
-                                @endif
-                                <span
-                                    class="text-xl font-bold text-blue-600">{{ $settings['app_name_1'] ?? env('APP_NAME_1', 'Ayuda') }}</span>
-                                <span
-                                    class="text-xl font-bold text-gray-800">{{ $settings['app_name_2'] ?? env('APP_NAME_2', 'Hub1') }}</span>
+                        <div class="flex items-center flex-1 min-w-0">
+                            <a href="{{ route('dashboard') }}" class="brand-navbar-logo">
+                                <img src="{{ asset('logo.png') }}" alt="{{ $brandName }}"
+                                    class="w-auto brand-navbar-mark h-11 sm:h-12">
+                                <span class="min-w-0">
+                                    <span class="block truncate brand-navbar-title">{{ $brandName }}</span>
+                                    <span class="block truncate brand-navbar-subtitle">
+                                        {{ $brandLocation ?: 'Alaminos City Digital Platform' }}
+                                    </span>
+                                </span>
                             </a>
                         </div>
+                        <div class="flex-wrap items-center justify-end hidden gap-3 sm:flex xl:flex-nowrap">
+                            <div class="brand-navbar-kicker">
+                                {{ $currentRoleLabel }}
+                            </div>
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" @click.away="open = false"
+                                    class="brand-user-trigger focus:outline-none">
+                                    <div class="brand-user-avatar">
+                                        {{ $userInitials }}
+                                    </div>
+                                    <div class="hidden min-w-0 sm:block">
+                                        <div class="text-sm font-semibold truncate text-slate-800">{{ Auth::user()->name }}</div>
+                                        <div class="mt-0.5 flex items-center gap-2">
+                                            <span class="brand-user-role">{{ $currentRoleLabel }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-1 text-slate-500">
+                                        <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
 
-                        <!-- Navigation Links -->
+                                <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 translate-y-1"
+                                    x-transition:enter-end="opacity-100 translate-y-0"
+                                    x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100 translate-y-0"
+                                    x-transition:leave-end="opacity-0 translate-y-1"
+                                    class="absolute right-0 z-10 w-64 mt-3 origin-top-right brand-navbar-menu"
+                                    style="display: none;">
+                                    <div class="px-2 py-2">
+                                        <div class="px-3 pb-3 mb-2 border-b border-slate-100">
+                                            <div class="text-sm font-semibold text-slate-800">{{ Auth::user()->name }}</div>
+                                            <div class="mt-1 text-xs text-slate-500">{{ Auth::user()->email }}</div>
+                                            <div class="inline-flex mt-2 brand-user-role">{{ $currentRoleLabel }}</div>
+                                        </div>
+                                        <div class="block px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                            Manage Account
+                                        </div>
 
-                        <div class="hidden space-x-3 sm:-my-px sm:ml-10 sm:flex">
+                                        <a href="{{ route('profile.show') }}"
+                                            class="brand-navbar-menu-link">
+                                            Profile
+                                        </a>
+
+                                        <form method="POST" action="{{ route('logout') }}" x-data>
+                                            @csrf
+                                            <a href="{{ route('logout') }}" @click.prevent="$root.submit();"
+                                                class="block w-full text-left brand-navbar-menu-link">
+                                                Log Out
+                                            </a>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Links -->
+                    <div class="flex items-center justify-between gap-3 pt-2 mt-3 border-t border-slate-200/70">
+                        <div class="items-center flex-1 hidden min-w-0 gap-5 overflow-x-auto brand-navbar-nav whitespace-nowrap sm:flex">
                             @role('registration-officer')
                                 <x-nav-link href="{{ route('registration.dashboard') }}" :active="request()->routeIs('registration.dashboard')">
                                     <span class="flex items-center">
@@ -161,8 +252,8 @@
                                     <button @click="open = !open" @click.away="open = false"
                                         class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
                                         :class="{
-                                            'border-indigo-400 text-gray-900': {{ request()->routeIs('programs.*') || request()->routeIs('distributions.*') ? 'true' : 'false' }},
-                                            'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300':
+                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ request()->routeIs('programs.*') || request()->routeIs('distributions.*') ? 'true' : 'false' }},
+                                            'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]':
                                                 !
                                                 {{ request()->routeIs('programs.*') || request()->routeIs('distributions.*') ? 'true' : 'false' }}
                                         }">
@@ -251,8 +342,8 @@
                                     <button @click="open = !open" @click.away="open = false"
                                         class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
                                         :class="{
-                                            'border-indigo-400 text-gray-900': {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
-                                            'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300':
+                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
+                                            'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]':
                                                 !{{ request()->routeIs('admin.*') ? 'true' : 'false' }}
                                         }">
                                         <span class="flex items-center">
@@ -312,73 +403,36 @@
                                 </div>
                             @endif
                         </div>
-                    </div>
-
-                    <!-- User Menu Dropdown - Fixed Positioning -->
-                    <div class="hidden ms-auto sm:flex sm:items-center sm:ml-6">
-                        <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" @click.away="open = false"
-                                class="flex items-center text-sm font-medium text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none">
-                                <div>{{ Auth::user()->name }}</div>
-                                <div class="ml-1">
-                                    <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-
-                            <!-- User dropdown menu positioned correctly -->
-                            <div x-show="open" x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 translate-y-1"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-150"
-                                x-transition:leave-start="opacity-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 translate-y-1"
-                                class="absolute right-0 z-10 w-48 mt-2 origin-top-right bg-white border border-gray-200 rounded-md shadow-lg"
-                                style="display: none;">
-                                <div class="py-1">
-                                    <div class="block px-4 py-2 text-xs text-gray-400">
-                                        Manage Account
-                                    </div>
-
-                                    <a href="{{ route('profile.show') }}"
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Profile
-                                    </a>
-
-                                    <form method="POST" action="{{ route('logout') }}" x-data>
-                                        @csrf
-                                        <a href="{{ route('logout') }}" @click.prevent="$root.submit();"
-                                            class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
-                                            Log Out
-                                        </a>
-                                    </form>
-                                </div>
-                            </div>
                         </div>
-                    </div>
 
-                    <!-- Hamburger -->
-                    <div class="flex items-center -mr-2 sm:hidden">
-                        <button @click="open = !open"
-                            class="inline-flex items-center justify-center p-2 text-gray-400 transition duration-150 ease-in-out rounded-md hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500">
-                            <svg class="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                <path :class="{ 'hidden': open, 'inline-flex': !open }" class="inline-flex"
-                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6h16M4 12h16M4 18h16" />
-                                <path :class="{ 'hidden': !open, 'inline-flex': open }" class="hidden"
-                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <!-- Hamburger -->
+                        <div class="flex items-center -mr-2 sm:hidden">
+                            <button @click="open = !open"
+                                class="inline-flex items-center justify-center p-2 text-slate-500 transition duration-150 ease-in-out rounded-2xl hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] focus:outline-none focus:bg-[var(--brand-mist)] focus:text-[var(--brand-primary)]">
+                                <svg class="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                                    <path :class="{ 'hidden': open, 'inline-flex': !open }" class="inline-flex"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16M4 18h16" />
+                                    <path :class="{ 'hidden': !open, 'inline-flex': open }" class="hidden"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Responsive Navigation Menu for Mobile -->
                 <div :class="{ 'block': open, 'hidden': !open }" class="hidden sm:hidden">
+                    <div class="brand-mobile-panel">
+                        <div class="flex items-center gap-3 px-2 py-3 mb-2 border-b border-slate-100">
+                            <div class="brand-user-avatar">{{ $userInitials }}</div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold truncate text-slate-800">{{ Auth::user()->name }}</div>
+                                <div class="text-xs truncate text-slate-500">{{ Auth::user()->email }}</div>
+                                <div class="inline-flex mt-2 brand-user-role">{{ $currentRoleLabel }}</div>
+                            </div>
+                        </div>
                     <div class="pt-2 pb-3 space-y-1">
                         <!-- Dashboard - accessible to all authenticated users -->
                         <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
@@ -424,7 +478,7 @@
                         @if (auth()->user()->hasAnyPermission(['view-programs', 'view-distributions', 'create-distributions']))
                             <div x-data="{ programsOpen: false }">
                                 <button @click="programsOpen = !programsOpen"
-                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('programs.*') || request()->routeIs('distributions.*') ? 'border-indigo-400 text-indigo-700 bg-indigo-50 focus:outline-none focus:text-indigo-800 focus:bg-indigo-100 focus:border-indigo-700' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
+                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('programs.*') || request()->routeIs('distributions.*') ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)] focus:outline-none focus:text-[var(--brand-primary-strong)] focus:bg-[var(--brand-mist)] focus:border-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -564,7 +618,7 @@
                         @if (auth()->user()->can('manage-users') || auth()->user()->hasRole('system-administrator'))
                             <div x-data="{ adminOpen: false }">
                                 <button @click="adminOpen = !adminOpen"
-                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('admin.*') ? 'border-indigo-400 text-indigo-700 bg-indigo-50 focus:outline-none focus:text-indigo-800 focus:bg-indigo-100 focus:border-indigo-700' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
+                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('admin.*') ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)] focus:outline-none focus:text-[var(--brand-primary-strong)] focus:bg-[var(--brand-mist)] focus:border-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -647,7 +701,7 @@
 
                     <!-- Responsive Settings Options -->
                     <div class="pt-4 pb-1 border-t border-gray-200">
-                        <div class="flex items-center px-4">
+                        <div class="items-center hidden px-4">
                             <div>
                                 <div class="text-base font-medium text-gray-800">{{ Auth::user()->name }}</div>
                                 <div class="text-sm font-medium text-gray-500">{{ Auth::user()->email }}</div>
@@ -683,45 +737,45 @@
                             </form>
                         </div>
                     </div>
+                    </div>
                 </div>
-            </div>
         </nav>
 
         <!-- Rest of your content -->
         <!-- Page Heading -->
         @if (isset($header))
             <header class="shadow bg-base">
-                <div class="px-4 py-6 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
+                <div class="px-4 py-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
                     {{ $header }}
                 </div>
             </header>
         @endif
 
         <!-- Page Content -->
-        <main class="py-6">
-            <div class="px-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
+        <main class="pt-4 pb-6">
+            <div class="px-6 mx-auto max-w-screen-2xl sm:px-8 lg:px-10">
                 {{ $slot }}
             </div>
         </main>
 
         <!-- Footer -->
-        <footer class="py-6 border-t border-gray-200 bg-base">
+        <footer class="py-6 border-t border-white/70 bg-white/80 backdrop-blur">
             <div class="px-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
                 <div class="flex flex-col items-center justify-between space-y-4 md:space-y-0 md:flex-row">
-                    <div>
-                        <span
-                            class="text-xl font-bold text-blue-600">{{ $settings['app_name_1'] ?? env('APP_NAME_1', 'Ayuda') }}</span>
-                        <span
-                            class="text-xl font-bold text-gray-800">{{ $settings['app_name_2'] ?? env('APP_NAME_2', 'Hub') }}</span>
+                    <div class="flex items-center gap-3">
+                        <img src="{{ asset('logo.png') }}" alt="{{ $brandName }}" class="w-auto h-10">
+                        <div>
+                            <div class="text-sm font-semibold sm:text-base brand-wordmark">{{ $brandName }}</div>
+                            <div class="text-xs text-gray-500">&copy; {{ date('Y') }} All rights reserved.</div>
+                        </div>
+                        <!--
                         <span class="ml-2 text-sm text-gray-500">© {{ date('Y') }} All rights reserved.</span>
+                        -->
                     </div>
                     <div class="text-sm text-center text-gray-500">
-                        <div>
-                            {{ $settings['municipality'] ?? 'Municipality' }},
-                            {{ $settings['province'] ?? 'Province' }}, {{ $settings['region'] ?? 'Region' }}
-                        </div>
+                        <div>{{ $brandLocation ?: 'Local government digital services platform' }}</div>
                         <div class="mt-1">
-                            Unified Relief Management Platform
+                            Connected public services for Alaminos City
                         </div>
                     </div>
                     <div class="text-sm text-right text-gray-500">

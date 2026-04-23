@@ -154,7 +154,7 @@ class DistributionSeeder extends Seeder
 
         // Create the distribution
         Distribution::create([
-            'reference_number' => 'D-' . date('Ymd', strtotime($date)) . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
+            'reference_number' => Distribution::generateReferenceNumber($date),
             'ayuda_program_id' => $program->id,
             'resident_id' => $resident->id,
             'household_id' => $resident->household_id,

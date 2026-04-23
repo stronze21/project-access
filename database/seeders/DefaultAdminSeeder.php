@@ -15,10 +15,10 @@ class DefaultAdminSeeder extends Seeder
     public function run(): void
     {
         // Create a default admin user
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+        $admin = User::updateOrCreate(
+            ['email' => 'joshua070915@gmail.com'],
             [
-                'name' => 'System Administrator',
+                'name' => 'Joshua',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]

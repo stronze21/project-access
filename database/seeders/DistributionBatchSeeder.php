@@ -20,6 +20,7 @@ class DistributionBatchSeeder extends Seeder
         $programs = AyudaProgram::all();
         $users = User::all();
         $barangays = LocationsSeeder::getBarangays();
+        $city = LocationsSeeder::getCity();
 
         // Create ~30 distribution batches
         $batchCount = 0;
@@ -69,7 +70,7 @@ class DistributionBatchSeeder extends Seeder
                 DistributionBatch::create([
                     'batch_number' => $program->code . '-' . date('Ymd', strtotime($batchDate)) . '-' . $batchCount,
                     'ayuda_program_id' => $program->id,
-                    'location' => 'Distribution Center - ' . $barangays[array_rand($barangays)],
+                    'location' => $city . ' Distribution Center - ' . $barangays[array_rand($barangays)],
                     'batch_date' => $batchDate,
                     'start_time' => Carbon::parse($batchDate)->setTime(8, 0),
                     'end_time' => Carbon::parse($batchDate)->setTime(17, 0),

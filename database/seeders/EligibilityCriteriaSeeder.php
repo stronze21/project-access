@@ -31,6 +31,12 @@ class EligibilityCriteriaSeeder extends Seeder
      */
     private function createCriteriaForProgram(AyudaProgram $program)
     {
+        $barangays = LocationsSeeder::getBarangays();
+        $urbanBarangays = implode(',', array_slice($barangays, 0, min(5, count($barangays))));
+        $ruralBarangays = implode(',', array_slice($barangays, 5, min(5, max(count($barangays) - 5, 0))));
+        $priorityBarangays = implode(',', array_slice($barangays, 10, min(5, max(count($barangays) - 10, 0))));
+        $fallbackPriorityBarangays = implode(',', array_slice($barangays, 0, min(5, count($barangays))));
+
         // Common criteria templates that can be reused
         $criteriaTemplates = [
             // Income criteria
@@ -114,21 +120,21 @@ class EligibilityCriteriaSeeder extends Seeder
                 'criterion_name' => 'Urban Barangay',
                 'criterion_type' => 'barangay',
                 'operator' => 'in',
-                'value' => 'Barangay 1,Barangay 2,Barangay 3,Barangay 4,Barangay 5',
+                'value' => $urbanBarangays,
                 'is_required' => false,
             ],
             'rural_barangay' => [
                 'criterion_name' => 'Rural Barangay',
                 'criterion_type' => 'barangay',
                 'operator' => 'in',
-                'value' => 'Barangay 6,Barangay 7,Barangay 8,Barangay 9,Barangay 10',
+                'value' => $ruralBarangays ?: $fallbackPriorityBarangays,
                 'is_required' => false,
             ],
             'priority_barangay' => [
                 'criterion_name' => 'Priority Barangay',
                 'criterion_type' => 'barangay',
                 'operator' => 'in',
-                'value' => 'Barangay 11,Barangay 12,Barangay 13,Barangay 14,Barangay 15',
+                'value' => $priorityBarangays ?: $fallbackPriorityBarangays,
                 'is_required' => false,
             ],
 
@@ -224,7 +230,7 @@ class EligibilityCriteriaSeeder extends Seeder
                     'criterion_name' => 'Priority Barangays',
                     'criterion_type' => 'barangay',
                     'operator' => 'in',
-                    'value' => 'Barangay 1,Barangay 2,Barangay 5,Barangay 8,Barangay 12',
+                    'value' => $fallbackPriorityBarangays,
                     'is_required' => false,
                 ];
                 break;

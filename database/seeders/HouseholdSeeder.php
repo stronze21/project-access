@@ -14,10 +14,14 @@ class HouseholdSeeder extends Seeder
     {
         $this->command->info('Creating households...');
 
-        $barangays = LocationsSeeder::getBarangays();
+        $barangays = LocationsSeeder::getBarangayRecords();
         $city = LocationsSeeder::getCity();
         $province = LocationsSeeder::getProvince();
         $region = LocationsSeeder::getRegion();
+        $cityCode = LocationsSeeder::getCityCode();
+        $provinceCode = LocationsSeeder::getProvinceCode();
+        $regionCode = LocationsSeeder::getRegionCode();
+        $postalCode = LocationsSeeder::getPostalCode();
 
         $dwellingTypes = ['owned', 'rented', 'shared', 'informal', 'other'];
 
@@ -41,11 +45,15 @@ class HouseholdSeeder extends Seeder
             Household::create([
                 'household_id' => 'HH-' . date('Ym') . '-' . str_pad($i, 4, '0', STR_PAD_LEFT),
                 'address' => 'House #' . rand(1, 999) . ' Street ' . rand(1, 50),
-                'barangay' => $barangay,
+                'barangay' => $barangay['name'],
+                'barangay_code' => $barangay['code'],
                 'city_municipality' => $city,
+                'city_municipality_code' => $cityCode,
                 'province' => $province,
-                'postal_code' => rand(1000, 9999),
+                'province_code' => $provinceCode,
+                'postal_code' => $postalCode,
                 'region' => $region,
+                'region_code' => $regionCode,
                 'dwelling_type' => $dwellingType,
                 'monthly_income' => $monthlyIncome,
                 'has_electricity' => rand(0, 10) > 1, // 90% have electricity

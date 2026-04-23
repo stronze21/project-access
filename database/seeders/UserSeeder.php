@@ -14,33 +14,41 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create admin user
-        User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@ayudahub.test',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'joshua070915@gmail.com'],
+            [
+                'name' => 'Joshua',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
 
         // Create regular staff users
-        User::create([
-            'name' => 'Staff User',
-            'email' => 'staff@ayudahub.test',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'staff@ayudahub.test'],
+            [
+                'name' => 'Staff User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
 
-        User::create([
-            'name' => 'Distribution Officer',
-            'email' => 'distribution@ayudahub.test',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'distribution@ayudahub.test'],
+            [
+                'name' => 'Distribution Officer',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
 
-        User::create([
-            'name' => 'Verification Officer',
-            'email' => 'verification@ayudahub.test',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'verification@ayudahub.test'],
+            [
+                'name' => 'Verification Officer',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }
