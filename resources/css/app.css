@@ -78,6 +78,7 @@
     .brand-navbar-shell {
         @apply rounded-[1.45rem] border border-slate-200/70 bg-white/90 px-4 py-3 shadow-md shadow-slate-200/25;
         backdrop-filter: blur(16px);
+        overflow: visible;
     }
 
     .brand-navbar-logo {
