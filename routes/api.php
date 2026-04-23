@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CitizenServicesAdminController;
 use App\Http\Controllers\Api\ResidentController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\HouseholdController;
@@ -15,12 +16,18 @@ use App\Http\Controllers\Api\DistributionBatchController;
 use App\Http\Controllers\Api\EligibilityCriteriaController;
 use App\Http\Controllers\Api\AddressController as ApiAddressController;
 use App\Http\Controllers\Api\ResidentPortal\AuthController as ResidentAuthController;
+use App\Http\Controllers\Api\PublicServiceLinkController;
+use App\Http\Controllers\Api\EmergencyAlertController;
+use App\Http\Controllers\Api\ResidentPortal\GrievanceController as ResidentGrievanceController;
+use App\Http\Controllers\Api\ResidentPortal\EmergencyController as ResidentEmergencyController;
+use App\Http\Controllers\Api\ResidentPortal\ServiceTrackingController as ResidentServiceTrackingController;
 use App\Http\Controllers\Api\ResidentPortal\ProfileController as ResidentProfileController;
 use App\Http\Controllers\Api\ResidentPortal\HouseholdController as ResidentHouseholdController;
 use App\Http\Controllers\Api\ResidentPortal\ProgramController as ResidentProgramController;
 use App\Http\Controllers\Api\ResidentPortal\DistributionController as ResidentDistributionController;
 use App\Http\Controllers\Api\ResidentPortal\AnnouncementController as ResidentAnnouncementController;
 use App\Http\Controllers\Api\ResidentPortal\NotificationController as ResidentNotificationController;
+use App\Http\Controllers\Api\ResidentPortal\PublicServicePortalController as ResidentPublicServicePortalController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -135,6 +142,26 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
     Route::delete('/settings/{key}', [SystemSettingController::class, 'destroy']);
     Route::get('/settings/group/{group}', [SystemSettingController::class, 'byGroup']);
     Route::post('/settings/clear-cache', [SystemSettingController::class, 'clearCache']);
+
+    Route::middleware('permission:manage-citizen-services')->prefix('citizen-services')->group(function () {
+        Route::get('/service-requests', [CitizenServicesAdminController::class, 'serviceRequests']);
+        Route::put('/service-requests/{id}', [CitizenServicesAdminController::class, 'updateServiceRequest']);
+
+        Route::get('/grievances', [CitizenServicesAdminController::class, 'grievances']);
+        Route::put('/grievances/{id}', [CitizenServicesAdminController::class, 'updateGrievance']);
+
+        Route::get('/sos-alerts', [CitizenServicesAdminController::class, 'sosAlerts']);
+        Route::put('/sos-alerts/{id}', [CitizenServicesAdminController::class, 'updateSosAlert']);
+
+        Route::get('/portal-links', [PublicServiceLinkController::class, 'index']);
+        Route::post('/portal-links', [PublicServiceLinkController::class, 'store']);
+        Route::put('/portal-links/{id}', [PublicServiceLinkController::class, 'update']);
+        Route::delete('/portal-links/{id}', [PublicServiceLinkController::class, 'destroy']);
+
+        Route::get('/emergency-alerts', [EmergencyAlertController::class, 'index']);
+        Route::post('/emergency-alerts', [EmergencyAlertController::class, 'store']);
+        Route::put('/emergency-alerts/{id}', [EmergencyAlertController::class, 'update']);
+    });
 });
 
 /*
@@ -198,4 +225,23 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('auth:san
     Route::post('/notifications/read-all', [ResidentNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('/notifications/register-device', [ResidentNotificationController::class, 'registerDevice'])->name('notifications.register-device');
     Route::post('/notifications/unregister-device', [ResidentNotificationController::class, 'unregisterDevice'])->name('notifications.unregister-device');
+
+    // Service Tracking
+    Route::get('/services', [ResidentServiceTrackingController::class, 'index'])->name('services.index');
+    Route::post('/services', [ResidentServiceTrackingController::class, 'store'])->name('services.store');
+    Route::get('/services/{id}', [ResidentServiceTrackingController::class, 'show'])->name('services.show');
+
+    // Public Service Portal
+    Route::get('/public-services', [ResidentPublicServicePortalController::class, 'index'])->name('public-services.index');
+
+    // Feedback and Grievance
+    Route::get('/grievances', [ResidentGrievanceController::class, 'index'])->name('grievances.index');
+    Route::post('/grievances', [ResidentGrievanceController::class, 'store'])->name('grievances.store');
+    Route::get('/grievances/{id}', [ResidentGrievanceController::class, 'show'])->name('grievances.show');
+
+    // Emergency and Alerts
+    Route::get('/emergency/alerts', [ResidentEmergencyController::class, 'index'])->name('emergency.alerts');
+    Route::get('/emergency/alerts/{id}', [ResidentEmergencyController::class, 'show'])->name('emergency.alerts.show');
+    Route::post('/emergency/sos', [ResidentEmergencyController::class, 'sos'])->name('emergency.sos');
+    Route::get('/emergency/sos/history', [ResidentEmergencyController::class, 'sosHistory'])->name('emergency.sos.history');
 });

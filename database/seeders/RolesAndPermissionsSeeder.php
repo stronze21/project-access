@@ -77,6 +77,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Resident Portal management permissions (admin-side management)
         $residentPortalPermissions = [
             'manage-announcements',
+            'manage-citizen-services',
         ];
 
         // Merge all permissions and create them
@@ -90,17 +91,17 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         foreach ($allPermissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         // Create roles and assign permissions
 
         // 1. System Administrator - Has all permissions
-        $adminRole = Role::create(['name' => 'system-administrator']);
+        $adminRole = Role::firstOrCreate(['name' => 'system-administrator']);
         $adminRole->givePermissionTo(Permission::all());
 
         // 2. Program Manager
-        $managerRole = Role::create(['name' => 'program-manager']);
+        $managerRole = Role::firstOrCreate(['name' => 'program-manager']);
         $managerRole->givePermissionTo([
             // System permissions
             'view-users',
@@ -130,10 +131,11 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Resident Portal management
             'manage-announcements',
+            'manage-citizen-services',
         ]);
 
         // 3. Registration Officer
-        $registrationRole = Role::create(['name' => 'registration-officer']);
+        $registrationRole = Role::firstOrCreate(['name' => 'registration-officer']);
         $registrationRole->givePermissionTo([
             // Resident/Household permissions
             'view-residents',
@@ -155,7 +157,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // 4. Distribution Officer
-        $distributionRole = Role::create(['name' => 'distribution-officer']);
+        $distributionRole = Role::firstOrCreate(['name' => 'distribution-officer']);
         $distributionRole->givePermissionTo([
             // Limited Resident/Household permissions
             'view-residents',
@@ -177,7 +179,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // 5. Reporting User
-        $reportingRole = Role::create(['name' => 'reporting-user']);
+        $reportingRole = Role::firstOrCreate(['name' => 'reporting-user']);
         $reportingRole->givePermissionTo([
             // View only permissions
             'view-residents',

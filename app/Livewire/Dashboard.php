@@ -3,10 +3,15 @@
 namespace App\Livewire;
 
 use App\Models\AyudaProgram;
+use App\Models\SosAlert;
 use App\Models\Distribution;
 use App\Models\Resident;
 use App\Models\Household;
+use App\Models\EmergencyAlert;
+use App\Models\GrievanceReport;
 use App\Models\DistributionBatch;
+use App\Models\PublicServiceLink;
+use App\Models\CitizenServiceRequest;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\DB;
@@ -511,6 +516,7 @@ class Dashboard extends Component
             'users_count' => \App\Models\User::count(),
             'roles_count' => \Spatie\Permission\Models\Role::count(),
             'permissions_count' => \Spatie\Permission\Models\Permission::count(),
+            'active_programs' => AyudaProgram::where('is_active', true)->count(),
             'recent_users' => \App\Models\User::orderBy('created_at', 'desc')->take(5)->get(),
             'role_distribution' => DB::table('model_has_roles')
                 ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
@@ -518,6 +524,34 @@ class Dashboard extends Component
                 ->groupBy('roles.name')
                 ->get()
         ];
+    }
+
+    /**
+     * Get citizen services overview cards for the dashboard.
+     */
+    #[Computed]
+    public function citizenServicesStats()
+    {
+        return [
+            'service_requests' => CitizenServiceRequest::count(),
+            'active_requests' => CitizenServiceRequest::whereNotIn('status', ['completed', 'released', 'cancelled', 'rejected'])->count(),
+            'open_grievances' => GrievanceReport::whereNotIn('status', ['resolved', 'closed'])->count(),
+            'active_alerts' => EmergencyAlert::active()->count(),
+            'open_sos' => SosAlert::where('status', 'open')->count(),
+            'portal_links' => PublicServiceLink::where('is_active', true)->count(),
+        ];
+    }
+
+    /**
+     * Recent SOS alerts for quick monitoring.
+     */
+    #[Computed]
+    public function recentSosAlerts()
+    {
+        return SosAlert::with('resident:id,first_name,last_name,resident_id')
+            ->latest()
+            ->limit(5)
+            ->get();
     }
 
     /**

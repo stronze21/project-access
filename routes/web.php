@@ -20,6 +20,7 @@ use App\Livewire\AyudaProgramCreate;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\RoleManagement;
 use App\Livewire\Admin\UserManagement;
+use App\Livewire\Admin\CitizenServicesManager;
 use App\Livewire\ResidentRegistration;
 use App\Livewire\DistributionBatchForm;
 use App\Livewire\DistributionBatchList;
@@ -174,6 +175,10 @@ Route::middleware([
     // Announcements Management
     Route::prefix('announcements')->middleware('permission:manage-announcements')->group(function () {
         Route::get('/', \App\Livewire\AnnouncementList::class)->name('announcements.index');
+    });
+
+    Route::middleware('permission:manage-citizen-services')->group(function () {
+        Route::get('/citizen-services', CitizenServicesManager::class)->name('citizen-services.index');
     });
 
     // Reports

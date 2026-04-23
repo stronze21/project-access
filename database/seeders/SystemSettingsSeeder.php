@@ -25,6 +25,10 @@ class SystemSettingsSeeder extends Seeder
             'municipality_code' => LocationsSeeder::getCityCode(),
             'province_code' => LocationsSeeder::getProvinceCode(),
             'region_code' => LocationsSeeder::getRegionCode(),
+            'command_center_name' => 'Alaminos City Command Center',
+            'command_center_hotline' => '911',
+            'command_center_alternate_hotline' => '(075) 551-2020',
+            'command_center_email' => 'commandcenter@alaminoscity.gov.ph',
         ];
 
         foreach ($settings as $key => $value) {

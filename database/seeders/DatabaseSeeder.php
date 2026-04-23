@@ -9,17 +9,22 @@ use Spatie\Permission\Models\Role;
 use Database\Seeders\BarangaySeeder;
 use Database\Seeders\ProvinceSeeder;
 use Database\Seeders\ResidentSeeder;
+use Database\Seeders\SosAlertSeeder;
 use Database\Seeders\HouseholdSeeder;
 use Database\Seeders\LocationsSeeder;
 use Database\Seeders\SystemSettingsSeeder;
 use Database\Seeders\AyudaProgramSeeder;
 use Database\Seeders\DefaultAdminSeeder;
 use Database\Seeders\DistributionSeeder;
+use Database\Seeders\GrievanceReportSeeder;
 use Spatie\Permission\Models\Permission;
 use Database\Seeders\CityMunicipalitySeeder;
+use Database\Seeders\EmergencyAlertSeeder;
 use Database\Seeders\DistributionBatchSeeder;
 use Database\Seeders\EligibilityCriteriaSeeder;
+use Database\Seeders\PublicServiceLinkSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Database\Seeders\CitizenServiceRequestSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -53,6 +58,15 @@ class DatabaseSeeder extends Seeder
         // Create distributions and batches
         $this->call(DistributionBatchSeeder::class);
         $this->call(DistributionSeeder::class);
+
+        // Citizen service portal data
+        $this->call([
+            PublicServiceLinkSeeder::class,
+            CitizenServiceRequestSeeder::class,
+            GrievanceReportSeeder::class,
+            EmergencyAlertSeeder::class,
+            SosAlertSeeder::class,
+        ]);
 
         $this->call([
             RolesAndPermissionsSeeder::class,

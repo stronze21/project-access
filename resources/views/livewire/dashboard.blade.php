@@ -64,6 +64,11 @@
                         <x-mary-button link="{{ route('report.controller') }}" label="View Reports"
                             class="tagged-color btn-info" icon="o-chart-bar" />
                     @endpermission
+
+                    @permission('manage-citizen-services')
+                        <x-mary-button link="{{ route('citizen-services.index') }}" label="Citizen Services"
+                            class="tagged-color btn-outline btn-secline" icon="o-megaphone" />
+                    @endpermission
                 </div>
             </div>
         </div>
@@ -360,6 +365,83 @@
             @endpermission
         </x-mary-card>
     @endif
+
+    @can('manage-citizen-services')
+        <div class="grid grid-cols-1 gap-4 mt-6 mb-6 md:grid-cols-2 xl:grid-cols-6">
+            <x-mary-stat title="Service Requests" value="{{ number_format($this->citizenServicesStats['service_requests']) }}"
+                icon="o-clipboard-document-list" class="tagged-color text-primary" />
+            <x-mary-stat title="Active Requests" value="{{ number_format($this->citizenServicesStats['active_requests']) }}"
+                icon="o-clock" class="tagged-color text-info" />
+            <x-mary-stat title="Open Grievances" value="{{ number_format($this->citizenServicesStats['open_grievances']) }}"
+                icon="o-chat-bubble-left-right" class="tagged-color text-warning" />
+            <x-mary-stat title="Active Alerts" value="{{ number_format($this->citizenServicesStats['active_alerts']) }}"
+                icon="o-bell-alert" class="tagged-color text-error" />
+            <x-mary-stat title="Open SOS" value="{{ number_format($this->citizenServicesStats['open_sos']) }}"
+                icon="o-shield-exclamation" class="tagged-color text-secondary" />
+            <x-mary-stat title="Portal Links" value="{{ number_format($this->citizenServicesStats['portal_links']) }}"
+                icon="o-globe-alt" class="tagged-color text-success" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
+            <x-mary-card title="Recent SOS Alerts">
+                <div class="space-y-3">
+                    @forelse ($this->recentSosAlerts as $sos)
+                        <div class="p-3 border rounded-lg">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <div class="font-medium">
+                                        {{ $sos->resident?->full_name ?? 'Unknown resident' }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ $sos->reference_number }} • {{ strtoupper($sos->status) }}
+                                    </div>
+                                    @if ($sos->location_label || ($sos->latitude && $sos->longitude))
+                                        <div class="mt-1 text-xs text-gray-500">
+                                            {{ $sos->location_label ?: $sos->latitude . ', ' . $sos->longitude }}
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ $sos->created_at->diffForHumans() }}
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="py-4 text-center text-gray-500">No recent SOS alerts found</p>
+                    @endforelse
+                </div>
+
+                <div class="mt-4 text-right">
+                    <x-mary-button link="{{ route('citizen-services.index') }}" label="Open Citizen Services" size="sm"
+                        class="tagged-color btn-primary" />
+                </div>
+            </x-mary-card>
+
+            <x-mary-card title="Citizen Services Snapshot">
+                <div class="space-y-4">
+                    <div class="p-4 border rounded-lg">
+                        <div class="text-sm text-gray-500">Service tracking</div>
+                        <div class="mt-1 text-2xl font-semibold text-slate-800">
+                            {{ number_format($this->citizenServicesStats['active_requests']) }} active applications
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600">
+                            Residents can now track permit, aid, and document requests in real time through the mobile API.
+                        </div>
+                    </div>
+
+                    <div class="p-4 border rounded-lg">
+                        <div class="text-sm text-gray-500">Emergency readiness</div>
+                        <div class="mt-1 text-2xl font-semibold text-slate-800">
+                            {{ number_format($this->citizenServicesStats['active_alerts']) }} live alerts
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600">
+                            Broadcast alerts, notify residents, and monitor incoming SOS requests from one place.
+                        </div>
+                    </div>
+                </div>
+            </x-mary-card>
+        </div>
+    @endcan
 
     <!-- Registration Officer Section - Only visible for registration officers -->
     @role('registration-officer')

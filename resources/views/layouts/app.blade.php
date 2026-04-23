@@ -335,6 +335,19 @@
                                 </x-nav-link>
                             @endcan
 
+                            @can('manage-citizen-services')
+                                <x-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
+                                    <span class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 8h10M7 12h8m-8 4h6m7-11l-8.586 8.586a2 2 0 01-1.414.586H5a1 1 0 01-1-1v-4.586a2 2 0 01.586-1.414L13.172 2.586A2 2 0 0114.586 2H19a1 1 0 011 1v4.414a2 2 0 01-.586 1.414z" />
+                                        </svg>
+                                        Citizen Services
+                                    </span>
+                                </x-nav-link>
+                            @endcan
+
                             <!-- Admin Dropdown - only show for appropriate permissions -->
                             @if (auth()->user()->can('manage-users') || auth()->user()->hasRole('system-administrator'))
                                 <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }">
@@ -375,6 +388,11 @@
                                                 <a href="{{ route('announcements.index') }}"
                                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                     Announcements
+                                                </a>
+
+                                                <a href="{{ route('citizen-services.index') }}"
+                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Citizen Services
                                                 </a>
 
                                             @can('manage-users')
@@ -598,6 +616,19 @@
                             </x-responsive-nav-link>
                         @endcan
 
+                        @can('manage-citizen-services')
+                            <x-responsive-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 8h10M7 12h8m-8 4h6m7-11l-8.586 8.586a2 2 0 01-1.414.586H5a1 1 0 01-1-1v-4.586a2 2 0 01.586-1.414L13.172 2.586A2 2 0 0114.586 2H19a1 1 0 011 1v4.414a2 2 0 01-.586 1.414z" />
+                                    </svg>
+                                    Citizen Services
+                                </span>
+                            </x-responsive-nav-link>
+                        @endcan
+
                         <!-- QR/RFID Scanner - only visible with permission -->
                         @can('verify-beneficiaries')
                             <x-responsive-nav-link href="{{ route('scanner') }}" :active="request()->routeIs('scanner')">
@@ -645,6 +676,19 @@
                                                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                                 </svg>
                                                 User Management
+                                            </span>
+                                        </x-responsive-nav-link>
+                                    @endcan
+
+                                    @can('manage-citizen-services')
+                                        <x-responsive-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
+                                            <span class="flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M7 8h10M7 12h8m-8 4h6m7-11l-8.586 8.586a2 2 0 01-1.414.586H5a1 1 0 01-1-1v-4.586a2 2 0 01.586-1.414L13.172 2.586A2 2 0 0114.586 2H19a1 1 0 011 1v4.414a2 2 0 01-.586 1.414z" />
+                                                </svg>
+                                                Citizen Services
                                             </span>
                                         </x-responsive-nav-link>
                                     @endcan
@@ -750,7 +794,7 @@
         @endif
 
         <!-- Page Content -->
-        <main class="pt-0 pb-6">
+        <main class="pt-6 pb-6">
             <div class="px-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
                 {{ $slot }}
             </div>

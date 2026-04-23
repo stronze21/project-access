@@ -63,6 +63,53 @@ class PushNotificationService
     }
 
     /**
+     * Create an in-app notification for a resident and optionally send push.
+     */
+    public function createInAppNotificationForResident(int $residentId, string $title, string $body, string $type = 'general', array $data = [], bool $sendPush = false): ResidentNotification
+    {
+        $notification = ResidentNotification::create([
+            'resident_id' => $residentId,
+            'title' => $title,
+            'body' => $body,
+            'type' => $type,
+            'data' => $data,
+        ]);
+
+        if ($sendPush) {
+            $this->sendToResident($residentId, $title, $body, array_merge($data, ['type' => $type]));
+        }
+
+        return $notification;
+    }
+
+    /**
+     * Broadcast a generic resident notification to all active residents.
+     */
+    public function broadcastResidentNotification(string $title, string $body, string $type = 'general', array $data = []): array
+    {
+        $residentIds = Resident::where('is_active', true)->pluck('id')->toArray();
+
+        if (!empty($residentIds)) {
+            $notifications = [];
+            foreach ($residentIds as $residentId) {
+                $notifications[] = [
+                    'resident_id' => $residentId,
+                    'title' => $title,
+                    'body' => $body,
+                    'type' => $type,
+                    'data' => json_encode($data),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            ResidentNotification::insert($notifications);
+        }
+
+        return $this->sendToAll($title, $body, array_merge($data, ['type' => $type]));
+    }
+
+    /**
      * Send push notification and also store an in-app notification record for each resident.
      */
     public function broadcastAnnouncementNotification(int $announcementId, string $title, string $body, string $type = 'announcement', string $recipientType = 'all', ?int $programId = null): array

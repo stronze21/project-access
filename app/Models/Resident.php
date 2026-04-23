@@ -242,6 +242,30 @@ class Resident extends Authenticatable
     }
 
     /**
+     * Get tracked service requests for this resident.
+     */
+    public function serviceRequests(): HasMany
+    {
+        return $this->hasMany(CitizenServiceRequest::class);
+    }
+
+    /**
+     * Get grievance reports filed by this resident.
+     */
+    public function grievanceReports(): HasMany
+    {
+        return $this->hasMany(GrievanceReport::class);
+    }
+
+    /**
+     * Get SOS alerts sent by this resident.
+     */
+    public function sosAlerts(): HasMany
+    {
+        return $this->hasMany(SosAlert::class);
+    }
+
+    /**
      * Get the resident value for a given criterion.
      *
      * @param EligibilityCriteria $criterion
