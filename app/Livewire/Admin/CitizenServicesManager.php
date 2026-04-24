@@ -148,12 +148,14 @@ class CitizenServicesManager extends Component
 
     public function createLink(): void
     {
+        $this->showAlertModal = false;
         $this->resetLinkForm();
         $this->showLinkModal = true;
     }
 
     public function editLink(int $id): void
     {
+        $this->showAlertModal = false;
         $link = PublicServiceLink::findOrFail($id);
 
         $this->editingLinkId = $link->id;
@@ -204,12 +206,14 @@ class CitizenServicesManager extends Component
 
     public function createAlert(): void
     {
+        $this->showLinkModal = false;
         $this->resetAlertForm();
         $this->showAlertModal = true;
     }
 
     public function editAlert(int $id): void
     {
+        $this->showLinkModal = false;
         $alert = EmergencyAlert::findOrFail($id);
 
         $this->editingAlertId = $alert->id;
