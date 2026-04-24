@@ -269,46 +269,50 @@
         </x-mary-card>
     @endif
 
-    <x-mary-modal wire:model="showLinkModal" title="{{ $editingLinkId ? 'Edit Portal Link' : 'New Portal Link' }}" box-class="max-w-2xl">
-        <form wire:submit.prevent="saveLink">
-            <div class="space-y-4">
-                <x-mary-input label="Title" wire:model="linkTitle" />
-                <x-mary-select label="Service Type" wire:model="linkServiceType" :options="$linkServiceTypes" />
-                <x-mary-textarea label="Description" wire:model="linkDescription" rows="3" />
-                <x-mary-input label="URL" wire:model="linkUrl" />
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <x-mary-input label="Icon Name" wire:model="linkIcon" hint="Optional icon key for future UI usage" />
-                    <x-mary-input label="Sort Order" wire:model="linkSortOrder" type="number" />
+    @if ($showActionModal && $actionModalType === 'link')
+        <x-mary-modal wire:model="showActionModal" title="{{ $editingLinkId ? 'Edit Portal Link' : 'New Portal Link' }}" box-class="max-w-2xl">
+            <form wire:submit.prevent="saveLink">
+                <div class="space-y-4">
+                    <x-mary-input label="Title" wire:model="linkTitle" />
+                    <x-mary-select label="Service Type" wire:model="linkServiceType" :options="$linkServiceTypes" />
+                    <x-mary-textarea label="Description" wire:model="linkDescription" rows="3" />
+                    <x-mary-input label="URL" wire:model="linkUrl" />
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <x-mary-input label="Icon Name" wire:model="linkIcon" hint="Optional icon key for future UI usage" />
+                        <x-mary-input label="Sort Order" wire:model="linkSortOrder" type="number" />
+                    </div>
+                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="linkIsActive" class="checkbox checkbox-primary"><span class="label-text">Active</span></label>
                 </div>
-                <label class="flex items-center gap-2"><input type="checkbox" wire:model="linkIsActive" class="checkbox checkbox-primary"><span class="label-text">Active</span></label>
-            </div>
-            <div class="flex justify-end mt-6 gap-2">
-                <x-mary-button type="button" wire:click="$set('showLinkModal', false)" class="btn-outline">Cancel</x-mary-button>
-                <x-mary-button type="submit" class="btn-primary">Save Link</x-mary-button>
-            </div>
-        </form>
-    </x-mary-modal>
+                <div class="flex justify-end mt-6 gap-2">
+                    <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>
+                    <x-mary-button type="submit" class="btn-primary">Save Link</x-mary-button>
+                </div>
+            </form>
+        </x-mary-modal>
+    @endif
 
-    <x-mary-modal wire:model="showAlertModal" title="{{ $editingAlertId ? 'Edit Emergency Alert' : 'New Emergency Alert' }}" box-class="max-w-3xl">
-        <form wire:submit.prevent="saveAlert">
-            <div class="space-y-4">
-                <x-mary-input label="Title" wire:model="alertTitle" />
-                <x-mary-textarea label="Message" wire:model="alertMessage" rows="4" />
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <x-mary-select label="Severity" wire:model="alertSeverity" :options="$alertSeverityOptions" />
-                    <x-mary-select label="Status" wire:model="alertStatus" :options="$alertStatusOptions" />
-                    <x-mary-select label="Type" wire:model="alertType" :options="$alertTypeOptions" />
+    @if ($showActionModal && $actionModalType === 'alert')
+        <x-mary-modal wire:model="showActionModal" title="{{ $editingAlertId ? 'Edit Emergency Alert' : 'New Emergency Alert' }}" box-class="max-w-3xl">
+            <form wire:submit.prevent="saveAlert">
+                <div class="space-y-4">
+                    <x-mary-input label="Title" wire:model="alertTitle" />
+                    <x-mary-textarea label="Message" wire:model="alertMessage" rows="4" />
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <x-mary-select label="Severity" wire:model="alertSeverity" :options="$alertSeverityOptions" />
+                        <x-mary-select label="Status" wire:model="alertStatus" :options="$alertStatusOptions" />
+                        <x-mary-select label="Type" wire:model="alertType" :options="$alertTypeOptions" />
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <x-mary-input label="Starts At" wire:model="alertStartsAt" type="datetime-local" />
+                        <x-mary-input label="Ends At" wire:model="alertEndsAt" type="datetime-local" />
+                    </div>
+                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="alertSendPush" class="checkbox checkbox-primary"><span class="label-text">Send push notification to residents</span></label>
                 </div>
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <x-mary-input label="Starts At" wire:model="alertStartsAt" type="datetime-local" />
-                    <x-mary-input label="Ends At" wire:model="alertEndsAt" type="datetime-local" />
+                <div class="flex justify-end mt-6 gap-2">
+                    <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>
+                    <x-mary-button type="submit" class="btn-primary">Save Alert</x-mary-button>
                 </div>
-                <label class="flex items-center gap-2"><input type="checkbox" wire:model="alertSendPush" class="checkbox checkbox-primary"><span class="label-text">Send push notification to residents</span></label>
-            </div>
-            <div class="flex justify-end mt-6 gap-2">
-                <x-mary-button type="button" wire:click="$set('showAlertModal', false)" class="btn-outline">Cancel</x-mary-button>
-                <x-mary-button type="submit" class="btn-primary">Save Alert</x-mary-button>
-            </div>
-        </form>
-    </x-mary-modal>
+            </form>
+        </x-mary-modal>
+    @endif
 </div>

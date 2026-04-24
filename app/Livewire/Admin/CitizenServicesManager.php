@@ -20,8 +20,8 @@ class CitizenServicesManager extends Component
     #[Url]
     public string $activeTab = 'overview';
 
-    public bool $showLinkModal = false;
-    public bool $showAlertModal = false;
+    public bool $showActionModal = false;
+    public ?string $actionModalType = null;
 
     public ?int $editingLinkId = null;
     public string $linkTitle = '';
@@ -143,21 +143,21 @@ class CitizenServicesManager extends Component
 
     public function changeTab(string $tab): void
     {
-        $this->showLinkModal = false;
-        $this->showAlertModal = false;
+        $this->closeModals();
         $this->activeTab = $tab;
     }
 
     public function createLink(): void
     {
-        $this->showAlertModal = false;
+        $this->closeModals();
         $this->resetLinkForm();
-        $this->showLinkModal = true;
+        $this->actionModalType = 'link';
+        $this->showActionModal = true;
     }
 
     public function editLink(int $id): void
     {
-        $this->showAlertModal = false;
+        $this->closeModals();
         $link = PublicServiceLink::findOrFail($id);
 
         $this->editingLinkId = $link->id;
@@ -168,7 +168,8 @@ class CitizenServicesManager extends Component
         $this->linkIcon = $link->icon ?? '';
         $this->linkIsActive = (bool) $link->is_active;
         $this->linkSortOrder = (int) $link->sort_order;
-        $this->showLinkModal = true;
+        $this->actionModalType = 'link';
+        $this->showActionModal = true;
     }
 
     public function saveLink(): void
@@ -197,7 +198,8 @@ class CitizenServicesManager extends Component
         }
 
         $this->resetLinkForm();
-        $this->showLinkModal = false;
+        $this->showActionModal = false;
+        $this->actionModalType = null;
     }
 
     public function deleteLink(int $id): void
@@ -208,14 +210,15 @@ class CitizenServicesManager extends Component
 
     public function createAlert(): void
     {
-        $this->showLinkModal = false;
+        $this->closeModals();
         $this->resetAlertForm();
-        $this->showAlertModal = true;
+        $this->actionModalType = 'alert';
+        $this->showActionModal = true;
     }
 
     public function editAlert(int $id): void
     {
-        $this->showLinkModal = false;
+        $this->closeModals();
         $alert = EmergencyAlert::findOrFail($id);
 
         $this->editingAlertId = $alert->id;
@@ -227,7 +230,8 @@ class CitizenServicesManager extends Component
         $this->alertSendPush = (bool) $alert->send_push_notification;
         $this->alertStartsAt = $alert->starts_at?->format('Y-m-d\TH:i');
         $this->alertEndsAt = $alert->ends_at?->format('Y-m-d\TH:i');
-        $this->showAlertModal = true;
+        $this->actionModalType = 'alert';
+        $this->showActionModal = true;
     }
 
     public function saveAlert(PushNotificationService $pushNotificationService): void
@@ -277,7 +281,8 @@ class CitizenServicesManager extends Component
         }
 
         $this->resetAlertForm();
-        $this->showAlertModal = false;
+        $this->showActionModal = false;
+        $this->actionModalType = null;
     }
 
     public function saveServiceRequest(int $id): void
@@ -398,6 +403,12 @@ class CitizenServicesManager extends Component
         $this->alertStartsAt = null;
         $this->alertEndsAt = null;
         $this->resetValidation();
+    }
+
+    private function closeModals(): void
+    {
+        $this->showActionModal = false;
+        $this->actionModalType = null;
     }
 
     public function getOverviewStatsProperty(): array
