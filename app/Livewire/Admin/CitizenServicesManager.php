@@ -110,6 +110,16 @@ class CitizenServicesManager extends Component
         ['id' => 'cancelled', 'name' => 'Cancelled'],
     ];
 
+    public array $tabs = [
+        'overview' => 'Overview',
+        'links' => 'Portal Links',
+        'requests' => 'Service Tracking',
+        'grievances' => 'Grievances',
+        'alerts' => 'Emergency Alerts',
+        'sos' => 'SOS Alerts',
+        'command-center' => 'Command Center',
+    ];
+
     public function mount(): void
     {
         $this->loadCommandCenterSettings();

@@ -17,25 +17,24 @@
         <x-mary-stat title="Portal Links" value="{{ number_format($this->overviewStats['portal_links']) }}" icon="o-globe-alt" class="tagged-color text-success" />
     </div>
 
-    <x-mary-card class="mb-6">
-        <div class="flex flex-wrap gap-2">
-            @foreach ([
-                'overview' => 'Overview',
-                'links' => 'Portal Links',
-                'requests' => 'Service Tracking',
-                'grievances' => 'Grievances',
-                'alerts' => 'Emergency Alerts',
-                'sos' => 'SOS Alerts',
-                'command-center' => 'Command Center',
-            ] as $tab => $label)
-                <x-mary-button wire:click="changeTab('{{ $tab }}')" class="{{ $activeTab === $tab ? 'btn-primary' : 'btn-outline' }}">
+    <x-mary-card class="mb-6" wire:key="citizen-services-tabs-card">
+        <div class="flex flex-wrap gap-2" wire:key="citizen-services-tabs-list">
+            @foreach ($tabs as $tab => $label)
+                <x-mary-button
+                    type="button"
+                    wire:key="citizen-services-tab-{{ $tab }}"
+                    wire:click="changeTab('{{ $tab }}')"
+                    class="{{ $activeTab === $tab ? 'btn-primary' : 'btn-outline' }}"
+                >
                     {{ $label }}
                 </x-mary-button>
             @endforeach
         </div>
     </x-mary-card>
 
-    @if ($activeTab === 'overview')
+    <div wire:key="citizen-services-panel-{{ $activeTab }}">
+    @switch($activeTab)
+        @case('overview')
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <x-mary-card title="Recent Emergency Alerts">
                 <div class="space-y-3">
@@ -72,9 +71,9 @@
                 </div>
             </x-mary-card>
         </div>
-    @endif
+        @break
 
-    @if ($activeTab === 'links')
+        @case('links')
         <x-mary-card>
             <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 class="text-lg font-semibold text-slate-800">Public Service Portal Links</h2>
@@ -119,9 +118,9 @@
                 </table>
             </div>
         </x-mary-card>
-    @endif
+        @break
 
-    @if ($activeTab === 'requests')
+        @case('requests')
         <x-mary-card title="Service Tracking Management">
             <div class="space-y-4">
                 @forelse ($serviceRequests as $request)
@@ -151,9 +150,9 @@
                 @endforelse
             </div>
         </x-mary-card>
-    @endif
+        @break
 
-    @if ($activeTab === 'grievances')
+        @case('grievances')
         <x-mary-card title="Feedback and Grievance Management">
             <div class="space-y-4">
                 @forelse ($grievances as $grievance)
@@ -180,9 +179,9 @@
                 @endforelse
             </div>
         </x-mary-card>
-    @endif
+        @break
 
-    @if ($activeTab === 'alerts')
+        @case('alerts')
         <x-mary-card>
             <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 class="text-lg font-semibold text-slate-800">Emergency Alerts</h2>
@@ -220,9 +219,9 @@
                 </table>
             </div>
         </x-mary-card>
-    @endif
+        @break
 
-    @if ($activeTab === 'sos')
+        @case('sos')
         <x-mary-card title="SOS Response Management">
             <div class="space-y-4">
                 @forelse ($sosAlerts as $sos)
@@ -251,9 +250,9 @@
                 @endforelse
             </div>
         </x-mary-card>
-    @endif
+        @break
 
-    @if ($activeTab === 'command-center')
+        @case('command-center')
         <x-mary-card title="Command Center Settings">
             <form wire:submit.prevent="saveCommandCenterSettings">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -267,7 +266,9 @@
                 </div>
             </form>
         </x-mary-card>
-    @endif
+        @break
+    @endswitch
+    </div>
 
     @if ($showActionModal && $actionModalType === 'link')
         <x-mary-modal wire:model="showActionModal" title="{{ $editingLinkId ? 'Edit Portal Link' : 'New Portal Link' }}" box-class="max-w-2xl">
