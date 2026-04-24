@@ -143,6 +143,8 @@ class CitizenServicesManager extends Component
 
     public function changeTab(string $tab): void
     {
+        $this->showLinkModal = false;
+        $this->showAlertModal = false;
         $this->activeTab = $tab;
     }
 
