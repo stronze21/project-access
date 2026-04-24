@@ -108,8 +108,8 @@
     @livewireStyles
 </head>
 
-<body class="font-sans antialiased brand-shell bg-base-300">
-    <div class="min-h-screen">
+<body class="min-h-screen font-sans antialiased brand-shell bg-base-300">
+    <div class="flex min-h-screen flex-col">
         <!-- Navigation -->
         <nav class="sticky top-0 z-40 brand-navbar" x-data="{ open: false }">
             <div class="px-4 pt-3 pb-1 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
@@ -794,7 +794,7 @@
         @endif
 
         <!-- Page Content -->
-        <main class="pt-6 pb-6">
+        <main class="flex-1 pt-6 pb-6">
             <div class="px-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
                 {{ $slot }}
             </div>
