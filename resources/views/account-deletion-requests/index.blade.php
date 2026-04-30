@@ -5,8 +5,8 @@
         </h2>
     </x-slot>
 
-    <div class="py-6">
-        <div class="mx-auto max-w-7xl">
+    <div>
+        <div class="w-full">
             @if (session('status'))
                 <div class="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-800">
                     {{ session('status') }}
