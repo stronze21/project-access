@@ -43,6 +43,8 @@ use App\Http\Controllers\ResidentCsvController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ResidentIdCardController;
 use App\Http\Controllers\BatchImageDownloadController;
+use App\Http\Controllers\AccountDeletionRequestController;
+use App\Http\Controllers\SupportRequestController;
 
 
 /*
@@ -59,6 +61,13 @@ use App\Http\Controllers\BatchImageDownloadController;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
+Route::get('/terms', [AccountDeletionRequestController::class, 'terms'])->name('legal.terms');
+Route::get('/support', [AccountDeletionRequestController::class, 'support'])->name('legal.support');
+Route::post('/support', [SupportRequestController::class, 'store'])->name('support-requests.store');
+Route::get('/account-deletion', [AccountDeletionRequestController::class, 'create'])->name('account-deletion.create');
+Route::post('/account-deletion', [AccountDeletionRequestController::class, 'store'])->name('account-deletion.store');
 
 Route::middleware([
     'auth:sanctum',
@@ -179,6 +188,13 @@ Route::middleware([
 
     Route::middleware('permission:manage-citizen-services')->group(function () {
         Route::get('/citizen-services', CitizenServicesManager::class)->name('citizen-services.index');
+        Route::get('/account-deletion-requests', [AccountDeletionRequestController::class, 'index'])
+            ->name('account-deletion-requests.index');
+        Route::patch('/account-deletion-requests/{accountDeletionRequest}', [AccountDeletionRequestController::class, 'update'])
+            ->name('account-deletion-requests.update');
+        Route::get('/support-requests', [SupportRequestController::class, 'index'])->name('support-requests.index');
+        Route::patch('/support-requests/{supportRequest}', [SupportRequestController::class, 'update'])
+            ->name('support-requests.update');
     });
 
     // Reports

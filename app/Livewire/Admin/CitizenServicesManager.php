@@ -42,12 +42,17 @@ class CitizenServicesManager extends Component
     public ?string $alertStartsAt = null;
     public ?string $alertEndsAt = null;
 
-    public array $requestStatuses = [];
-    public array $requestSteps = [];
-    public array $requestNotes = [];
-    public array $grievanceStatuses = [];
-    public array $grievanceResponses = [];
-    public array $sosStatuses = [];
+    public ?int $editingRequestId = null;
+    public string $requestStatus = 'submitted';
+    public string $requestStep = '';
+    public string $requestNote = '';
+
+    public ?int $editingGrievanceId = null;
+    public string $grievanceStatus = 'submitted';
+    public string $grievanceResponse = '';
+
+    public ?int $editingSosId = null;
+    public string $sosStatus = 'open';
 
     public string $commandCenterName = '';
     public string $commandCenterHotline = '';
@@ -144,6 +149,12 @@ class CitizenServicesManager extends Component
             'alertSendPush' => 'boolean',
             'alertStartsAt' => 'nullable|date',
             'alertEndsAt' => 'nullable|date|after_or_equal:alertStartsAt',
+            'requestStatus' => 'required|string|max:50',
+            'requestStep' => 'nullable|string|max:255',
+            'requestNote' => 'nullable|string',
+            'grievanceStatus' => 'required|string|max:50',
+            'grievanceResponse' => 'nullable|string',
+            'sosStatus' => 'required|string|max:50',
             'commandCenterName' => 'required|string|max:255',
             'commandCenterHotline' => 'required|string|max:50',
             'commandCenterAlternateHotline' => 'nullable|string|max:50',
@@ -295,48 +306,96 @@ class CitizenServicesManager extends Component
         $this->actionModalType = null;
     }
 
-    public function saveServiceRequest(int $id): void
+    public function editServiceRequest(int $id): void
     {
+        $this->closeModals();
         $request = CitizenServiceRequest::findOrFail($id);
-        $status = $this->requestStatuses[$id] ?? $request->status;
+
+        $this->editingRequestId = $request->id;
+        $this->requestStatus = $request->status;
+        $this->requestStep = $request->current_step ?? '';
+        $this->requestNote = $request->notes ?? '';
+        $this->actionModalType = 'request';
+        $this->showActionModal = true;
+    }
+
+    public function saveServiceRequest(): void
+    {
+        $this->validateOnly('requestStatus');
+        $this->validateOnly('requestStep');
+        $this->validateOnly('requestNote');
+
+        $request = CitizenServiceRequest::findOrFail($this->editingRequestId);
 
         $request->update([
-            'status' => $status,
-            'current_step' => $this->requestSteps[$id] ?? $request->current_step,
-            'notes' => $this->requestNotes[$id] ?? $request->notes,
+            'status' => $this->requestStatus,
+            'current_step' => $this->requestStep ?: null,
+            'notes' => $this->requestNote ?: null,
             'status_updated_at' => now(),
-            'completed_at' => in_array($status, ['completed', 'released'], true) ? now() : null,
+            'completed_at' => in_array($this->requestStatus, ['completed', 'released'], true) ? now() : null,
         ]);
 
         $this->success('Service request updated.');
+        $this->resetRequestForm();
+        $this->closeModals();
     }
 
-    public function saveGrievance(int $id): void
+    public function editGrievance(int $id): void
     {
+        $this->closeModals();
         $grievance = GrievanceReport::findOrFail($id);
-        $status = $this->grievanceStatuses[$id] ?? $grievance->status;
+
+        $this->editingGrievanceId = $grievance->id;
+        $this->grievanceStatus = $grievance->status;
+        $this->grievanceResponse = $grievance->admin_response ?? '';
+        $this->actionModalType = 'grievance';
+        $this->showActionModal = true;
+    }
+
+    public function saveGrievance(): void
+    {
+        $this->validateOnly('grievanceStatus');
+        $this->validateOnly('grievanceResponse');
+
+        $grievance = GrievanceReport::findOrFail($this->editingGrievanceId);
 
         $grievance->update([
-            'status' => $status,
-            'admin_response' => $this->grievanceResponses[$id] ?? $grievance->admin_response,
-            'resolved_at' => in_array($status, ['resolved', 'closed'], true) ? now() : null,
+            'status' => $this->grievanceStatus,
+            'admin_response' => $this->grievanceResponse ?: null,
+            'resolved_at' => in_array($this->grievanceStatus, ['resolved', 'closed'], true) ? now() : null,
         ]);
 
         $this->success('Grievance updated.');
+        $this->resetGrievanceForm();
+        $this->closeModals();
     }
 
-    public function saveSos(int $id): void
+    public function editSos(int $id): void
     {
+        $this->closeModals();
         $sos = SosAlert::findOrFail($id);
-        $status = $this->sosStatuses[$id] ?? $sos->status;
+
+        $this->editingSosId = $sos->id;
+        $this->sosStatus = $sos->status;
+        $this->actionModalType = 'sos';
+        $this->showActionModal = true;
+    }
+
+    public function saveSos(): void
+    {
+        $this->validateOnly('sosStatus');
+
+        $sos = SosAlert::findOrFail($this->editingSosId);
 
         $sos->update([
-            'status' => $status,
-            'acknowledged_at' => in_array($status, ['acknowledged', 'resolved'], true) ? ($sos->acknowledged_at ?? now()) : null,
-            'resolved_at' => $status === 'resolved' ? now() : null,
+            'status' => $this->sosStatus,
+            'acknowledged_at' => in_array($this->sosStatus, ['acknowledged', 'resolved'], true) ? ($sos->acknowledged_at ?? now()) : null,
+            'resolved_at' => $this->sosStatus === 'resolved' ? now() : null,
         ]);
 
         $this->success('SOS alert updated.');
+        $this->resetSosForm();
+        $this->closeModals();
     }
 
     public function saveCommandCenterSettings(): void
@@ -372,20 +431,6 @@ class CitizenServicesManager extends Component
 
     private function primeFormMaps(): void
     {
-        foreach (CitizenServiceRequest::latest('status_updated_at')->limit(20)->get() as $request) {
-            $this->requestStatuses[$request->id] = $request->status;
-            $this->requestSteps[$request->id] = $request->current_step ?? '';
-            $this->requestNotes[$request->id] = $request->notes ?? '';
-        }
-
-        foreach (GrievanceReport::latest()->limit(20)->get() as $grievance) {
-            $this->grievanceStatuses[$grievance->id] = $grievance->status;
-            $this->grievanceResponses[$grievance->id] = $grievance->admin_response ?? '';
-        }
-
-        foreach (SosAlert::latest()->limit(20)->get() as $sos) {
-            $this->sosStatuses[$sos->id] = $sos->status;
-        }
     }
 
     private function resetLinkForm(): void
@@ -412,6 +457,30 @@ class CitizenServicesManager extends Component
         $this->alertSendPush = false;
         $this->alertStartsAt = null;
         $this->alertEndsAt = null;
+        $this->resetValidation();
+    }
+
+    private function resetRequestForm(): void
+    {
+        $this->editingRequestId = null;
+        $this->requestStatus = 'submitted';
+        $this->requestStep = '';
+        $this->requestNote = '';
+        $this->resetValidation();
+    }
+
+    private function resetGrievanceForm(): void
+    {
+        $this->editingGrievanceId = null;
+        $this->grievanceStatus = 'submitted';
+        $this->grievanceResponse = '';
+        $this->resetValidation();
+    }
+
+    private function resetSosForm(): void
+    {
+        $this->editingSosId = null;
+        $this->sosStatus = 'open';
         $this->resetValidation();
     }
 

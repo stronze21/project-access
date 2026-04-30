@@ -28,6 +28,8 @@ use App\Http\Controllers\Api\ResidentPortal\DistributionController as ResidentDi
 use App\Http\Controllers\Api\ResidentPortal\AnnouncementController as ResidentAnnouncementController;
 use App\Http\Controllers\Api\ResidentPortal\NotificationController as ResidentNotificationController;
 use App\Http\Controllers\Api\ResidentPortal\PublicServicePortalController as ResidentPublicServicePortalController;
+use App\Http\Controllers\Api\ResidentPortal\AccountDeletionRequestController as ResidentAccountDeletionRequestController;
+use App\Http\Controllers\Api\ResidentPortal\SupportRequestController as ResidentSupportRequestController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -195,6 +197,15 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('auth:san
     Route::post('/profile/signature', [ResidentProfileController::class, 'uploadSignature'])->name('profile.signature');
     Route::get('/profile/qr-code', [ResidentProfileController::class, 'qrCode'])->name('profile.qr-code');
     Route::get('/profile/id-card', [ResidentProfileController::class, 'idCard'])->name('profile.id-card');
+    Route::get('/account-deletion-requests', [ResidentAccountDeletionRequestController::class, 'index'])
+        ->name('account-deletion-requests.index');
+    Route::post('/account-deletion-requests', [ResidentAccountDeletionRequestController::class, 'store'])
+        ->name('account-deletion-requests.store');
+    Route::get('/account-deletion-requests/{id}', [ResidentAccountDeletionRequestController::class, 'show'])
+        ->name('account-deletion-requests.show');
+    Route::get('/support-requests', [ResidentSupportRequestController::class, 'index'])->name('support-requests.index');
+    Route::post('/support-requests', [ResidentSupportRequestController::class, 'store'])->name('support-requests.store');
+    Route::get('/support-requests/{id}', [ResidentSupportRequestController::class, 'show'])->name('support-requests.show');
 
     // Household
     Route::get('/household', [ResidentHouseholdController::class, 'show'])->name('household.show');

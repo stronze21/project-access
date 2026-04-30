@@ -33,241 +33,256 @@
     </x-mary-card>
 
     <div wire:key="citizen-services-panel-{{ $activeTab }}">
-    @switch($activeTab)
-        @case('overview')
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <x-mary-card title="Recent Emergency Alerts">
-                <div class="space-y-3">
-                    @forelse ($emergencyAlerts->take(5) as $alert)
-                        <div class="p-3 border rounded-lg">
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="font-medium text-slate-800">{{ $alert->title }}</div>
-                                <x-mary-badge value="{{ strtoupper($alert->status) }}" class="badge-sm badge-ghost" />
-                            </div>
-                            <div class="mt-1 text-sm text-gray-600">{{ $alert->message }}</div>
-                        </div>
-                    @empty
-                        <p class="py-4 text-center text-gray-500">No emergency alerts found.</p>
-                    @endforelse
-                </div>
-            </x-mary-card>
-
-            <x-mary-card title="Recent SOS Alerts">
-                <div class="space-y-3">
-                    @forelse ($sosAlerts->take(5) as $sos)
-                        <div class="p-3 border rounded-lg">
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="font-medium text-slate-800">{{ $sos->resident?->full_name ?? 'Unknown resident' }}</div>
-                                <x-mary-badge value="{{ strtoupper($sos->status) }}" class="badge-sm badge-ghost" />
-                            </div>
-                            <div class="mt-1 text-xs text-gray-500">{{ $sos->reference_number }} • {{ $sos->created_at->diffForHumans() }}</div>
-                            @if ($sos->location_label)
-                                <div class="mt-1 text-sm text-gray-600">{{ $sos->location_label }}</div>
-                            @endif
-                        </div>
-                    @empty
-                        <p class="py-4 text-center text-gray-500">No SOS alerts found.</p>
-                    @endforelse
-                </div>
-            </x-mary-card>
-        </div>
-        @break
-
-        @case('links')
-        <x-mary-card>
-            <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 class="text-lg font-semibold text-slate-800">Public Service Portal Links</h2>
-                <x-mary-button wire:click="createLink" class="btn-primary">Add Portal Link</x-mary-button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs uppercase bg-base-200 text-slate-600">
-                        <tr>
-                            <th class="px-4 py-3">Title</th>
-                            <th class="px-4 py-3">Type</th>
-                            <th class="px-4 py-3">URL</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Order</th>
-                            <th class="px-4 py-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($serviceLinks as $link)
-                            <tr class="border-b">
-                                <td class="px-4 py-3">
-                                    <div class="font-medium">{{ $link->title }}</div>
-                                    @if ($link->description)
-                                        <div class="text-xs text-gray-500">{{ $link->description }}</div>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">{{ $link->service_type }}</td>
-                                <td class="px-4 py-3"><a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" class="brand-link">{{ $link->url }}</a></td>
-                                <td class="px-4 py-3"><x-mary-badge value="{{ $link->is_active ? 'ACTIVE' : 'INACTIVE' }}" class="badge-sm {{ $link->is_active ? 'badge-success' : 'badge-ghost' }}" /></td>
-                                <td class="px-4 py-3">{{ $link->sort_order }}</td>
-                                <td class="px-4 py-3 text-right">
-                                    <div class="flex justify-end gap-2">
-                                        <x-mary-button wire:click="editLink({{ $link->id }})" icon="o-pencil" class="btn-ghost btn-sm" />
-                                        <x-mary-button wire:click="deleteLink({{ $link->id }})" icon="o-trash" class="btn-ghost btn-sm text-error" />
+        @switch($activeTab)
+            @case('overview')
+                <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    <x-mary-card title="Recent Emergency Alerts">
+                        <div class="space-y-3">
+                            @forelse ($emergencyAlerts->take(5) as $alert)
+                                <div class="p-3 border rounded-lg">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="font-medium text-slate-800">{{ $alert->title }}</div>
+                                        <x-mary-badge value="{{ strtoupper($alert->status) }}" class="badge-sm badge-ghost" />
                                     </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No portal links configured yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </x-mary-card>
-        @break
+                                    <div class="mt-1 text-sm text-gray-600">{{ $alert->message }}</div>
+                                </div>
+                            @empty
+                                <p class="py-4 text-center text-gray-500">No emergency alerts found.</p>
+                            @endforelse
+                        </div>
+                    </x-mary-card>
 
-        @case('requests')
-        <x-mary-card title="Service Tracking Management">
-            <div class="space-y-4">
-                @forelse ($serviceRequests as $request)
-                    <div class="p-4 border rounded-lg">
-                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                            <div>
-                                <div class="font-semibold text-slate-800">{{ $request->service_name }}</div>
-                                <div class="text-sm text-gray-500">{{ $request->reference_number }} • {{ $request->resident?->full_name ?? 'External request' }}</div>
-                            </div>
-                            <div class="w-full lg:w-56">
-                                <x-mary-select wire:model="requestStatuses.{{ $request->id }}" :options="$serviceStatusOptions" />
-                            </div>
+                    <x-mary-card title="Recent SOS Alerts">
+                        <div class="space-y-3">
+                            @forelse ($sosAlerts->take(5) as $sos)
+                                <div class="p-3 border rounded-lg">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="font-medium text-slate-800">{{ $sos->resident?->full_name ?? 'Unknown resident' }}</div>
+                                        <x-mary-badge value="{{ strtoupper($sos->status) }}" class="badge-sm badge-ghost" />
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-500">{{ $sos->reference_number }} • {{ $sos->created_at->diffForHumans() }}</div>
+                                    @if ($sos->location_label)
+                                        <div class="mt-1 text-sm text-gray-600">{{ $sos->location_label }}</div>
+                                    @endif
+                                </div>
+                            @empty
+                                <p class="py-4 text-center text-gray-500">No SOS alerts found.</p>
+                            @endforelse
                         </div>
-                        <div class="grid grid-cols-1 gap-4 mt-4 lg:grid-cols-2">
-                            <x-mary-input label="Current Step" wire:model="requestSteps.{{ $request->id }}" />
-                            <x-mary-input label="Last Updated" value="{{ optional($request->status_updated_at)->format('M d, Y h:i A') }}" readonly />
-                        </div>
-                        <div class="mt-4">
-                            <x-mary-textarea label="Internal Notes" rows="3" wire:model="requestNotes.{{ $request->id }}" />
-                        </div>
-                        <div class="flex justify-end mt-4">
-                            <x-mary-button wire:click="saveServiceRequest({{ $request->id }})" class="btn-primary btn-sm">Save Request Update</x-mary-button>
-                        </div>
-                    </div>
-                @empty
-                    <p class="py-4 text-center text-gray-500">No service requests found.</p>
-                @endforelse
-            </div>
-        </x-mary-card>
-        @break
-
-        @case('grievances')
-        <x-mary-card title="Feedback and Grievance Management">
-            <div class="space-y-4">
-                @forelse ($grievances as $grievance)
-                    <div class="p-4 border rounded-lg">
-                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                            <div>
-                                <div class="font-semibold text-slate-800">{{ $grievance->subject }}</div>
-                                <div class="text-sm text-gray-500">{{ $grievance->reference_number }} • {{ $grievance->category }} • {{ $grievance->resident?->full_name ?? 'Anonymous/guest' }}</div>
-                                <div class="mt-2 text-sm text-gray-700">{{ $grievance->description }}</div>
-                            </div>
-                            <div class="w-full lg:w-56">
-                                <x-mary-select wire:model="grievanceStatuses.{{ $grievance->id }}" :options="$grievanceStatusOptions" />
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <x-mary-textarea label="Admin Response" rows="3" wire:model="grievanceResponses.{{ $grievance->id }}" />
-                        </div>
-                        <div class="flex justify-end mt-4">
-                            <x-mary-button wire:click="saveGrievance({{ $grievance->id }})" class="btn-primary btn-sm">Save Grievance Update</x-mary-button>
-                        </div>
-                    </div>
-                @empty
-                    <p class="py-4 text-center text-gray-500">No grievances found.</p>
-                @endforelse
-            </div>
-        </x-mary-card>
-        @break
-
-        @case('alerts')
-        <x-mary-card>
-            <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 class="text-lg font-semibold text-slate-800">Emergency Alerts</h2>
-                <x-mary-button wire:click="createAlert" class="btn-primary">New Emergency Alert</x-mary-button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs uppercase bg-base-200 text-slate-600">
-                        <tr>
-                            <th class="px-4 py-3">Alert</th>
-                            <th class="px-4 py-3">Type</th>
-                            <th class="px-4 py-3">Severity</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Window</th>
-                            <th class="px-4 py-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($emergencyAlerts as $alert)
-                            <tr class="border-b">
-                                <td class="px-4 py-3">
-                                    <div class="font-medium">{{ $alert->title }}</div>
-                                    <div class="text-xs text-gray-500">{{ \Illuminate\Support\Str::limit($alert->message, 90) }}</div>
-                                </td>
-                                <td class="px-4 py-3">{{ $alert->alert_type }}</td>
-                                <td class="px-4 py-3">{{ $alert->severity }}</td>
-                                <td class="px-4 py-3">{{ $alert->status }}</td>
-                                <td class="px-4 py-3 text-xs text-gray-500">{{ $alert->starts_at?->format('M d, Y h:i A') ?? 'Now' }}<br>{{ $alert->ends_at?->format('M d, Y h:i A') ?? 'No end' }}</td>
-                                <td class="px-4 py-3 text-right"><x-mary-button wire:click="editAlert({{ $alert->id }})" icon="o-pencil" class="btn-ghost btn-sm" /></td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No emergency alerts found.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </x-mary-card>
-        @break
-
-        @case('sos')
-        <x-mary-card title="SOS Response Management">
-            <div class="space-y-4">
-                @forelse ($sosAlerts as $sos)
-                    <div class="p-4 border rounded-lg">
-                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                            <div>
-                                <div class="font-semibold text-slate-800">{{ $sos->resident?->full_name ?? 'Unknown resident' }}</div>
-                                <div class="text-sm text-gray-500">{{ $sos->reference_number }} • {{ $sos->contact_number ?: 'No contact number' }}</div>
-                                @if ($sos->message)
-                                    <div class="mt-2 text-sm text-gray-700">{{ $sos->message }}</div>
-                                @endif
-                                @if ($sos->location_label)
-                                    <div class="mt-1 text-xs text-gray-500">{{ $sos->location_label }}</div>
-                                @endif
-                            </div>
-                            <div class="w-full lg:w-56">
-                                <x-mary-select wire:model="sosStatuses.{{ $sos->id }}" :options="$sosStatusOptions" />
-                            </div>
-                        </div>
-                        <div class="flex justify-end mt-4">
-                            <x-mary-button wire:click="saveSos({{ $sos->id }})" class="btn-primary btn-sm">Save SOS Update</x-mary-button>
-                        </div>
-                    </div>
-                @empty
-                    <p class="py-4 text-center text-gray-500">No SOS alerts found.</p>
-                @endforelse
-            </div>
-        </x-mary-card>
-        @break
-
-        @case('command-center')
-        <x-mary-card title="Command Center Settings">
-            <form wire:submit.prevent="saveCommandCenterSettings">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <x-mary-input label="Command Center Name" wire:model="commandCenterName" />
-                    <x-mary-input label="Primary Hotline" wire:model="commandCenterHotline" />
-                    <x-mary-input label="Alternate Hotline" wire:model="commandCenterAlternateHotline" />
-                    <x-mary-input label="Command Center Email" wire:model="commandCenterEmail" type="email" />
+                    </x-mary-card>
                 </div>
-                <div class="flex justify-end mt-6">
-                    <x-mary-button type="submit" class="btn-primary">Save Command Center Settings</x-mary-button>
-                </div>
-            </form>
-        </x-mary-card>
-        @break
-    @endswitch
+            @break
+
+            @case('links')
+                <x-mary-card>
+                    <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 class="text-lg font-semibold text-slate-800">Public Service Portal Links</h2>
+                        <x-mary-button wire:click="createLink" class="btn-primary">Add Portal Link</x-mary-button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs uppercase bg-base-200 text-slate-600">
+                                <tr>
+                                    <th class="px-4 py-3">Title</th>
+                                    <th class="px-4 py-3">Type</th>
+                                    <th class="px-4 py-3">URL</th>
+                                    <th class="px-4 py-3">Status</th>
+                                    <th class="px-4 py-3">Order</th>
+                                    <th class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($serviceLinks as $link)
+                                    <tr class="border-b">
+                                        <td class="px-4 py-3">
+                                            <div class="font-medium">{{ $link->title }}</div>
+                                            @if ($link->description)
+                                                <div class="text-xs text-gray-500">{{ $link->description }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3">{{ $link->service_type }}</td>
+                                        <td class="px-4 py-3"><a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" class="brand-link">{{ $link->url }}</a></td>
+                                        <td class="px-4 py-3"><x-mary-badge value="{{ $link->is_active ? 'ACTIVE' : 'INACTIVE' }}" class="badge-sm {{ $link->is_active ? 'badge-success' : 'badge-ghost' }}" /></td>
+                                        <td class="px-4 py-3">{{ $link->sort_order }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <div class="flex justify-end gap-2">
+                                                <x-mary-button wire:click="editLink({{ $link->id }})" icon="o-pencil" class="btn-ghost btn-sm" />
+                                                <x-mary-button wire:click="deleteLink({{ $link->id }})" icon="o-trash" class="btn-ghost btn-sm text-error" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">No portal links configured yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </x-mary-card>
+            @break
+
+            @case('requests')
+                <x-mary-card title="Service Tracking Management">
+                    <div class="space-y-4">
+                        @forelse ($serviceRequests as $request)
+                            <div class="p-4 border rounded-lg">
+                                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                    <div>
+                                        <div class="font-semibold text-slate-800">{{ $request->service_name }}</div>
+                                        <div class="text-sm text-gray-500">{{ $request->reference_number }} • {{ $request->resident?->full_name ?? 'External request' }}</div>
+                                        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                            <x-mary-badge value="{{ strtoupper($request->status) }}" class="badge-sm badge-ghost" />
+                                            <span>Step: {{ $request->current_step ?: 'Not set' }}</span>
+                                            <span>Updated: {{ optional($request->status_updated_at)->format('M d, Y h:i A') ?: 'N/A' }}</span>
+                                        </div>
+                                        @if ($request->notes)
+                                            <div class="mt-3 text-sm text-gray-700">{{ $request->notes }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <x-mary-button wire:click="editServiceRequest({{ $request->id }})" icon="o-pencil-square" class="btn-primary btn-sm">Edit Request</x-mary-button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="py-4 text-center text-gray-500">No service requests found.</p>
+                        @endforelse
+                    </div>
+                </x-mary-card>
+            @break
+
+            @case('grievances')
+                <x-mary-card title="Feedback and Grievance Management">
+                    <div class="space-y-4">
+                        @forelse ($grievances as $grievance)
+                            <div class="p-4 border rounded-lg">
+                                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                    <div>
+                                        <div class="font-semibold text-slate-800">{{ $grievance->subject }}</div>
+                                        <div class="text-sm text-gray-500">{{ $grievance->reference_number }} • {{ $grievance->category }} • {{ $grievance->resident?->full_name ?? 'Anonymous/guest' }}</div>
+                                        <div class="mt-2 text-sm text-gray-700">{{ $grievance->description }}</div>
+                                        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                            <x-mary-badge value="{{ strtoupper($grievance->status) }}" class="badge-sm badge-ghost" />
+                                            @if ($grievance->resolved_at)
+                                                <span>Resolved: {{ $grievance->resolved_at->format('M d, Y h:i A') }}</span>
+                                            @endif
+                                        </div>
+                                        @if ($grievance->admin_response)
+                                            <div class="mt-3 text-sm text-gray-700">
+                                                <span class="font-medium text-slate-800">Admin response:</span> {{ $grievance->admin_response }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <x-mary-button wire:click="editGrievance({{ $grievance->id }})" icon="o-pencil-square" class="btn-primary btn-sm">Edit Grievance</x-mary-button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="py-4 text-center text-gray-500">No grievances found.</p>
+                        @endforelse
+                    </div>
+                </x-mary-card>
+            @break
+
+            @case('alerts')
+                <x-mary-card>
+                    <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 class="text-lg font-semibold text-slate-800">Emergency Alerts</h2>
+                        <x-mary-button wire:click="createAlert" class="btn-primary">New Emergency Alert</x-mary-button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs uppercase bg-base-200 text-slate-600">
+                                <tr>
+                                    <th class="px-4 py-3">Alert</th>
+                                    <th class="px-4 py-3">Type</th>
+                                    <th class="px-4 py-3">Severity</th>
+                                    <th class="px-4 py-3">Status</th>
+                                    <th class="px-4 py-3">Window</th>
+                                    <th class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($emergencyAlerts as $alert)
+                                    <tr class="border-b">
+                                        <td class="px-4 py-3">
+                                            <div class="font-medium">{{ $alert->title }}</div>
+                                            <div class="text-xs text-gray-500">{{ \Illuminate\Support\Str::limit($alert->message, 90) }}</div>
+                                        </td>
+                                        <td class="px-4 py-3">{{ $alert->alert_type }}</td>
+                                        <td class="px-4 py-3">{{ $alert->severity }}</td>
+                                        <td class="px-4 py-3">{{ $alert->status }}</td>
+                                        <td class="px-4 py-3 text-xs text-gray-500">{{ $alert->starts_at?->format('M d, Y h:i A') ?? 'Now' }}<br>{{ $alert->ends_at?->format('M d, Y h:i A') ?? 'No end' }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <x-mary-button wire:click="editAlert({{ $alert->id }})" icon="o-pencil" class="btn-ghost btn-sm" />
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">No emergency alerts found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </x-mary-card>
+            @break
+
+            @case('sos')
+                <x-mary-card title="SOS Response Management">
+                    <div class="space-y-4">
+                        @forelse ($sosAlerts as $sos)
+                            <div class="p-4 border rounded-lg">
+                                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                    <div>
+                                        <div class="font-semibold text-slate-800">{{ $sos->resident?->full_name ?? 'Unknown resident' }}</div>
+                                        <div class="text-sm text-gray-500">{{ $sos->reference_number }} • {{ $sos->contact_number ?: 'No contact number' }}</div>
+                                        @if ($sos->message)
+                                            <div class="mt-2 text-sm text-gray-700">{{ $sos->message }}</div>
+                                        @endif
+                                        @if ($sos->location_label)
+                                            <div class="mt-1 text-xs text-gray-500">{{ $sos->location_label }}</div>
+                                        @endif
+                                        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                            <x-mary-badge value="{{ strtoupper($sos->status) }}" class="badge-sm badge-ghost" />
+                                            @if ($sos->acknowledged_at)
+                                                <span>Acknowledged: {{ $sos->acknowledged_at->format('M d, Y h:i A') }}</span>
+                                            @endif
+                                            @if ($sos->resolved_at)
+                                                <span>Resolved: {{ $sos->resolved_at->format('M d, Y h:i A') }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <x-mary-button wire:click="editSos({{ $sos->id }})" icon="o-pencil-square" class="btn-primary btn-sm">Edit SOS</x-mary-button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="py-4 text-center text-gray-500">No SOS alerts found.</p>
+                        @endforelse
+                    </div>
+                </x-mary-card>
+            @break
+
+            @case('command-center')
+                <x-mary-card title="Command Center Settings">
+                    <form wire:submit.prevent="saveCommandCenterSettings">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <x-mary-input label="Command Center Name" wire:model="commandCenterName" />
+                            <x-mary-input label="Primary Hotline" wire:model="commandCenterHotline" />
+                            <x-mary-input label="Alternate Hotline" wire:model="commandCenterAlternateHotline" />
+                            <x-mary-input label="Command Center Email" wire:model="commandCenterEmail" type="email" />
+                        </div>
+                        <div class="flex justify-end mt-6">
+                            <x-mary-button type="submit" class="btn-primary">Save Command Center Settings</x-mary-button>
+                        </div>
+                    </form>
+                </x-mary-card>
+            @break
+        @endswitch
     </div>
 
     @if ($showActionModal && $actionModalType === 'link')
@@ -312,6 +327,51 @@
                 <div class="flex justify-end mt-6 gap-2">
                     <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>
                     <x-mary-button type="submit" class="btn-primary">Save Alert</x-mary-button>
+                </div>
+            </form>
+        </x-mary-modal>
+    @endif
+
+    @if ($showActionModal && $actionModalType === 'request')
+        <x-mary-modal wire:model="showActionModal" title="Edit Service Request" box-class="max-w-2xl">
+            <form wire:submit.prevent="saveServiceRequest">
+                <div class="space-y-4">
+                    <x-mary-select label="Status" wire:model="requestStatus" :options="$serviceStatusOptions" />
+                    <x-mary-input label="Current Step" wire:model="requestStep" />
+                    <x-mary-textarea label="Internal Notes" rows="4" wire:model="requestNote" />
+                </div>
+                <div class="flex justify-end mt-6 gap-2">
+                    <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>
+                    <x-mary-button type="submit" class="btn-primary">Save Request Update</x-mary-button>
+                </div>
+            </form>
+        </x-mary-modal>
+    @endif
+
+    @if ($showActionModal && $actionModalType === 'grievance')
+        <x-mary-modal wire:model="showActionModal" title="Edit Grievance" box-class="max-w-2xl">
+            <form wire:submit.prevent="saveGrievance">
+                <div class="space-y-4">
+                    <x-mary-select label="Status" wire:model="grievanceStatus" :options="$grievanceStatusOptions" />
+                    <x-mary-textarea label="Admin Response" rows="4" wire:model="grievanceResponse" />
+                </div>
+                <div class="flex justify-end mt-6 gap-2">
+                    <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>
+                    <x-mary-button type="submit" class="btn-primary">Save Grievance Update</x-mary-button>
+                </div>
+            </form>
+        </x-mary-modal>
+    @endif
+
+    @if ($showActionModal && $actionModalType === 'sos')
+        <x-mary-modal wire:model="showActionModal" title="Edit SOS Alert" box-class="max-w-xl">
+            <form wire:submit.prevent="saveSos">
+                <div class="space-y-4">
+                    <x-mary-select label="Status" wire:model="sosStatus" :options="$sosStatusOptions" />
+                </div>
+                <div class="flex justify-end mt-6 gap-2">
+                    <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>
+                    <x-mary-button type="submit" class="btn-primary">Save SOS Update</x-mary-button>
                 </div>
             </form>
         </x-mary-modal>

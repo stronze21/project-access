@@ -346,6 +346,26 @@
                                         Citizen Services
                                     </span>
                                 </x-nav-link>
+                                <x-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
+                                    <span class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.82L3 20l1.32-3.3A7.18 7.18 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        Support
+                                    </span>
+                                </x-nav-link>
+                                <x-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
+                                    <span class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 9v4m0 4h.01M5.07 19h13.86A2 2 0 0020.66 16L13.73 4a2 2 0 00-3.46 0L3.34 16a2 2 0 001.73 3z" />
+                                        </svg>
+                                        Data Requests
+                                    </span>
+                                </x-nav-link>
                             @endcan
 
                             <!-- Admin Dropdown - only show for appropriate permissions -->
@@ -393,6 +413,14 @@
                                                 <a href="{{ route('citizen-services.index') }}"
                                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                     Citizen Services
+                                                </a>
+                                                <a href="{{ route('support-requests.index') }}"
+                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Support Requests
+                                                </a>
+                                                <a href="{{ route('account-deletion-requests.index') }}"
+                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Data Requests
                                                 </a>
 
                                             @can('manage-users')
@@ -627,6 +655,26 @@
                                     Citizen Services
                                 </span>
                             </x-responsive-nav-link>
+                            <x-responsive-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.82L3 20l1.32-3.3A7.18 7.18 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                    Support
+                                </span>
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 9v4m0 4h.01M5.07 19h13.86A2 2 0 0020.66 16L13.73 4a2 2 0 00-3.46 0L3.34 16a2 2 0 001.73 3z" />
+                                    </svg>
+                                    Data Requests
+                                </span>
+                            </x-responsive-nav-link>
                         @endcan
 
                         <!-- QR/RFID Scanner - only visible with permission -->
@@ -689,6 +737,26 @@
                                                         d="M7 8h10M7 12h8m-8 4h6m7-11l-8.586 8.586a2 2 0 01-1.414.586H5a1 1 0 01-1-1v-4.586a2 2 0 01.586-1.414L13.172 2.586A2 2 0 0114.586 2H19a1 1 0 011 1v4.414a2 2 0 01-.586 1.414z" />
                                                 </svg>
                                                 Citizen Services
+                                            </span>
+                                        </x-responsive-nav-link>
+                                        <x-responsive-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
+                                            <span class="flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.82L3 20l1.32-3.3A7.18 7.18 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                                Support Requests
+                                            </span>
+                                        </x-responsive-nav-link>
+                                        <x-responsive-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
+                                            <span class="flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 9v4m0 4h.01M5.07 19h13.86A2 2 0 0020.66 16L13.73 4a2 2 0 00-3.46 0L3.34 16a2 2 0 001.73 3z" />
+                                                </svg>
+                                                Data Requests
                                             </span>
                                         </x-responsive-nav-link>
                                     @endcan
@@ -801,8 +869,9 @@
         </main>
 
         <!-- Footer -->
-        <footer class="py-6 border-t border-white/70 bg-white/80 backdrop-blur">
+        <footer class="py-6">
             <div class="px-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
+                <div class="brand-navbar-shell">
                 <div class="flex flex-col items-center justify-between space-y-4 md:space-y-0 md:flex-row">
                     <div class="flex items-center gap-3">
                         <img src="{{ asset('logo.png') }}" alt="{{ $brandName }}" class="w-auto h-10">
@@ -828,6 +897,7 @@
                             {{ $settings['office_address'] ?? '' }}
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         </footer>
