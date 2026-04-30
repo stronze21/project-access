@@ -854,8 +854,8 @@
         <!-- Rest of your content -->
         <!-- Page Heading -->
         @if (isset($header))
-            <header class="shadow bg-base">
-                <div class="px-4 py-4 mx-auto max-w-screen-2xl sm:px-6 lg:px-8">
+            <header class="bg-base">
+                <div class="px-4 py-4 mx-auto border-b max-w-screen-2xl border-slate-200/70 sm:px-6 lg:px-8">
                     {{ $header }}
                 </div>
             </header>
