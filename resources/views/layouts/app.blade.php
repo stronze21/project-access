@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 @php
-    $configuredBrandName = trim((string) config('app.name', 'Alaminos City E-Services Solutions'));
+    $configuredBrandName = trim((string) config('app.name', "Alaminos City Citizen's E-Services Solutions"));
     $settingsBrandName = trim(collect([
         $settings['app_name_1'] ?? null,
         $settings['app_name_2'] ?? null,

@@ -80,9 +80,9 @@ class Reports extends Component
         $this->dateTo = now()->endOfMonth()->format('Y-m-d');
 
         // Set defaults for new households
-        $regionInfo = Region::where('regCode', '02')->first(); // Region II
-        $provinceInfo = Province::where('provCode', '0231')->first(); // ISABELA
-        $cityInfo = CityMunicipality::where('citymunCode', '023101')->first(); // ALICIA
+        $regionInfo = Region::where('regCode', '01')->first(); // Region I
+        $provinceInfo = Province::where('provCode', '0155')->first(); // PANGASINAN
+        $cityInfo = CityMunicipality::where('citymunCode', '015503')->first(); // ALAMINOS CITY
 
         if ($regionInfo) {
             $this->regionCode = $regionInfo->regCode;

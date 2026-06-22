@@ -28,10 +28,10 @@ class AddressSelector extends Component
     public $barangayName = '';
 
 
-    // Default codes for Region II (CAGAYAN VALLEY), ISABELA, ALICIA
-    protected $defaultRegionCode = '02';     // Region II code
-    protected $defaultProvinceCode = '0231'; // ISABELA code
-    protected $defaultCityCode = '023101';   // ALICIA code
+    // Default codes for Region I (ILOCOS REGION), PANGASINAN, ALAMINOS
+    protected $defaultRegionCode = '01';     // Region I code
+    protected $defaultProvinceCode = '0155'; // PANGASINAN code
+    protected $defaultCityCode = '015503';   // CITY OF ALAMINOS code
 
     public function mount($initialRegionCode = null, $initialProvinceCode = null, $initialCityCode = null, $initialBarangayCode = null)
     {
