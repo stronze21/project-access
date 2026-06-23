@@ -69,6 +69,7 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'token' => $token,
             'resident' => $resident->load('household'),
+            'requires_mpin_update' => $usesBirthdayFallback,
         ]);
     }
 
@@ -129,6 +130,7 @@ class AuthController extends Controller
             'message' => 'Account activated successfully',
             'token' => $token,
             'resident' => $resident->load('household'),
+            'requires_mpin_update' => false,
         ], 201);
     }
 
