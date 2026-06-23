@@ -37,6 +37,7 @@ class Resident extends Authenticatable
         'contact_number',
         'email',
         'password',
+        'mpin',
         'photo_path',
         'id_card_path',
         'relationship_to_head',
@@ -71,6 +72,7 @@ class Resident extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'mpin',
         'remember_token',
     ];
 
@@ -85,6 +87,7 @@ class Resident extends Authenticatable
         'last_login_at' => 'datetime',
         'monthly_income' => 'decimal:2',
         'password' => 'hashed',
+        'mpin' => 'hashed',
         'is_registered_voter' => 'boolean',
         'is_pwd' => 'boolean',
         'is_senior_citizen' => 'boolean',

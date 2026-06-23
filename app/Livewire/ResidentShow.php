@@ -22,8 +22,8 @@ class ResidentShow extends Component
     // Portal account fields
     public $showPortalAccountModal = false;
     public $portalEmail;
-    public $portalPassword;
-    public $portalPasswordConfirmation;
+    public $portalMpin;
+    public $portalMpinConfirmation;
     public $resetPassword = false;
 
     /**
@@ -72,8 +72,8 @@ class ResidentShow extends Component
     {
         $this->portalEmail = $this->resident->email;
         $this->resetPassword = false;
-        $this->portalPassword = '';
-        $this->portalPasswordConfirmation = '';
+        $this->portalMpin = '';
+        $this->portalMpinConfirmation = '';
         $this->showPortalAccountModal = true;
         $this->resetValidation();
     }
@@ -88,17 +88,17 @@ class ResidentShow extends Component
         ];
 
         if ($this->resetPassword) {
-            $rules['portalPassword'] = 'required|min:8|same:portalPasswordConfirmation';
-            $rules['portalPasswordConfirmation'] = 'required|min:8';
+            $rules['portalMpin'] = 'required|digits:6|same:portalMpinConfirmation';
+            $rules['portalMpinConfirmation'] = 'required|digits:6';
         }
 
         $this->validate($rules, [
             'portalEmail.required' => 'Email is required',
             'portalEmail.email' => 'Please enter a valid email address',
             'portalEmail.unique' => 'This email is already in use',
-            'portalPassword.required' => 'Password is required',
-            'portalPassword.min' => 'Password must be at least 8 characters',
-            'portalPassword.same' => 'Password confirmation does not match',
+            'portalMpin.required' => 'MPIN is required',
+            'portalMpin.digits' => 'MPIN must be exactly 6 digits',
+            'portalMpin.same' => 'MPIN confirmation does not match',
         ]);
 
         try {
@@ -106,8 +106,8 @@ class ResidentShow extends Component
                 'email' => $this->portalEmail,
             ];
 
-            if ($this->resetPassword && $this->portalPassword) {
-                $data['password'] = Hash::make($this->portalPassword);
+            if ($this->resetPassword && $this->portalMpin) {
+                $data['mpin'] = Hash::make($this->portalMpin);
             }
 
             $this->resident->update($data);
@@ -121,26 +121,26 @@ class ResidentShow extends Component
     }
 
     /**
-     * Reset portal account password
+     * Reset portal account MPIN
      */
     public function resetPortalPassword()
     {
         $this->validate([
-            'portalPassword' => 'required|min:8|same:portalPasswordConfirmation',
-            'portalPasswordConfirmation' => 'required|min:8',
+            'portalMpin' => 'required|digits:6|same:portalMpinConfirmation',
+            'portalMpinConfirmation' => 'required|digits:6',
         ]);
 
         try {
             $this->resident->update([
-                'password' => Hash::make($this->portalPassword),
+                'mpin' => Hash::make($this->portalMpin),
             ]);
 
-            $this->success('Password reset successfully');
+            $this->success('MPIN reset successfully');
             $this->showPortalAccountModal = false;
-            $this->portalPassword = '';
-            $this->portalPasswordConfirmation = '';
+            $this->portalMpin = '';
+            $this->portalMpinConfirmation = '';
         } catch (\Exception $e) {
-            $this->error('Error resetting password: ' . $e->getMessage());
+            $this->error('Error resetting MPIN: ' . $e->getMessage());
         }
     }
 
@@ -153,6 +153,7 @@ class ResidentShow extends Component
             $this->resident->update([
                 'email' => null,
                 'password' => null,
+                'mpin' => null,
             ]);
 
             $this->success('Portal access disabled successfully');

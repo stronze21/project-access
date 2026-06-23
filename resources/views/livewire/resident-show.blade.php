@@ -417,7 +417,7 @@
                     <span class="text-sm font-medium text-gray-700">Portal Access</span>
                 </div>
                 <div class="mt-2">
-                    @if ($resident->email && $resident->password)
+                    @if ($resident->email && ($resident->mpin || $resident->password))
                         <x-mary-badge value="Enabled" class="badge-success" />
                     @else
                         <x-mary-badge value="Disabled" class="badge-ghost" />
@@ -536,23 +536,23 @@
                 <div class="p-4 border rounded-lg bg-base-50">
                     <label class="flex items-center space-x-2 cursor-pointer">
                         <input type="checkbox" wire:model.live="resetPassword" class="checkbox checkbox-primary">
-                        <span class="font-medium label-text">Reset Password</span>
+                        <span class="font-medium label-text">Reset MPIN</span>
                     </label>
                 </div>
 
                 @if ($resetPassword)
                     <div class="space-y-3">
-                        <x-mary-input label="New Password" wire:model="portalPassword" type="password"
-                            placeholder="Enter new password" required error="{{ $errors->first('portalPassword') }}"
-                            hint="Minimum 8 characters" />
+                        <x-mary-input label="New 6-digit MPIN" wire:model="portalMpin" type="password"
+                            placeholder="Enter new MPIN" required error="{{ $errors->first('portalMpin') }}"
+                            hint="Exactly 6 digits" />
 
-                        <x-mary-input label="Confirm Password" wire:model="portalPasswordConfirmation" type="password"
-                            placeholder="Confirm new password" required
-                            error="{{ $errors->first('portalPasswordConfirmation') }}" />
+                        <x-mary-input label="Confirm MPIN" wire:model="portalMpinConfirmation" type="password"
+                            placeholder="Confirm new MPIN" required
+                            error="{{ $errors->first('portalMpinConfirmation') }}" />
                     </div>
                 @endif
 
-                @if ($resident->email && $resident->password)
+                @if ($resident->email && ($resident->mpin || $resident->password))
                     <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
                         <div class="flex items-start space-x-2">
                             <x-mary-icon name="o-exclamation-triangle" class="w-5 h-5 text-yellow-600" />
@@ -567,7 +567,7 @@
 
             <div class="flex justify-between mt-6">
                 <div>
-                    @if ($resident->email && $resident->password)
+                    @if ($resident->email && ($resident->mpin || $resident->password))
                         <x-mary-button type="button" wire:click="disablePortalAccess"
                             wire:confirm="Are you sure you want to disable portal access?" class="btn-error btn-outline">
                             Disable Portal Access

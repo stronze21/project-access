@@ -14,13 +14,14 @@ class AuthController extends Controller
     /**
      * Login a resident and issue a Sanctum token.
      *
-     * Residents authenticate using their resident_id (or email/contact_number) + password.
+     * Residents authenticate using their resident_id (or email/contact_number) + MPIN.
      */
     public function login(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'login' => 'required|string',
-            'password' => 'required|string',
+            'mpin' => 'required_without:password|nullable|digits:6',
+            'password' => 'required_without:mpin|nullable|string',
             'device_name' => 'nullable|string|max:255',
         ]);
 
@@ -36,7 +37,15 @@ class AuthController extends Controller
             ->orWhere('contact_number', $login)
             ->first();
 
-        if (!$resident || !$resident->password || !Hash::check($request->password, $resident->password)) {
+        $credential = $request->filled('mpin') ? $request->mpin : $request->password;
+        $credentialHash = $request->filled('mpin') ? $resident?->mpin : $resident?->password;
+        $usesBirthdayFallback = $resident
+            && $request->filled('mpin')
+            && !$resident->mpin
+            && $resident->birth_date
+            && hash_equals($resident->birth_date->format('ymd'), $credential);
+
+        if (!$resident || (!$usesBirthdayFallback && (!$credentialHash || !Hash::check($credential, $credentialHash)))) {
             return response()->json([
                 'message' => 'The provided credentials are incorrect.',
                 'errors' => ['login' => ['The provided credentials are incorrect.']],
@@ -67,7 +76,7 @@ class AuthController extends Controller
      * Register/activate a resident's mobile account.
      *
      * Residents must already exist in the system (registered by an officer).
-     * They activate their mobile account by providing their resident_id and setting a password.
+     * They activate their mobile account by providing their resident_id and setting an MPIN.
      */
     public function register(Request $request): JsonResponse
     {
@@ -75,7 +84,8 @@ class AuthController extends Controller
             'resident_id' => 'required|string',
             'birth_date' => 'required|date',
             'last_name' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'mpin' => 'required_without:password|nullable|digits:6|confirmed',
+            'password' => 'required_without:mpin|nullable|string|min:8|confirmed',
             'device_name' => 'nullable|string|max:255',
         ]);
 
@@ -99,7 +109,7 @@ class AuthController extends Controller
             ], 404);
         }
 
-        if ($resident->password) {
+        if ($resident->mpin || $resident->password) {
             return response()->json([
                 'message' => 'This resident account has already been activated. Please login instead.',
                 'errors' => ['resident_id' => ['Account already activated.']],
@@ -107,7 +117,8 @@ class AuthController extends Controller
         }
 
         $resident->update([
-            'password' => Hash::make($request->password),
+            'mpin' => $request->filled('mpin') ? Hash::make($request->mpin) : null,
+            'password' => $request->filled('password') ? Hash::make($request->password) : null,
             'last_login_at' => now(),
         ]);
 
@@ -136,13 +147,15 @@ class AuthController extends Controller
     }
 
     /**
-     * Change the resident's password.
+     * Change the resident's MPIN.
      */
     public function changePassword(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'current_mpin' => 'required_without:current_password|nullable|digits:6',
+            'mpin' => 'required_without:password|nullable|digits:6|confirmed',
+            'current_password' => 'required_without:current_mpin|nullable|string',
+            'password' => 'required_without:mpin|nullable|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -151,11 +164,25 @@ class AuthController extends Controller
 
         $resident = $request->user();
 
-        if (!Hash::check($request->current_password, $resident->password)) {
+        $currentCredential = $request->filled('current_mpin') ? $request->current_mpin : $request->current_password;
+        $currentHash = $request->filled('current_mpin') ? $resident->mpin : $resident->password;
+
+        $usesBirthdayFallback = $request->filled('current_mpin')
+            && !$resident->mpin
+            && $resident->birth_date
+            && hash_equals($resident->birth_date->format('ymd'), $currentCredential);
+
+        if (!$usesBirthdayFallback && (!$currentHash || !Hash::check($currentCredential, $currentHash))) {
             return response()->json([
-                'message' => 'Current password is incorrect.',
-                'errors' => ['current_password' => ['Current password is incorrect.']],
+                'message' => 'Current credential is incorrect.',
+                'errors' => ['current_mpin' => ['Current MPIN is incorrect.']],
             ], 422);
+        }
+
+        if ($request->filled('mpin')) {
+            $resident->update(['mpin' => Hash::make($request->mpin)]);
+
+            return response()->json(['message' => 'MPIN changed successfully']);
         }
 
         $resident->update(['password' => Hash::make($request->password)]);
