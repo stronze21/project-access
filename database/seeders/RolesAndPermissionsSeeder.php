@@ -80,6 +80,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-citizen-services',
         ];
 
+        $bosesmotoPermissions = [
+            'manage-complaints',
+            'view-complaint-audit-logs',
+            'manage-complaint-reference-data',
+            'manage-polls',
+            'moderate-sentiments',
+        ];
+
         // Merge all permissions and create them
         $allPermissions = array_merge(
             $systemPermissions,
@@ -87,7 +95,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $programPermissions,
             $distributionPermissions,
             $reportPermissions,
-            $residentPortalPermissions
+            $residentPortalPermissions,
+            $bosesmotoPermissions
         );
 
         foreach ($allPermissions as $permission) {
@@ -99,6 +108,23 @@ class RolesAndPermissionsSeeder extends Seeder
         // 1. System Administrator - Has all permissions
         $adminRole = Role::firstOrCreate(['name' => 'system-administrator']);
         $adminRole->givePermissionTo(Permission::all());
+
+        $bosesmotoAdminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $bosesmotoAdminRole->givePermissionTo($bosesmotoPermissions);
+
+        $bosesmotoSuperAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
+        $bosesmotoSuperAdminRole->givePermissionTo(Permission::all());
+
+        $mayorRole = Role::firstOrCreate(['name' => 'mayor']);
+        $mayorRole->givePermissionTo(['manage-complaints', 'view-complaint-audit-logs', 'manage-polls', 'moderate-sentiments']);
+
+        $departmentHeadRole = Role::firstOrCreate(['name' => 'department-head']);
+        $departmentHeadRole->givePermissionTo(['manage-complaints']);
+
+        $actionOfficerRole = Role::firstOrCreate(['name' => 'action-officer']);
+        $actionOfficerRole->givePermissionTo(['manage-complaints']);
+
+        Role::firstOrCreate(['name' => 'citizen']);
 
         // 2. Program Manager
         $managerRole = Role::firstOrCreate(['name' => 'program-manager']);

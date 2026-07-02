@@ -40,7 +40,7 @@ return new class extends Migration
     {
         $settings = [
             // Application information
-            ['key' => 'app_name_1', 'value' => 'Alaminos City Citizen's E-Services', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
+            ['key' => 'app_name_1', 'value' => "Alaminos City Citizen's E-Services", 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
             ['key' => 'app_name_2', 'value' => 'Solutions', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
             ['key' => 'app_logo', 'value' => 'logo.png', 'group' => 'appearance', 'type' => 'file', 'is_public' => true],
             ['key' => 'app_favicon', 'value' => 'favicon.ico', 'group' => 'appearance', 'type' => 'file', 'is_public' => true],

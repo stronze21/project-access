@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Complaint;
+use App\Models\Poll;
+use App\Models\SentimentPost;
+use App\Observers\ComplaintObserver;
+use App\Observers\PollObserver;
+use App\Observers\SentimentPostObserver;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Validator;
@@ -21,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Complaint::observe(ComplaintObserver::class);
+        Poll::observe(PollObserver::class);
+        SentimentPost::observe(SentimentPostObserver::class);
+
         Validator::extend('philippine_phone', function ($attribute, $value, $parameters, $validator) {
             return preg_match('/^09\d{9}$/', $value) ||
                    preg_match('/^\+639\d{9}$/', $value) ||

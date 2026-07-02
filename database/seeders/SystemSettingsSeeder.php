@@ -17,7 +17,7 @@ class SystemSettingsSeeder extends Seeder
         }
 
         $settings = [
-            'app_name_1' => 'Alaminos City Citizen's E-Services',
+            'app_name_1' => 'Alaminos City Citizen\'s E-Services',
             'app_name_2' => 'Solutions',
             'municipality' => LocationsSeeder::getCity(),
             'province' => LocationsSeeder::getProvince(),

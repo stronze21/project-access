@@ -62,6 +62,8 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+require __DIR__.'/bosesmoto.php';
+
 Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
 Route::get('/terms', [AccountDeletionRequestController::class, 'terms'])->name('legal.terms');
 Route::get('/support', [AccountDeletionRequestController::class, 'support'])->name('legal.support');

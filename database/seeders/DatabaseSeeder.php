@@ -25,6 +25,10 @@ use Database\Seeders\EligibilityCriteriaSeeder;
 use Database\Seeders\PublicServiceLinkSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\CitizenServiceRequestSeeder;
+use Database\Seeders\FeedbackReferenceSeeder;
+use Database\Seeders\PollSeeder;
+use Database\Seeders\PublicComplaintSeeder;
+use Database\Seeders\SentimentSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -71,6 +75,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             DefaultAdminSeeder::class,
+            FeedbackReferenceSeeder::class,
+            PublicComplaintSeeder::class,
+            PollSeeder::class,
+            SentimentSeeder::class,
             // Add other seeders here
         ]);
 

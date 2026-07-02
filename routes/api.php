@@ -256,3 +256,5 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('auth:san
     Route::post('/emergency/sos', [ResidentEmergencyController::class, 'sos'])->name('emergency.sos');
     Route::get('/emergency/sos/history', [ResidentEmergencyController::class, 'sosHistory'])->name('emergency.sos.history');
 });
+
+require __DIR__.'/bosesmoto_api.php';
