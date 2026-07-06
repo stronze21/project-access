@@ -14,6 +14,7 @@ Route::prefix('mobile')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/register', [MobileAuthController::class, 'register'])->name('api.mobile.auth.register');
         Route::post('/login', [MobileAuthController::class, 'login'])->name('api.mobile.auth.login');
+        Route::middleware('auth:sanctum')->post('/resident-session', [MobileAuthController::class, 'residentSession'])->name('api.mobile.auth.resident-session');
         Route::middleware('auth:sanctum')->post('/logout', [MobileAuthController::class, 'logout'])->name('api.mobile.auth.logout');
     });
 

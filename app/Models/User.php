@@ -48,8 +48,10 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'resident_id',
         'name',
         'email',
+        'email_verified_at',
         'department_id',
         'password',
         'profile_photo_path',
@@ -95,6 +97,11 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function resident(): BelongsTo
+    {
+        return $this->belongsTo(Resident::class);
     }
 
     public function submittedComplaints(): HasMany
