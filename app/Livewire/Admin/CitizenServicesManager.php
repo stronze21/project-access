@@ -2,10 +2,11 @@
 
 namespace App\Livewire\Admin;
 
-use App\Models\CitizenServiceRequest;
+use App\Models\Complaint;
 use App\Models\EmergencyAlert;
-use App\Models\GrievanceReport;
+use App\Models\Poll;
 use App\Models\PublicServiceLink;
+use App\Models\SentimentPost;
 use App\Models\SosAlert;
 use App\Models\SystemSetting;
 use App\Services\PushNotificationService;
@@ -41,15 +42,6 @@ class CitizenServicesManager extends Component
     public bool $alertSendPush = false;
     public ?string $alertStartsAt = null;
     public ?string $alertEndsAt = null;
-
-    public ?int $editingRequestId = null;
-    public string $requestStatus = 'submitted';
-    public string $requestStep = '';
-    public string $requestNote = '';
-
-    public ?int $editingGrievanceId = null;
-    public string $grievanceStatus = 'submitted';
-    public string $grievanceResponse = '';
 
     public ?int $editingSosId = null;
     public string $sosStatus = 'open';
@@ -90,24 +82,6 @@ class CitizenServicesManager extends Component
         ['id' => 'drill', 'name' => 'Drill'],
     ];
 
-    public array $serviceStatusOptions = [
-        ['id' => 'submitted', 'name' => 'Submitted'],
-        ['id' => 'processing', 'name' => 'Processing'],
-        ['id' => 'for-release', 'name' => 'For Release'],
-        ['id' => 'completed', 'name' => 'Completed'],
-        ['id' => 'released', 'name' => 'Released'],
-        ['id' => 'cancelled', 'name' => 'Cancelled'],
-        ['id' => 'rejected', 'name' => 'Rejected'],
-    ];
-
-    public array $grievanceStatusOptions = [
-        ['id' => 'submitted', 'name' => 'Submitted'],
-        ['id' => 'under-review', 'name' => 'Under Review'],
-        ['id' => 'in-progress', 'name' => 'In Progress'],
-        ['id' => 'resolved', 'name' => 'Resolved'],
-        ['id' => 'closed', 'name' => 'Closed'],
-    ];
-
     public array $sosStatusOptions = [
         ['id' => 'open', 'name' => 'Open'],
         ['id' => 'acknowledged', 'name' => 'Acknowledged'],
@@ -118,8 +92,6 @@ class CitizenServicesManager extends Component
     public array $tabs = [
         'overview' => 'Overview',
         'links' => 'Portal Links',
-        'requests' => 'Service Tracking',
-        'grievances' => 'Grievances',
         'alerts' => 'Emergency Alerts',
         'sos' => 'SOS Alerts',
         'command-center' => 'Command Center',
@@ -129,6 +101,7 @@ class CitizenServicesManager extends Component
     {
         $this->loadCommandCenterSettings();
         $this->primeFormMaps();
+        $this->normalizeActiveTab();
     }
 
     protected function rules(): array
@@ -149,11 +122,6 @@ class CitizenServicesManager extends Component
             'alertSendPush' => 'boolean',
             'alertStartsAt' => 'nullable|date',
             'alertEndsAt' => 'nullable|date|after_or_equal:alertStartsAt',
-            'requestStatus' => 'required|string|max:50',
-            'requestStep' => 'nullable|string|max:255',
-            'requestNote' => 'nullable|string',
-            'grievanceStatus' => 'required|string|max:50',
-            'grievanceResponse' => 'nullable|string',
             'sosStatus' => 'required|string|max:50',
             'commandCenterName' => 'required|string|max:255',
             'commandCenterHotline' => 'required|string|max:50',
@@ -166,6 +134,7 @@ class CitizenServicesManager extends Component
     {
         $this->closeModals();
         $this->activeTab = $tab;
+        $this->normalizeActiveTab();
     }
 
     public function createLink(): void
@@ -306,70 +275,6 @@ class CitizenServicesManager extends Component
         $this->actionModalType = null;
     }
 
-    public function editServiceRequest(int $id): void
-    {
-        $this->closeModals();
-        $request = CitizenServiceRequest::findOrFail($id);
-
-        $this->editingRequestId = $request->id;
-        $this->requestStatus = $request->status;
-        $this->requestStep = $request->current_step ?? '';
-        $this->requestNote = $request->notes ?? '';
-        $this->actionModalType = 'request';
-        $this->showActionModal = true;
-    }
-
-    public function saveServiceRequest(): void
-    {
-        $this->validateOnly('requestStatus');
-        $this->validateOnly('requestStep');
-        $this->validateOnly('requestNote');
-
-        $request = CitizenServiceRequest::findOrFail($this->editingRequestId);
-
-        $request->update([
-            'status' => $this->requestStatus,
-            'current_step' => $this->requestStep ?: null,
-            'notes' => $this->requestNote ?: null,
-            'status_updated_at' => now(),
-            'completed_at' => in_array($this->requestStatus, ['completed', 'released'], true) ? now() : null,
-        ]);
-
-        $this->success('Service request updated.');
-        $this->resetRequestForm();
-        $this->closeModals();
-    }
-
-    public function editGrievance(int $id): void
-    {
-        $this->closeModals();
-        $grievance = GrievanceReport::findOrFail($id);
-
-        $this->editingGrievanceId = $grievance->id;
-        $this->grievanceStatus = $grievance->status;
-        $this->grievanceResponse = $grievance->admin_response ?? '';
-        $this->actionModalType = 'grievance';
-        $this->showActionModal = true;
-    }
-
-    public function saveGrievance(): void
-    {
-        $this->validateOnly('grievanceStatus');
-        $this->validateOnly('grievanceResponse');
-
-        $grievance = GrievanceReport::findOrFail($this->editingGrievanceId);
-
-        $grievance->update([
-            'status' => $this->grievanceStatus,
-            'admin_response' => $this->grievanceResponse ?: null,
-            'resolved_at' => in_array($this->grievanceStatus, ['resolved', 'closed'], true) ? now() : null,
-        ]);
-
-        $this->success('Grievance updated.');
-        $this->resetGrievanceForm();
-        $this->closeModals();
-    }
-
     public function editSos(int $id): void
     {
         $this->closeModals();
@@ -460,23 +365,6 @@ class CitizenServicesManager extends Component
         $this->resetValidation();
     }
 
-    private function resetRequestForm(): void
-    {
-        $this->editingRequestId = null;
-        $this->requestStatus = 'submitted';
-        $this->requestStep = '';
-        $this->requestNote = '';
-        $this->resetValidation();
-    }
-
-    private function resetGrievanceForm(): void
-    {
-        $this->editingGrievanceId = null;
-        $this->grievanceStatus = 'submitted';
-        $this->grievanceResponse = '';
-        $this->resetValidation();
-    }
-
     private function resetSosForm(): void
     {
         $this->editingSosId = null;
@@ -490,24 +378,35 @@ class CitizenServicesManager extends Component
         $this->actionModalType = null;
     }
 
+    private function normalizeActiveTab(): void
+    {
+        if (! array_key_exists($this->activeTab, $this->tabs)) {
+            $this->activeTab = 'overview';
+        }
+    }
+
     public function getOverviewStatsProperty(): array
     {
         return [
-            'service_requests' => CitizenServiceRequest::count(),
-            'active_requests' => CitizenServiceRequest::whereNotIn('status', ['completed', 'released', 'cancelled', 'rejected'])->count(),
-            'open_grievances' => GrievanceReport::whereNotIn('status', ['resolved', 'closed'])->count(),
+            'open_complaints' => Complaint::whereIn('status', [
+                Complaint::STATUS_RECEIVED,
+                Complaint::STATUS_ASSIGNED,
+                Complaint::STATUS_IN_PROGRESS,
+            ])->count(),
             'active_alerts' => EmergencyAlert::active()->count(),
             'open_sos' => SosAlert::where('status', 'open')->count(),
             'portal_links' => PublicServiceLink::where('is_active', true)->count(),
+            'polls' => Poll::count(),
+            'sentiment_posts' => SentimentPost::count(),
         ];
     }
 
     public function render()
     {
+        $this->normalizeActiveTab();
+
         return view('livewire.admin.citizen-services-manager', [
             'serviceLinks' => PublicServiceLink::orderBy('sort_order')->orderBy('title')->get(),
-            'serviceRequests' => CitizenServiceRequest::with('resident:id,first_name,last_name,resident_id')->latest('status_updated_at')->limit(20)->get(),
-            'grievances' => GrievanceReport::with('resident:id,first_name,last_name,resident_id')->latest()->limit(20)->get(),
             'sosAlerts' => SosAlert::with('resident:id,first_name,last_name,resident_id')->latest()->limit(20)->get(),
             'emergencyAlerts' => EmergencyAlert::latest()->limit(20)->get(),
         ]);

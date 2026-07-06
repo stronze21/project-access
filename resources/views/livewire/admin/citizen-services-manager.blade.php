@@ -3,18 +3,18 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Citizen Services</h1>
-                <p class="mt-1 text-sm text-gray-600">Manage portal links, service tracking, grievances, emergency alerts, SOS cases, and command center details.</p>
+                <p class="mt-1 text-sm text-gray-600">Manage portal links, emergency alerts, SOS cases, and command center details. BosesMoto handles complaints, public feedback, polls, and reporting.</p>
             </div>
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4 mb-6 xl:grid-cols-6">
-        <x-mary-stat title="Requests" value="{{ number_format($this->overviewStats['service_requests']) }}" icon="o-clipboard-document-list" class="tagged-color text-primary" />
-        <x-mary-stat title="Active" value="{{ number_format($this->overviewStats['active_requests']) }}" icon="o-clock" class="tagged-color text-info" />
-        <x-mary-stat title="Grievances" value="{{ number_format($this->overviewStats['open_grievances']) }}" icon="o-chat-bubble-left-right" class="tagged-color text-warning" />
+        <x-mary-stat title="Open Cases" value="{{ number_format($this->overviewStats['open_complaints']) }}" icon="o-clipboard-document-list" class="tagged-color text-primary" />
         <x-mary-stat title="Alerts" value="{{ number_format($this->overviewStats['active_alerts']) }}" icon="o-bell-alert" class="tagged-color text-error" />
         <x-mary-stat title="Open SOS" value="{{ number_format($this->overviewStats['open_sos']) }}" icon="o-shield-exclamation" class="tagged-color text-secondary" />
         <x-mary-stat title="Portal Links" value="{{ number_format($this->overviewStats['portal_links']) }}" icon="o-globe-alt" class="tagged-color text-success" />
+        <x-mary-stat title="Polls" value="{{ number_format($this->overviewStats['polls']) }}" icon="o-chart-bar" class="tagged-color text-info" />
+        <x-mary-stat title="Posts" value="{{ number_format($this->overviewStats['sentiment_posts']) }}" icon="o-chat-bubble-left-right" class="tagged-color text-warning" />
     </div>
 
     <x-mary-card class="mb-6" wire:key="citizen-services-tabs-card">
@@ -36,6 +36,25 @@
         @switch($activeTab)
             @case('overview')
                 <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    <x-mary-card title="BosesMoto Services">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <a href="{{ route('bosesmoto.dashboard') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                BosesMoto Dashboard
+                            </a>
+                            @if (auth()->user()->hasAnyRole(['Admin', 'Super Admin', 'Mayor', 'Department Head', 'Action Officer', 'system-administrator', 'mayor', 'department-head', 'action-officer']))
+                                <a href="{{ route('complaints.manage.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                    Complaint Queue
+                                </a>
+                            @endif
+                            <a href="{{ route('sentiments.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                Sentiments
+                            </a>
+                            <a href="{{ route('polls.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                Polls
+                            </a>
+                        </div>
+                    </x-mary-card>
+
                     <x-mary-card title="Recent Emergency Alerts">
                         <div class="space-y-3">
                             @forelse ($emergencyAlerts->take(5) as $alert)

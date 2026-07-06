@@ -33,6 +33,43 @@
             ->map(fn ($part) => strtoupper(substr($part, 0, 1)))
             ->implode('')
         : 'AU';
+    $citizenServicesActive = request()->routeIs(
+        'citizen-services.*',
+        'support-requests.*',
+        'account-deletion-requests.*',
+        'announcements.*',
+        'bosesmoto.*',
+        'complaints.*',
+        'sentiments.*',
+        'polls.*'
+    );
+    $canManageBosesmoto = auth()->check() && auth()->user()->hasAnyRole([
+        'Admin',
+        'Super Admin',
+        'Mayor',
+        'Department Head',
+        'Action Officer',
+        'system-administrator',
+        'mayor',
+        'department-head',
+        'action-officer',
+    ]);
+    $canManageBosesmotoAdmin = auth()->check() && auth()->user()->hasAnyRole([
+        'Admin',
+        'Super Admin',
+        'system-administrator',
+    ]);
+    $canManageBosesmotoExecutive = auth()->check() && auth()->user()->hasAnyRole([
+        'Mayor',
+        'mayor',
+    ]);
+    $canManageBosesmotoPublishing = auth()->check() && auth()->user()->hasAnyRole([
+        'Admin',
+        'Super Admin',
+        'Mayor',
+        'system-administrator',
+        'mayor',
+    ]);
 @endphp
 
 <head>
@@ -335,8 +372,14 @@
                                 </x-nav-link>
                             @endcan
 
-                            @can('manage-citizen-services')
-                                <x-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
+                            <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }">
+                                <button @click="open = !open" @click.away="open = false"
+                                    class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
+                                    :class="{
+                                        'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ $citizenServicesActive ? 'true' : 'false' }},
+                                        'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]':
+                                            !{{ $citizenServicesActive ? 'true' : 'false' }}
+                                    }">
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -345,28 +388,93 @@
                                         </svg>
                                         Citizen Services
                                     </span>
-                                </x-nav-link>
-                                <x-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.82L3 20l1.32-3.3A7.18 7.18 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                        Support
-                                    </span>
-                                </x-nav-link>
-                                <x-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 9v4m0 4h.01M5.07 19h13.86A2 2 0 0020.66 16L13.73 4a2 2 0 00-3.46 0L3.34 16a2 2 0 001.73 3z" />
-                                        </svg>
-                                        Data Requests
-                                    </span>
-                                </x-nav-link>
-                            @endcan
+                                    <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 translate-y-1"
+                                    x-transition:enter-end="opacity-100 translate-y-0"
+                                    x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100 translate-y-0"
+                                    x-transition:leave-end="opacity-0 translate-y-1"
+                                    class="absolute left-0 top-full z-20 mt-2 w-64 origin-top-left rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40"
+                                    style="display: none;">
+                                    <div class="py-1">
+                                        <a href="{{ route('bosesmoto.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            BosesMoto Dashboard
+                                        </a>
+                                        <a href="{{ route('complaints.public.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Public Reports
+                                        </a>
+                                        <a href="{{ route('complaints.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Submit Report
+                                        </a>
+                                        <a href="{{ route('complaints.my.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            My Reports
+                                        </a>
+                                        <a href="{{ route('sentiments.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Sentiments
+                                        </a>
+                                        <a href="{{ route('polls.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Polls
+                                        </a>
+
+                                        @if ($canManageBosesmoto || auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements'))
+                                            <div class="my-1 border-t border-slate-100"></div>
+                                        @endif
+
+                                        @if ($canManageBosesmoto)
+                                            <a href="{{ route('complaints.manage.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Complaint Queue
+                                            </a>
+                                        @endif
+                                        @if ($canManageBosesmotoExecutive)
+                                            <a href="{{ route('complaints.executive.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Executive Dashboard
+                                            </a>
+                                        @endif
+                                        @if ($canManageBosesmotoPublishing)
+                                            <a href="{{ route('complaints.reports.monthly') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Monthly Reports
+                                            </a>
+                                            <a href="{{ route('complaints.audit.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Audit Logs
+                                            </a>
+                                        @endif
+                                        @if ($canManageBosesmotoAdmin)
+                                            <a href="{{ route('complaints.categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Complaint References
+                                            </a>
+                                        @endif
+                                        @if ($canManageBosesmotoPublishing)
+                                            <a href="{{ route('polls.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Create Poll
+                                            </a>
+                                        @endif
+                                        @can('manage-announcements')
+                                            <a href="{{ route('announcements.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Announcements
+                                            </a>
+                                        @endcan
+                                        @can('manage-citizen-services')
+                                            <a href="{{ route('citizen-services.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Portal Services
+                                            </a>
+                                            <a href="{{ route('support-requests.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Support Requests
+                                            </a>
+                                            <a href="{{ route('account-deletion-requests.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Data Requests
+                                            </a>
+                                        @endcan
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Admin Dropdown - only show for appropriate permissions -->
                             @if (auth()->user()->can('manage-users') || auth()->user()->hasRole('system-administrator'))
@@ -405,24 +513,6 @@
                                         class="absolute left-0 top-full z-20 mt-2 w-56 origin-top-left rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40"
                                         style="display: none;">
                                         <div class="py-1">
-                                                <a href="{{ route('announcements.index') }}"
-                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    Announcements
-                                                </a>
-
-                                                <a href="{{ route('citizen-services.index') }}"
-                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    Citizen Services
-                                                </a>
-                                                <a href="{{ route('support-requests.index') }}"
-                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    Support Requests
-                                                </a>
-                                                <a href="{{ route('account-deletion-requests.index') }}"
-                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    Data Requests
-                                                </a>
-
                                             @can('manage-users')
                                                 <a href="{{ route('admin.users') }}"
                                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -644,8 +734,9 @@
                             </x-responsive-nav-link>
                         @endcan
 
-                        @can('manage-citizen-services')
-                            <x-responsive-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
+                        <div x-data="{ citizenServicesOpen: {{ $citizenServicesActive ? 'true' : 'false' }} }">
+                            <button @click="citizenServicesOpen = !citizenServicesOpen"
+                                class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ $citizenServicesActive ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
                                 <span class="flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
@@ -654,28 +745,77 @@
                                     </svg>
                                     Citizen Services
                                 </span>
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
-                                <span class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.82L3 20l1.32-3.3A7.18 7.18 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                    </svg>
-                                    Support
-                                </span>
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
-                                <span class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 9v4m0 4h.01M5.07 19h13.86A2 2 0 0020.66 16L13.73 4a2 2 0 00-3.46 0L3.34 16a2 2 0 001.73 3z" />
-                                    </svg>
-                                    Data Requests
-                                </span>
-                            </x-responsive-nav-link>
-                        @endcan
+                                <svg class="w-4 h-4 ml-auto" :class="{ 'rotate-90': citizenServicesOpen }"
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <div x-show="citizenServicesOpen" class="pl-6 mt-1 space-y-1" style="display: none;">
+                                <x-responsive-nav-link href="{{ route('bosesmoto.dashboard') }}" :active="request()->routeIs('bosesmoto.*')">
+                                    BosesMoto Dashboard
+                                </x-responsive-nav-link>
+                                <x-responsive-nav-link href="{{ route('complaints.public.index') }}" :active="request()->routeIs('complaints.public.*')">
+                                    Public Reports
+                                </x-responsive-nav-link>
+                                <x-responsive-nav-link href="{{ route('complaints.create') }}" :active="request()->routeIs('complaints.create')">
+                                    Submit Report
+                                </x-responsive-nav-link>
+                                <x-responsive-nav-link href="{{ route('complaints.my.index') }}" :active="request()->routeIs('complaints.my.*')">
+                                    My Reports
+                                </x-responsive-nav-link>
+                                <x-responsive-nav-link href="{{ route('sentiments.index') }}" :active="request()->routeIs('sentiments.*')">
+                                    Sentiments
+                                </x-responsive-nav-link>
+                                <x-responsive-nav-link href="{{ route('polls.index') }}" :active="request()->routeIs('polls.index', 'polls.show')">
+                                    Polls
+                                </x-responsive-nav-link>
+
+                                @if ($canManageBosesmoto)
+                                    <x-responsive-nav-link href="{{ route('complaints.manage.index') }}" :active="request()->routeIs('complaints.manage.*')">
+                                        Complaint Queue
+                                    </x-responsive-nav-link>
+                                @endif
+                                @if ($canManageBosesmotoExecutive)
+                                    <x-responsive-nav-link href="{{ route('complaints.executive.dashboard') }}" :active="request()->routeIs('complaints.executive.*')">
+                                        Executive Dashboard
+                                    </x-responsive-nav-link>
+                                @endif
+                                @if ($canManageBosesmotoPublishing)
+                                    <x-responsive-nav-link href="{{ route('complaints.reports.monthly') }}" :active="request()->routeIs('complaints.reports.*')">
+                                        Monthly Reports
+                                    </x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('complaints.audit.index') }}" :active="request()->routeIs('complaints.audit.*')">
+                                        Audit Logs
+                                    </x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('polls.create') }}" :active="request()->routeIs('polls.create')">
+                                        Create Poll
+                                    </x-responsive-nav-link>
+                                @endif
+                                @if ($canManageBosesmotoAdmin)
+                                    <x-responsive-nav-link href="{{ route('complaints.categories.index') }}" :active="request()->routeIs('complaints.categories.*', 'complaints.departments.*', 'complaints.officials.*')">
+                                        Complaint References
+                                    </x-responsive-nav-link>
+                                @endif
+                                @can('manage-announcements')
+                                    <x-responsive-nav-link href="{{ route('announcements.index') }}" :active="request()->routeIs('announcements.*')">
+                                        Announcements
+                                    </x-responsive-nav-link>
+                                @endcan
+                                @can('manage-citizen-services')
+                                    <x-responsive-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
+                                        Portal Services
+                                    </x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
+                                        Support Requests
+                                    </x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
+                                        Data Requests
+                                    </x-responsive-nav-link>
+                                @endcan
+                            </div>
+                        </div>
 
                         <!-- QR/RFID Scanner - only visible with permission -->
                         @can('verify-beneficiaries')
@@ -724,39 +864,6 @@
                                                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                                 </svg>
                                                 User Management
-                                            </span>
-                                        </x-responsive-nav-link>
-                                    @endcan
-
-                                    @can('manage-citizen-services')
-                                        <x-responsive-nav-link href="{{ route('citizen-services.index') }}" :active="request()->routeIs('citizen-services.*')">
-                                            <span class="flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M7 8h10M7 12h8m-8 4h6m7-11l-8.586 8.586a2 2 0 01-1.414.586H5a1 1 0 01-1-1v-4.586a2 2 0 01.586-1.414L13.172 2.586A2 2 0 0114.586 2H19a1 1 0 011 1v4.414a2 2 0 01-.586 1.414z" />
-                                                </svg>
-                                                Citizen Services
-                                            </span>
-                                        </x-responsive-nav-link>
-                                        <x-responsive-nav-link href="{{ route('support-requests.index') }}" :active="request()->routeIs('support-requests.*')">
-                                            <span class="flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.82L3 20l1.32-3.3A7.18 7.18 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                Support Requests
-                                            </span>
-                                        </x-responsive-nav-link>
-                                        <x-responsive-nav-link href="{{ route('account-deletion-requests.index') }}" :active="request()->routeIs('account-deletion-requests.*')">
-                                            <span class="flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M12 9v4m0 4h.01M5.07 19h13.86A2 2 0 0020.66 16L13.73 4a2 2 0 00-3.46 0L3.34 16a2 2 0 001.73 3z" />
-                                                </svg>
-                                                Data Requests
                                             </span>
                                         </x-responsive-nav-link>
                                     @endcan
