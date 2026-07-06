@@ -70,6 +70,7 @@
         'system-administrator',
         'mayor',
     ]);
+    $canUseCitizenComplaintForms = auth()->check() && auth()->user()->isCitizen();
 @endphp
 
 <head>
@@ -404,71 +405,88 @@
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     class="absolute left-0 top-full z-20 mt-2 w-64 origin-top-left rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40"
                                     style="display: none;">
-                                    <div class="py-1">
-                                        <a href="{{ route('bosesmoto.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            BosesMoto Dashboard
-                                        </a>
-                                        <a href="{{ route('complaints.public.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Public Reports
-                                        </a>
-                                        <a href="{{ route('complaints.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Submit Report
-                                        </a>
-                                        <a href="{{ route('complaints.my.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            My Reports
-                                        </a>
-                                        <a href="{{ route('sentiments.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Sentiments
-                                        </a>
-                                        <a href="{{ route('polls.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Polls
-                                        </a>
+                                    <div class="px-2 py-2">
+                                        <div class="relative" x-data="{ bosesmotoOpen: false }" @mouseenter="bosesmotoOpen = true" @mouseleave="bosesmotoOpen = false">
+                                            <button type="button" @click="bosesmotoOpen = !bosesmotoOpen"
+                                                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-100">
+                                                <span>BosesMoto</span>
+                                                <svg class="h-4 w-4" :class="{ 'rotate-90': bosesmotoOpen }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
 
-                                        @if ($canManageBosesmoto || auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements'))
+                                            <div x-show="bosesmotoOpen" x-transition
+                                                class="absolute left-full top-0 z-30 ml-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-200/40"
+                                                style="display: none;">
+                                                <a href="{{ route('bosesmoto.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Dashboard
+                                                </a>
+                                                <a href="{{ route('complaints.public.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Public Reports
+                                                </a>
+                                                @if ($canUseCitizenComplaintForms)
+                                                    <a href="{{ route('complaints.create') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Submit Report
+                                                    </a>
+                                                    <a href="{{ route('complaints.my.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        My Reports
+                                                    </a>
+                                                @endif
+                                                <a href="{{ route('sentiments.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Sentiments
+                                                </a>
+                                                <a href="{{ route('polls.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    Polls
+                                                </a>
+                                                @if ($canManageBosesmoto || $canManageBosesmotoExecutive || $canManageBosesmotoPublishing || $canManageBosesmotoAdmin)
+                                                    <div class="my-1 border-t border-slate-100"></div>
+                                                @endif
+                                                @if ($canManageBosesmoto)
+                                                    <a href="{{ route('complaints.manage.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Complaint Queue
+                                                    </a>
+                                                @endif
+                                                @if ($canManageBosesmotoExecutive)
+                                                    <a href="{{ route('complaints.executive.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Executive Dashboard
+                                                    </a>
+                                                @endif
+                                                @if ($canManageBosesmotoPublishing)
+                                                    <a href="{{ route('complaints.reports.monthly') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Monthly Reports
+                                                    </a>
+                                                    <a href="{{ route('complaints.audit.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Audit Logs
+                                                    </a>
+                                                    <a href="{{ route('polls.create') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Create Poll
+                                                    </a>
+                                                @endif
+                                                @if ($canManageBosesmotoAdmin)
+                                                    <a href="{{ route('complaints.categories.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Complaint References
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        @if (auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements'))
                                             <div class="my-1 border-t border-slate-100"></div>
                                         @endif
 
-                                        @if ($canManageBosesmoto)
-                                            <a href="{{ route('complaints.manage.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Complaint Queue
-                                            </a>
-                                        @endif
-                                        @if ($canManageBosesmotoExecutive)
-                                            <a href="{{ route('complaints.executive.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Executive Dashboard
-                                            </a>
-                                        @endif
-                                        @if ($canManageBosesmotoPublishing)
-                                            <a href="{{ route('complaints.reports.monthly') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Monthly Reports
-                                            </a>
-                                            <a href="{{ route('complaints.audit.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Audit Logs
-                                            </a>
-                                        @endif
-                                        @if ($canManageBosesmotoAdmin)
-                                            <a href="{{ route('complaints.categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Complaint References
-                                            </a>
-                                        @endif
-                                        @if ($canManageBosesmotoPublishing)
-                                            <a href="{{ route('polls.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Create Poll
-                                            </a>
-                                        @endif
                                         @can('manage-announcements')
-                                            <a href="{{ route('announcements.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <a href="{{ route('announcements.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 Announcements
                                             </a>
                                         @endcan
                                         @can('manage-citizen-services')
-                                            <a href="{{ route('citizen-services.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <a href="{{ route('citizen-services.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 Portal Services
                                             </a>
-                                            <a href="{{ route('support-requests.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <a href="{{ route('support-requests.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 Support Requests
                                             </a>
-                                            <a href="{{ route('account-deletion-requests.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <a href="{{ route('account-deletion-requests.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 Data Requests
                                             </a>
                                         @endcan
@@ -753,51 +771,67 @@
                                 </svg>
                             </button>
                             <div x-show="citizenServicesOpen" class="pl-6 mt-1 space-y-1" style="display: none;">
-                                <x-responsive-nav-link href="{{ route('bosesmoto.dashboard') }}" :active="request()->routeIs('bosesmoto.*')">
-                                    BosesMoto Dashboard
-                                </x-responsive-nav-link>
-                                <x-responsive-nav-link href="{{ route('complaints.public.index') }}" :active="request()->routeIs('complaints.public.*')">
-                                    Public Reports
-                                </x-responsive-nav-link>
-                                <x-responsive-nav-link href="{{ route('complaints.create') }}" :active="request()->routeIs('complaints.create')">
-                                    Submit Report
-                                </x-responsive-nav-link>
-                                <x-responsive-nav-link href="{{ route('complaints.my.index') }}" :active="request()->routeIs('complaints.my.*')">
-                                    My Reports
-                                </x-responsive-nav-link>
-                                <x-responsive-nav-link href="{{ route('sentiments.index') }}" :active="request()->routeIs('sentiments.*')">
-                                    Sentiments
-                                </x-responsive-nav-link>
-                                <x-responsive-nav-link href="{{ route('polls.index') }}" :active="request()->routeIs('polls.index', 'polls.show')">
-                                    Polls
-                                </x-responsive-nav-link>
+                                <div x-data="{ bosesmotoOpen: {{ request()->routeIs('bosesmoto.*', 'complaints.*', 'sentiments.*', 'polls.*') ? 'true' : 'false' }} }">
+                                    <button @click="bosesmotoOpen = !bosesmotoOpen"
+                                        class="flex w-full items-center py-2 pl-3 pr-4 text-left text-sm font-semibold text-gray-600 hover:text-[var(--brand-primary)]">
+                                        <span>BosesMoto</span>
+                                        <svg class="ml-auto h-4 w-4" :class="{ 'rotate-90': bosesmotoOpen }"
+                                            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="bosesmotoOpen" class="ml-3 space-y-1 border-l border-slate-200 pl-3" style="display: none;">
+                                        <x-responsive-nav-link href="{{ route('bosesmoto.dashboard') }}" :active="request()->routeIs('bosesmoto.*')">
+                                            Dashboard
+                                        </x-responsive-nav-link>
+                                        <x-responsive-nav-link href="{{ route('complaints.public.index') }}" :active="request()->routeIs('complaints.public.*')">
+                                            Public Reports
+                                        </x-responsive-nav-link>
+                                        @if ($canUseCitizenComplaintForms)
+                                            <x-responsive-nav-link href="{{ route('complaints.create') }}" :active="request()->routeIs('complaints.create')">
+                                                Submit Report
+                                            </x-responsive-nav-link>
+                                            <x-responsive-nav-link href="{{ route('complaints.my.index') }}" :active="request()->routeIs('complaints.my.*')">
+                                                My Reports
+                                            </x-responsive-nav-link>
+                                        @endif
+                                        <x-responsive-nav-link href="{{ route('sentiments.index') }}" :active="request()->routeIs('sentiments.*')">
+                                            Sentiments
+                                        </x-responsive-nav-link>
+                                        <x-responsive-nav-link href="{{ route('polls.index') }}" :active="request()->routeIs('polls.index', 'polls.show')">
+                                            Polls
+                                        </x-responsive-nav-link>
+                                        @if ($canManageBosesmoto)
+                                            <x-responsive-nav-link href="{{ route('complaints.manage.index') }}" :active="request()->routeIs('complaints.manage.*')">
+                                                Complaint Queue
+                                            </x-responsive-nav-link>
+                                        @endif
+                                        @if ($canManageBosesmotoExecutive)
+                                            <x-responsive-nav-link href="{{ route('complaints.executive.dashboard') }}" :active="request()->routeIs('complaints.executive.*')">
+                                                Executive Dashboard
+                                            </x-responsive-nav-link>
+                                        @endif
+                                        @if ($canManageBosesmotoPublishing)
+                                            <x-responsive-nav-link href="{{ route('complaints.reports.monthly') }}" :active="request()->routeIs('complaints.reports.*')">
+                                                Monthly Reports
+                                            </x-responsive-nav-link>
+                                            <x-responsive-nav-link href="{{ route('complaints.audit.index') }}" :active="request()->routeIs('complaints.audit.*')">
+                                                Audit Logs
+                                            </x-responsive-nav-link>
+                                            <x-responsive-nav-link href="{{ route('polls.create') }}" :active="request()->routeIs('polls.create')">
+                                                Create Poll
+                                            </x-responsive-nav-link>
+                                        @endif
+                                        @if ($canManageBosesmotoAdmin)
+                                            <x-responsive-nav-link href="{{ route('complaints.categories.index') }}" :active="request()->routeIs('complaints.categories.*', 'complaints.departments.*', 'complaints.officials.*')">
+                                                Complaint References
+                                            </x-responsive-nav-link>
+                                        @endif
+                                    </div>
+                                </div>
 
-                                @if ($canManageBosesmoto)
-                                    <x-responsive-nav-link href="{{ route('complaints.manage.index') }}" :active="request()->routeIs('complaints.manage.*')">
-                                        Complaint Queue
-                                    </x-responsive-nav-link>
-                                @endif
-                                @if ($canManageBosesmotoExecutive)
-                                    <x-responsive-nav-link href="{{ route('complaints.executive.dashboard') }}" :active="request()->routeIs('complaints.executive.*')">
-                                        Executive Dashboard
-                                    </x-responsive-nav-link>
-                                @endif
-                                @if ($canManageBosesmotoPublishing)
-                                    <x-responsive-nav-link href="{{ route('complaints.reports.monthly') }}" :active="request()->routeIs('complaints.reports.*')">
-                                        Monthly Reports
-                                    </x-responsive-nav-link>
-                                    <x-responsive-nav-link href="{{ route('complaints.audit.index') }}" :active="request()->routeIs('complaints.audit.*')">
-                                        Audit Logs
-                                    </x-responsive-nav-link>
-                                    <x-responsive-nav-link href="{{ route('polls.create') }}" :active="request()->routeIs('polls.create')">
-                                        Create Poll
-                                    </x-responsive-nav-link>
-                                @endif
-                                @if ($canManageBosesmotoAdmin)
-                                    <x-responsive-nav-link href="{{ route('complaints.categories.index') }}" :active="request()->routeIs('complaints.categories.*', 'complaints.departments.*', 'complaints.officials.*')">
-                                        Complaint References
-                                    </x-responsive-nav-link>
-                                @endif
                                 @can('manage-announcements')
                                     <x-responsive-nav-link href="{{ route('announcements.index') }}" :active="request()->routeIs('announcements.*')">
                                         Announcements
