@@ -12,7 +12,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+        <div class="max-w-7xl-removed mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
             <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-800 p-5 text-white shadow-lg sm:p-6">
                 <div class="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
                 <div class="pointer-events-none absolute -bottom-10 left-12 h-28 w-28 rounded-full bg-cyan-300/20 blur-2xl"></div>

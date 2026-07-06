@@ -12,7 +12,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl-removed space-y-5 px-4 sm:px-6 lg:px-8">
             <section class="rounded-2xl bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-900 p-5 text-white shadow-lg sm:p-6">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">Community Pulse</p>
                 <h3 class="mt-2 text-2xl font-bold">One Global Feed</h3>

@@ -1,25 +1,25 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">
                 {{ $title }}
             </h2>
-            <span class="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full w-fit bg-slate-100 text-slate-700">
                 {{ auth()->user()->role }}
             </span>
         </div>
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
-            <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-900 p-5 text-white shadow-lg sm:p-6">
-                <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
-                <div class="pointer-events-none absolute -bottom-8 left-20 h-24 w-24 rounded-full bg-cyan-300/20 blur-2xl"></div>
+        <div class="px-4 space-y-5 max-w-7xl-removed mx-auto sm:px-6 lg:px-8">
+            <section class="relative p-5 overflow-hidden text-white shadow-lg rounded-2xl bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-900 sm:p-6">
+                <div class="absolute rounded-full pointer-events-none -right-8 -top-8 h-28 w-28 bg-white/10 blur-2xl"></div>
+                <div class="absolute w-24 h-24 rounded-full pointer-events-none -bottom-8 left-20 bg-cyan-300/20 blur-2xl"></div>
 
                 <div class="relative">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Operations Overview</p>
                     <h3 class="mt-2 text-xl font-bold sm:text-2xl">{{ $title }}</h3>
-                    <p class="mt-2 max-w-2xl text-sm text-cyan-100/90">
+                    <p class="max-w-2xl mt-2 text-sm text-cyan-100/90">
                         Welcome, {{ auth()->user()->name }}. {{ $subtitle }}
                     </p>
                 </div>
@@ -38,7 +38,7 @@
                         };
                     @endphp
 
-                    <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100 sm:p-4">
+                    <div class="p-3 bg-white shadow-sm rounded-xl ring-1 ring-slate-100 sm:p-4">
                         <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ $stat['label'] }}</p>
                         <p class="mt-1 text-lg font-bold sm:text-2xl {{ $accentClass }}">{{ number_format((int) $stat['value']) }}</p>
                     </div>
@@ -46,51 +46,51 @@
             </section>
 
             <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-6">
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-slate-900">Complaint Status Distribution</h3>
                         <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Current Scope</span>
                     </div>
-                    <div class="mt-3 h-64 sm:h-72">
+                    <div class="h-64 mt-3 sm:h-72">
                         <canvas id="dashboard-status-chart"></canvas>
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-6">
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-slate-900">6-Month Submission Trend</h3>
                         <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Monthly</span>
                     </div>
-                    <div class="mt-3 h-64 sm:h-72">
+                    <div class="h-64 mt-3 sm:h-72">
                         <canvas id="dashboard-trend-chart"></canvas>
                     </div>
                 </div>
             </section>
 
             <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-6">
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-slate-900">Response Time Trend (Hours)</h3>
                         <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Last 6 Months</span>
                     </div>
                     <p class="mt-1 text-xs text-slate-500">Computed from submission to first action, and submission to resolved/closed.</p>
-                    <div class="mt-3 h-64 sm:h-72">
+                    <div class="h-64 mt-3 sm:h-72">
                         <canvas id="dashboard-response-trend-chart"></canvas>
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-6">
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-slate-900">Average Response Snapshot (Hours)</h3>
                         <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Current Scope</span>
                     </div>
-                    <div class="mt-3 h-64 sm:h-72">
+                    <div class="h-64 mt-3 sm:h-72">
                         <canvas id="dashboard-response-snapshot-chart"></canvas>
                     </div>
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <section class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-6">
                 <div class="flex items-center justify-between gap-3">
                     <h3 class="text-base font-semibold text-slate-900">Division Response Time Per Request</h3>
                     <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Top 10 Divisions</span>
@@ -102,21 +102,21 @@
             </section>
 
             <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="p-4 bg-white border shadow-sm xl:col-span-2 rounded-2xl border-slate-200 sm:p-6">
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-slate-900">Priority Breakdown</h3>
                         <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Current Scope</span>
                     </div>
-                    <div class="mt-3 h-64 sm:h-72">
+                    <div class="h-64 mt-3 sm:h-72">
                         <canvas id="dashboard-priority-chart"></canvas>
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-6">
                     <h3 class="text-base font-semibold text-slate-900">Suggested Graph Focus</h3>
                     <ul class="mt-3 space-y-2 text-sm text-slate-700">
                         @foreach ($graphSuggestions as $suggestion)
-                            <li class="rounded-lg bg-slate-50 px-3 py-2">
+                            <li class="px-3 py-2 rounded-lg bg-slate-50">
                                 {{ $suggestion }}
                             </li>
                         @endforeach
@@ -144,7 +144,7 @@
                                 <p class="mt-2 text-sm text-slate-600">{{ $card['description'] }}</p>
                             </a>
                         @else
-                            <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                            <article class="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-5">
                                 <h3 class="text-base font-semibold text-slate-900">{{ $card['title'] }}</h3>
                                 <p class="mt-2 text-sm text-slate-600">{{ $card['description'] }}</p>
                             </article>

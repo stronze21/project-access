@@ -35,7 +35,7 @@
     @endphp
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+        <div class="max-w-7xl-removed mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
             @if (session('status'))
                 <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                     {{ session('status') }}
