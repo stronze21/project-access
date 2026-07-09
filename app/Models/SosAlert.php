@@ -12,6 +12,7 @@ class SosAlert extends Model
 
     protected $fillable = [
         'resident_id',
+        'sos_department_id',
         'reference_number',
         'status',
         'contact_number',
@@ -42,5 +43,10 @@ class SosAlert extends Model
     public function resident(): BelongsTo
     {
         return $this->belongsTo(Resident::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(SosDepartment::class, 'sos_department_id');
     }
 }

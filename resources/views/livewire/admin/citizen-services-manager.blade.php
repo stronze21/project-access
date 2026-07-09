@@ -94,6 +94,9 @@
                                         <x-mary-badge value="{{ strtoupper($sos->status) }}" class="badge-sm badge-ghost" />
                                     </div>
                                     <div class="mt-1 text-xs text-gray-500">{{ $sos->reference_number }} • {{ $sos->created_at->diffForHumans() }}</div>
+                                    @if ($sos->department)
+                                        <div class="mt-1 text-sm font-medium text-slate-700">{{ $sos->department->name }}</div>
+                                    @endif
                                     @if ($sos->location_label)
                                         <div class="mt-1 text-sm text-gray-600">{{ $sos->location_label }}</div>
                                     @endif
@@ -272,6 +275,9 @@
                                     <div>
                                         <div class="font-semibold text-slate-800">{{ $sos->resident?->full_name ?? 'Unknown resident' }}</div>
                                         <div class="text-sm text-gray-500">{{ $sos->reference_number }} • {{ $sos->contact_number ?: 'No contact number' }}</div>
+                                        @if ($sos->department)
+                                            <div class="mt-1 text-sm font-medium text-slate-700">Inform: {{ $sos->department->name }}</div>
+                                        @endif
                                         @if ($sos->message)
                                             <div class="mt-2 text-sm text-gray-700">{{ $sos->message }}</div>
                                         @endif

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Household;
 use App\Models\Resident;
 use App\Models\ResidentNotification;
+use App\Models\SosDepartment;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -26,6 +27,20 @@ class ResidentPortalEmergencyAndGrievanceTest extends TestCase
 
         Sanctum::actingAs($resident);
 
+        $department = SosDepartment::query()->create([
+            'name' => 'Ambulance',
+            'code' => 'ambulance-test',
+            'description' => 'Medical response',
+            'hotline' => '911',
+            'sort_order' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->getJson('/api/resident-portal/emergency/sos/departments')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $department->id)
+            ->assertJsonPath('data.0.name', 'Ambulance');
+
         $this->postJson('/api/resident-portal/grievances', [
             'category' => 'roads',
             'subject' => 'Blocked drainage',
@@ -37,6 +52,7 @@ class ResidentPortalEmergencyAndGrievanceTest extends TestCase
             ->assertJsonPath('data.category', 'roads');
 
         $this->postJson('/api/resident-portal/emergency/sos', [
+            'sos_department_id' => $department->id,
             'message' => 'Need urgent medical assistance.',
             'latitude' => 16.1554321,
             'longitude' => 119.9812345,
@@ -51,6 +67,7 @@ class ResidentPortalEmergencyAndGrievanceTest extends TestCase
 
         $this->assertDatabaseHas('sos_alerts', [
             'resident_id' => $resident->id,
+            'sos_department_id' => $department->id,
             'status' => 'open',
         ]);
 

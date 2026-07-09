@@ -13,6 +13,7 @@ use Database\Seeders\SosAlertSeeder;
 use Database\Seeders\HouseholdSeeder;
 use Database\Seeders\LocationsSeeder;
 use Database\Seeders\SystemSettingsSeeder;
+use Database\Seeders\SosDepartmentSeeder;
 use Database\Seeders\AyudaProgramSeeder;
 use Database\Seeders\DefaultAdminSeeder;
 use Database\Seeders\DistributionSeeder;
@@ -66,6 +67,7 @@ class DatabaseSeeder extends Seeder
         // Citizen service portal data
         $this->call([
             PublicServiceLinkSeeder::class,
+            SosDepartmentSeeder::class,
             CitizenServiceRequestSeeder::class,
             GrievanceReportSeeder::class,
             EmergencyAlertSeeder::class,

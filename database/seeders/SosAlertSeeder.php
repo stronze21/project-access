@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Resident;
 use Illuminate\Database\Seeder;
 use App\Models\SosAlert;
+use App\Models\SosDepartment;
 
 class SosAlertSeeder extends Seeder
 {
@@ -20,12 +21,14 @@ class SosAlertSeeder extends Seeder
         }
 
         $statuses = ['open', 'acknowledged', 'resolved'];
+        $departmentIds = SosDepartment::query()->orderBy('sort_order')->pluck('id')->values();
 
         foreach ($residents as $index => $resident) {
             $status = $statuses[$index % count($statuses)];
 
             SosAlert::create([
                 'resident_id' => $resident->id,
+                'sos_department_id' => $departmentIds[$index % max(1, $departmentIds->count())] ?? null,
                 'status' => $status,
                 'contact_number' => $resident->contact_number,
                 'message' => [

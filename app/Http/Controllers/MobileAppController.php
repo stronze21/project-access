@@ -27,6 +27,16 @@ class MobileAppController extends Controller
             abort(404, 'No APK release is currently available.');
         }
 
-        return Storage::disk('public')->download($path, $release['download_name']);
+        $downloadName = $release['download_name'];
+
+        return Storage::disk('public')->download($path, $downloadName, [
+            'Content-Type' => 'application/vnd.android.package-archive',
+            'Content-Disposition' => sprintf(
+                'attachment; filename="%s"; filename*=UTF-8\'\'%s',
+                addcslashes($downloadName, '"\\'),
+                rawurlencode($downloadName)
+            ),
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

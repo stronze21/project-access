@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\ResidentPortal;
 use App\Http\Controllers\Controller;
 use App\Models\EmergencyAlert;
 use App\Models\SosAlert;
+use App\Models\SosDepartment;
 use App\Models\SystemSetting;
 use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
@@ -39,9 +40,21 @@ class EmergencyController extends Controller
         ]);
     }
 
+    public function sosDepartments(): JsonResponse
+    {
+        return response()->json([
+            'data' => SosDepartment::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'description', 'hotline']),
+        ]);
+    }
+
     public function sos(Request $request, PushNotificationService $pushNotificationService): JsonResponse
     {
         $validator = Validator::make($request->all(), [
+            'sos_department_id' => 'nullable|exists:sos_departments,id',
             'message' => 'nullable|string|max:1000',
             'contact_number' => 'nullable|string|max:30',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -57,6 +70,7 @@ class EmergencyController extends Controller
 
         $sosAlert = SosAlert::create([
             'resident_id' => $resident->id,
+            'sos_department_id' => $request->sos_department_id,
             'status' => 'open',
             'contact_number' => $request->contact_number ?? $resident->contact_number,
             'message' => $request->message,
@@ -70,19 +84,23 @@ class EmergencyController extends Controller
             'SOS received',
             'Your emergency request has been forwarded to the city command center.',
             'sos',
-            ['sos_alert_id' => (string) $sosAlert->id]
+            [
+                'sos_alert_id' => (string) $sosAlert->id,
+                'sos_department_id' => (string) ($sosAlert->sos_department_id ?? ''),
+            ]
         );
 
         return response()->json([
             'message' => 'SOS alert sent successfully.',
-            'data' => $sosAlert,
+            'data' => $sosAlert->load('department:id,name,code,hotline'),
             'command_center' => $this->commandCenterConfig(),
         ], 201);
     }
 
     public function sosHistory(Request $request): JsonResponse
     {
-        $alerts = SosAlert::where('resident_id', $request->user()->id)
+        $alerts = SosAlert::with('department:id,name,code,hotline')
+            ->where('resident_id', $request->user()->id)
             ->latest()
             ->paginate($request->integer('per_page', 10));
 

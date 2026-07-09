@@ -95,7 +95,10 @@ class CitizenServicesAdminController extends Controller
 
     public function sosAlerts(Request $request): JsonResponse
     {
-        $query = SosAlert::with('resident:id,resident_id,first_name,last_name');
+        $query = SosAlert::with([
+            'resident:id,resident_id,first_name,last_name',
+            'department:id,name,code,hotline',
+        ]);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

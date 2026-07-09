@@ -407,7 +407,10 @@ class CitizenServicesManager extends Component
 
         return view('livewire.admin.citizen-services-manager', [
             'serviceLinks' => PublicServiceLink::orderBy('sort_order')->orderBy('title')->get(),
-            'sosAlerts' => SosAlert::with('resident:id,first_name,last_name,resident_id')->latest()->limit(20)->get(),
+            'sosAlerts' => SosAlert::with([
+                'resident:id,first_name,last_name,resident_id',
+                'department:id,name,code,hotline',
+            ])->latest()->limit(20)->get(),
             'emergencyAlerts' => EmergencyAlert::latest()->limit(20)->get(),
         ]);
     }

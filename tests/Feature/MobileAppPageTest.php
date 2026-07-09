@@ -42,7 +42,9 @@ class MobileAppPageTest extends TestCase
 
         $this->get('/mobile-app/download')
             ->assertOk()
-            ->assertDownload('projectaccess-2-1-0.apk');
+            ->assertDownload('projectaccess-2-1-0.apk')
+            ->assertHeader('Content-Type', 'application/vnd.android.package-archive')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
     public function test_download_404s_when_no_apk_exists(): void

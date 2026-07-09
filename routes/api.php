@@ -253,6 +253,7 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('auth:san
     // Emergency and Alerts
     Route::get('/emergency/alerts', [ResidentEmergencyController::class, 'index'])->name('emergency.alerts');
     Route::get('/emergency/alerts/{id}', [ResidentEmergencyController::class, 'show'])->name('emergency.alerts.show');
+    Route::get('/emergency/sos/departments', [ResidentEmergencyController::class, 'sosDepartments'])->name('emergency.sos.departments');
     Route::post('/emergency/sos', [ResidentEmergencyController::class, 'sos'])->name('emergency.sos');
     Route::get('/emergency/sos/history', [ResidentEmergencyController::class, 'sosHistory'])->name('emergency.sos.history');
 });
