@@ -566,6 +566,10 @@
                                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                     System Settings
                                                 </a>
+                                                <a href="{{ route('admin.app-release') }}"
+                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    App Release
+                                                </a>
                                             @endif
                                         </div>
                                     </div>
@@ -749,6 +753,12 @@
                                                         stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 </svg>
                                                 System Settings
+                                            </span>
+                                        </x-nav-link>
+                                        <x-nav-link href="{{ route('admin.app-release') }}" :active="request()->routeIs('admin.app-release')">
+                                            <span class="flex items-center">
+                                                <x-mary-icon name="o-device-phone-mobile" class="mr-1 h-5 w-5" />
+                                                App Release
                                             </span>
                                         </x-nav-link>
                                     @endif
@@ -956,6 +966,12 @@
                                                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 </svg>
                                                 System Settings
+                                            </span>
+                                        </x-responsive-nav-link>
+                                        <x-responsive-nav-link href="{{ route('admin.app-release') }}" :active="request()->routeIs('admin.app-release')">
+                                            <span class="flex items-center">
+                                                <x-mary-icon name="o-device-phone-mobile" class="mr-1 h-5 w-5" />
+                                                App Release
                                             </span>
                                         </x-responsive-nav-link>
                                     @endrole

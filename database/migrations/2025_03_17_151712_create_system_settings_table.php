@@ -57,6 +57,25 @@ return new class extends Migration
             ['key' => 'contact_email', 'value' => 'contact@ayudahub.example', 'group' => 'contact', 'type' => 'email', 'is_public' => true],
             ['key' => 'contact_phone', 'value' => '+63 (XXX) XXX-XXXX', 'group' => 'contact', 'type' => 'text', 'is_public' => true],
             ['key' => 'office_address', 'value' => 'Municipal Hall, Sample Street', 'group' => 'contact', 'type' => 'textarea', 'is_public' => true],
+
+            // Android app release information
+            ['key' => 'mobile_app.name', 'value' => 'ProjectAccess Mobile', 'group' => 'mobile_app', 'type' => 'text', 'is_public' => true],
+            ['key' => 'mobile_app.description', 'value' => 'ProjectAccess Mobile gives residents a direct way to use local digital services, receive announcements, submit requests, and stay connected with city programs.', 'group' => 'mobile_app', 'type' => 'textarea', 'is_public' => true],
+            ['key' => 'mobile_app.version_name', 'value' => '1.0.0', 'group' => 'mobile_app', 'type' => 'text', 'is_public' => true],
+            ['key' => 'mobile_app.version_code', 'value' => '1', 'group' => 'mobile_app', 'type' => 'text', 'is_public' => true],
+            ['key' => 'mobile_app.release_notes', 'value' => 'Initial public Android release.', 'group' => 'mobile_app', 'type' => 'textarea', 'is_public' => true],
+            ['key' => 'mobile_app.features', 'value' => json_encode([
+                'Resident account access and profile management',
+                'Announcements from the city and barangay offices',
+                'Citizen service requests and tracking',
+                'Emergency alerts and grievance reporting',
+                'Public feedback, complaints, polls, and sentiment features',
+            ]), 'group' => 'mobile_app', 'type' => 'textarea', 'is_public' => true],
+            ['key' => 'mobile_app.source_project_path', 'value' => 'C:\\Users\\HP\\source\\repos\\ProjectAccessApp\\ProjectAccessApp', 'group' => 'mobile_app', 'type' => 'text', 'is_public' => false],
+            ['key' => 'mobile_app.apk_path', 'value' => '', 'group' => 'mobile_app', 'type' => 'file', 'is_public' => true],
+            ['key' => 'mobile_app.apk_original_name', 'value' => '', 'group' => 'mobile_app', 'type' => 'text', 'is_public' => true],
+            ['key' => 'mobile_app.apk_size', 'value' => '', 'group' => 'mobile_app', 'type' => 'number', 'is_public' => true],
+            ['key' => 'mobile_app.apk_uploaded_at', 'value' => '', 'group' => 'mobile_app', 'type' => 'datetime', 'is_public' => true],
         ];
 
         $table = app('db')->table('system_settings');

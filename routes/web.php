@@ -41,6 +41,7 @@ use App\Livewire\Reports\DistributionsReport;
 use App\Livewire\RegistrationOfficerDashboard;
 use App\Http\Controllers\ResidentCsvController;
 use App\Http\Controllers\ReportExportController;
+use App\Http\Controllers\MobileAppController;
 use App\Http\Controllers\ResidentIdCardController;
 use App\Http\Controllers\BatchImageDownloadController;
 use App\Http\Controllers\AccountDeletionRequestController;
@@ -70,6 +71,8 @@ Route::get('/support', [AccountDeletionRequestController::class, 'support'])->na
 Route::post('/support', [SupportRequestController::class, 'store'])->name('support-requests.store');
 Route::get('/account-deletion', [AccountDeletionRequestController::class, 'create'])->name('account-deletion.create');
 Route::post('/account-deletion', [AccountDeletionRequestController::class, 'store'])->name('account-deletion.store');
+Route::get('/mobile-app', [MobileAppController::class, 'index'])->name('mobile-app.index');
+Route::get('/mobile-app/download', [MobileAppController::class, 'download'])->name('mobile-app.download');
 
 Route::middleware([
     'auth:sanctum',
@@ -261,6 +264,9 @@ Route::middleware([
             Route::get('/system-settings', function () {
                 return view('admin.system-settings');
             })->name('admin.system-settings');
+            Route::get('/app-release', function () {
+                return view('admin.app-release');
+            })->name('admin.app-release');
             Route::redirect('/admin/system-settings', '/admin/system-settings');
         });
     });
