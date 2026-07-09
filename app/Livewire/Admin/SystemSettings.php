@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\SystemSetting;
+use App\Services\ModuleSettings;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -37,6 +38,8 @@ class SystemSettings extends Component
     // Active tab
     public $activeTab = 'appearance';
 
+    public array $moduleStates = [];
+
     public function mount()
     {
         $this->loadAllSettings();
@@ -65,6 +68,15 @@ class SystemSettings extends Component
         if ($favicon && $favicon->value) {
             $this->current_favicon_url = Storage::url($favicon->value);
         }
+
+        $this->loadModuleSettings();
+    }
+
+    public function loadModuleSettings(): void
+    {
+        $this->moduleStates = collect(app(ModuleSettings::class)->all())
+            ->mapWithKeys(fn (array $module, string $key) => [$key => (bool) $module['enabled']])
+            ->toArray();
     }
 
     public function changeTab($tab)
@@ -134,8 +146,23 @@ class SystemSettings extends Component
         $this->success('Contact settings updated successfully!');
     }
 
+    public function saveModuleSettings()
+    {
+        $modules = app(ModuleSettings::class);
+
+        foreach (array_keys(ModuleSettings::MODULES) as $module) {
+            $modules->set($module, (bool) ($this->moduleStates[$module] ?? false));
+        }
+
+        $this->loadModuleSettings();
+
+        $this->success('Module settings updated successfully!');
+    }
+
     public function render()
     {
-        return view('livewire.admin.system-settings');
+        return view('livewire.admin.system-settings', [
+            'availableModules' => ModuleSettings::MODULES,
+        ]);
     }
 }

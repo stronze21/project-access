@@ -258,9 +258,10 @@ Route::middleware([
         // Role management - system administrator only
         Route::middleware('role:system-administrator')->group(function () {
             Route::get('/roles', RoleManagement::class)->name('admin.roles');
-            Route::get('/admin/system-settings', function () {
+            Route::get('/system-settings', function () {
                 return view('admin.system-settings');
             })->name('admin.system-settings');
+            Route::redirect('/admin/system-settings', '/admin/system-settings');
         });
     });
 

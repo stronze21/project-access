@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <x-theme-script />
 
         <title>{{ config('app.name', "Alaminos City Citizen's E-Services Solutions") }}</title>
 
@@ -18,6 +19,9 @@
         @livewireStyles
     </head>
     <body class="brand-auth-shell">
+        <div class="fixed right-4 top-4 z-50">
+            <x-theme-toggle />
+        </div>
         <div class="font-sans antialiased text-slate-800">
             {{ $slot }}
         </div>

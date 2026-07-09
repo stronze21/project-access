@@ -47,8 +47,15 @@ class SystemSetting extends Model
             ['value' => $value]
         );
 
-        // Clear the cache for this key
+        // Clear the cache for this key and grouped/public views that may include it.
         Cache::forget("system_settings.{$key}");
+        Cache::forget('system_settings_all');
+        Cache::forget('system_settings_grouped');
+        Cache::forget('system_settings_public');
+
+        if ($result->group) {
+            Cache::forget("system_settings_group.{$result->group}");
+        }
 
         return (bool) $result;
     }

@@ -542,11 +542,11 @@
 
                 @if ($resetPassword)
                     <div class="space-y-3">
-                        <x-mary-input label="New 6-digit MPIN" wire:model="portalMpin" type="password"
+                        <x-mary-password label="New 6-digit MPIN" wire:model="portalMpin" right
                             placeholder="Enter new MPIN" required error="{{ $errors->first('portalMpin') }}"
                             hint="Exactly 6 digits" />
 
-                        <x-mary-input label="Confirm MPIN" wire:model="portalMpinConfirmation" type="password"
+                        <x-mary-password label="Confirm MPIN" wire:model="portalMpinConfirmation" right
                             placeholder="Confirm new MPIN" required
                             error="{{ $errors->first('portalMpinConfirmation') }}" />
                     </div>

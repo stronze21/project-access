@@ -1,4 +1,12 @@
 <div>
+    @php
+        $moduleSettings = app(\App\Services\ModuleSettings::class);
+        $bosesmotoEnabled = $moduleSettings->enabled('bosesmoto');
+        $bosesmotoComplaintsEnabled = $moduleSettings->enabled('complaints');
+        $bosesmotoSentimentsEnabled = $moduleSettings->enabled('sentiments');
+        $bosesmotoPollsEnabled = $moduleSettings->enabled('polls');
+    @endphp
+
     <div class="mb-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -38,20 +46,26 @@
                 <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
                     <x-mary-card title="BosesMoto Services">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <a href="{{ route('bosesmoto.dashboard') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                                BosesMoto Dashboard
-                            </a>
-                            @if (auth()->user()->hasAnyRole(['Admin', 'Super Admin', 'Mayor', 'Department Head', 'Action Officer', 'system-administrator', 'mayor', 'department-head', 'action-officer']))
+                            @if ($bosesmotoEnabled)
+                                <a href="{{ route('bosesmoto.dashboard') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                    BosesMoto Dashboard
+                                </a>
+                            @endif
+                            @if ($bosesmotoComplaintsEnabled && auth()->user()->hasAnyRole(['Admin', 'Super Admin', 'Mayor', 'Department Head', 'Action Officer', 'system-administrator', 'mayor', 'department-head', 'action-officer']))
                                 <a href="{{ route('complaints.manage.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                                     Complaint Queue
                                 </a>
                             @endif
-                            <a href="{{ route('sentiments.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                                Sentiments
-                            </a>
-                            <a href="{{ route('polls.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                                Polls
-                            </a>
+                            @if ($bosesmotoSentimentsEnabled)
+                                <a href="{{ route('sentiments.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                    Sentiments
+                                </a>
+                            @endif
+                            @if ($bosesmotoPollsEnabled)
+                                <a href="{{ route('polls.index') }}" class="rounded-lg border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                    Polls
+                                </a>
+                            @endif
                         </div>
                     </x-mary-card>
 

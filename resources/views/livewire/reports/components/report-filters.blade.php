@@ -1,7 +1,7 @@
 <div>
     <div class="flex items-center justify-between mb-3 cursor-pointer" wire:click="toggleExpanded">
-        <h3 class="text-sm font-medium text-gray-500">Filter Options</h3>
-        <button class="text-gray-400 hover:text-gray-600">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-slate-300">Filter Options</h3>
+        <button class="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200">
             @if ($expanded)
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
@@ -22,7 +22,7 @@
             <div class="flex flex-wrap gap-2 mb-3">
                 @foreach ($dateRangeOptions as $key => $label)
                     <button type="button"
-                        class="px-3 py-1 text-xs font-medium {{ $selectedDateRange === $key ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700' }} rounded-md hover:bg-blue-50"
+                        class="px-3 py-1 text-xs font-medium {{ $selectedDateRange === $key ? 'bg-blue-100 text-blue-700 dark:bg-cyan-900/60 dark:text-cyan-100' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-200' }} rounded-md hover:bg-blue-50 dark:hover:bg-cyan-950/45"
                         wire:click="applyDateRange('{{ $key }}')">
                         {{ $label }}
                     </button>

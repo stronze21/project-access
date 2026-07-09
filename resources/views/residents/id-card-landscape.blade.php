@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <x-theme-script />
     <title>Resident ID Card - {{ $resident->full_name }}</title>
     <style>
         @page {
@@ -30,12 +31,18 @@
             padding: 20px;
         }
 
+        html.dark body {
+            background: #0b1120;
+            color: #e5edf4;
+        }
+
         /* Floating Sidebar */
         .floating-sidebar {
             position: fixed;
             top: 20px;
             right: 20px;
             background: white;
+            border: 1px solid rgba(229, 231, 235, 0.9);
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             padding: 20px;
@@ -44,6 +51,12 @@
             overflow-y: auto;
             z-index: 1000;
             cursor: move;
+        }
+
+        html.dark .floating-sidebar {
+            background: #111827;
+            border-color: #334155;
+            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.55);
         }
 
         .sidebar-header {
@@ -60,6 +73,10 @@
             font-weight: 700;
             font-size: 16px;
             color: #1f2937;
+        }
+
+        html.dark .sidebar-title {
+            color: #e5edf4;
         }
 
         .drag-handle {
@@ -79,6 +96,11 @@
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        html.dark .control-label,
+        html.dark .drag-handle {
+            color: #94a3b8;
         }
 
         .control-buttons {
@@ -457,11 +479,11 @@
         .id-card-back {
             width: 3.375in;
             height: 2.125in;
-            background-color: #f5f5f5;
+            background-color: #fff;
             border-radius: 0;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
             position: relative;
-            overflow: visible;
+            overflow: hidden;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             color-adjust: exact;
@@ -471,18 +493,24 @@
         .back-logos {
             position: absolute;
             top: 0.1in;
-            left: 0.6in;
+            left: 0.16in;
             display: flex;
             filter: grayscale(100%);
-            gap: 0.15in;
+            gap: 0.08in;
             align-items: center;
+            width: 1.55in;
+            height: 0.32in;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
         .back-logo {
-            width: 0.25in;
-            height: 0.25in;
+            width: 0.28in;
+            height: 0.28in;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
 
         .back-logo img {
@@ -493,16 +521,40 @@
             print-color-adjust: exact;
         }
 
+        .back-logo-placeholder,
+        .qr-fallback,
+        .mayor-signature-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #4b5563;
+            border: 1px dashed #9ca3af;
+            font-size: 0.055in;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .back-logo-placeholder[hidden],
+        .qr-fallback[hidden],
+        .mayor-signature-placeholder[hidden] {
+            display: none !important;
+        }
+
         /* Back labels and underlines */
         .back-field-container {
             position: absolute;
+            width: 1.78in;
         }
 
         .back-field-label {
-            font-size: 0.07in;
+            font-size: 0.055in;
             font-style: italic;
             color: #000;
-            margin-bottom: 0.02in;
+            margin-bottom: 0.012in;
+            line-height: 1.05;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -517,11 +569,11 @@
         }
 
         .back-data-field {
-            font-size: 0.12in;
-            font-weight: 400;
+            font-size: 0.09in;
+            font-weight: 700;
             color: #000;
             line-height: 1.1;
-            max-width: 1.4in;
+            max-width: 1.78in;
             word-wrap: break-word;
             overflow-wrap: break-word;
             overflow: hidden;
@@ -538,62 +590,62 @@
 
         /* Auto-resize for long text */
         .back-data-field.long-text {
-            font-size: 0.08in;
+            font-size: 0.075in;
         }
 
         .back-data-field.very-long-text {
-            font-size: 0.06in;
+            font-size: 0.062in;
         }
 
         /* Date Issue field */
         .field-date-issue-container {
             left: 0.15in;
-            top: 0.35in;
+            top: 0.47in;
         }
 
         /* Sex field */
         .field-sex-container {
             left: 0.15in;
-            top: 0.60in;
+            top: 0.67in;
         }
 
         /* Marital Status field */
         .field-marital-status-container {
             left: 0.15in;
-            top: 0.85in;
+            top: 0.87in;
         }
 
         /* Birthplace field */
         .field-birthplace-container {
             left: 0.15in;
-            top: 1.10in;
+            top: 1.08in;
         }
 
         /* Emergency Contact field */
         .field-emergency-container {
             left: 0.15in;
-            top: 1.35in;
+            top: 1.31in;
         }
 
         /* Occupation field */
         .field-occupation-container {
             left: 0.15in;
-            top: 1.60in;
+            top: 1.55in;
         }
 
         /* Special Sector field */
         .field-special-sector-container {
             left: 0.15in;
-            top: 1.85in;
+            top: 1.78in;
         }
 
         /* QR Code on back */
         .qr-code-back {
             position: absolute;
-            right: 0.1in;
-            top: 0.1in;
-            width: 1.5in;
-            height: 1.5in;
+            right: 0.14in;
+            top: 0.52in;
+            width: 1.05in;
+            height: 1.05in;
             background-color: white;
             padding: 0.03in;
             border: 1px solid #000;
@@ -615,16 +667,17 @@
         /* Mayor signature and name */
         .mayor-signature-section {
             position: absolute;
-            right: 0.19in;
-            bottom: 0.05in;
+            right: 0.12in;
+            bottom: 0.08in;
             text-align: center;
+            width: 1.2in;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
         .mayor-signature {
             width: 1.2in;
-            height: 0.25in;
+            height: 0.22in;
             margin-bottom: -0.03in;
         }
 
@@ -635,7 +688,7 @@
         }
 
         .mayor-name {
-            font-size: 0.07in;
+            font-size: 0.055in;
             font-weight: 700;
             color: #000;
             text-align: center;
@@ -645,7 +698,7 @@
         }
 
         .mayor-title {
-            font-size: 0.07in;
+            font-size: 0.055in;
             color: #000;
             text-align: center;
             -webkit-print-color-adjust: exact;
@@ -661,6 +714,14 @@
             border-radius: 4px;
             font-size: 13px;
             margin-bottom: 8px;
+        }
+
+        html.dark .field-selector,
+        html.dark .font-size-input,
+        html.dark .font-unit-select {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e5edf4;
         }
 
         .font-size-controls {
@@ -761,6 +822,8 @@
         $signatureStyle = '';
         $imageStyle = '';
         $filename = null;
+        $mayorSignaturePath = 'storage/images/mayor-signature.png';
+        $mayorSignatureExists = file_exists(public_path($mayorSignaturePath));
 
         // Process signature: convert base64 to image file WITHOUT auto-cropping
         if ($resident->signature) {
@@ -1192,10 +1255,20 @@
             <!-- Logos -->
             <div class="back-logos">
                 <div class="back-logo">
-                    <img src="{{ $current_logo_url }}" alt="Municipal Logo">
+                    @if ($current_logo_url)
+                        <img src="{{ $current_logo_url }}" alt="" onerror="this.style.display='none'; this.nextElementSibling.hidden=false;">
+                        <div class="back-logo-placeholder" hidden>LGU</div>
+                    @else
+                        <div class="back-logo-placeholder">LGU</div>
+                    @endif
                 </div>
                 <div class="back-logo">
-                    <img src="{{ $current_favicon_url }}" alt="One Alicia Logo">
+                    @if ($current_favicon_url)
+                        <img src="{{ $current_favicon_url }}" alt="" onerror="this.style.display='none'; this.nextElementSibling.hidden=false;">
+                        <div class="back-logo-placeholder" hidden>LOGO</div>
+                    @else
+                        <div class="back-logo-placeholder">LOGO</div>
+                    @endif
                 </div>
             </div>
 
@@ -1250,13 +1323,19 @@
 
             <!-- QR Code -->
             <div class="qr-code-back">
-                <img src="{{ route('qrcode.resident', $resident->id) }}" alt="QR Code">
+                <img src="{{ route('qrcode.resident', $resident->id) }}" alt="" onerror="this.style.display='none'; this.nextElementSibling.hidden=false;">
+                <div class="qr-fallback" hidden>QR</div>
             </div>
 
             <!-- Mayor Signature Section -->
             <div class="mayor-signature-section">
                 <div class="mayor-signature">
-                    <img src="{{ asset('storage/images/mayor-signature.png') }}" alt="Mayor Signature">
+                    @if ($mayorSignatureExists)
+                        <img src="{{ asset($mayorSignaturePath) }}" alt="" onerror="this.style.display='none'; this.nextElementSibling.hidden=false;">
+                        <div class="mayor-signature-placeholder" hidden>SIGNATURE</div>
+                    @else
+                        <div class="mayor-signature-placeholder">SIGNATURE</div>
+                    @endif
                 </div>
                 <div class="mayor-name">ATTY. JOEL AMOS P. ALEJANDRO, CPA</div>
                 <div class="mayor-title">Municipal Mayor</div>

@@ -4,6 +4,7 @@ import typography from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: 'class',
     content: [
 		'./vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
 		 './vendor/laravel/jetstream/**/*.blade.php',
@@ -59,6 +60,30 @@ export default {
             "warning-content": "#4b3215",
             "error": "#c75b5b",
             "error-content": "#fff6f6",
+          }
+        },
+        {
+          "aces-dark": {
+            "primary": "#5aa2d8",
+            "primary-content": "#071522",
+            "secondary": "#38c7c5",
+            "secondary-content": "#062322",
+            "accent": "#f3c57d",
+            "accent-content": "#2c1b08",
+            "neutral": "#d7e5ec",
+            "neutral-content": "#101820",
+            "base-100": "#0f172a",
+            "base-200": "#111c2e",
+            "base-300": "#1e293b",
+            "base-content": "#e5edf4",
+            "info": "#6ab4e6",
+            "info-content": "#071522",
+            "success": "#4fd1c5",
+            "success-content": "#052322",
+            "warning": "#f3c57d",
+            "warning-content": "#2c1b08",
+            "error": "#f08484",
+            "error-content": "#2b0909",
           }
         }
       ],

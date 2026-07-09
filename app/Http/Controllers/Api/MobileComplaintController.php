@@ -178,13 +178,13 @@ class MobileComplaintController extends Controller
             'reporter_email' => [$isCitizenSubmission ? 'exclude' : 'nullable', 'email', 'max:255'],
             'device_fingerprint' => [$isCitizenSubmission ? 'exclude' : 'nullable', 'string', 'max:191'],
             'title' => ['required', 'string', 'max:255'],
-            'short_summary' => ['required', 'string', 'max:280'],
+            'short_summary' => ['nullable', 'string', 'max:280'],
             'description' => ['required', 'string'],
             'category_id' => ['required', Rule::exists('complaint_categories', 'id')],
-            'visibility' => ['required', Rule::in(array_keys($this->visibilityOptions($isCitizenSubmission)))],
+            'visibility' => ['nullable', Rule::in(array_keys($this->visibilityOptions($isCitizenSubmission)))],
             'barangay_id' => ['nullable', Rule::exists('bosesmoto_barangays', 'id')],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
             'official_ids' => ['nullable', 'array'],
             'official_ids.*' => ['integer', Rule::exists('public_officials', 'id')],
             'photo' => [
@@ -195,6 +195,10 @@ class MobileComplaintController extends Controller
             ],
         ]);
 
+        $visibility = $isCitizenSubmission
+            ? Complaint::VISIBILITY_PUBLIC_NAMED
+            : Complaint::VISIBILITY_PUBLIC_ANONYMOUS;
+
         $complaint = new Complaint([
             'reference_code' => $this->generateReferenceCode(),
             'submitted_by_user_id' => $isCitizenSubmission ? $user?->id : null,
@@ -202,13 +206,13 @@ class MobileComplaintController extends Controller
             'reporter_name' => $isCitizenSubmission ? null : ($validated['reporter_name'] ?? null),
             'reporter_email' => $isCitizenSubmission ? null : ($validated['reporter_email'] ?? null),
             'title' => $validated['title'],
-            'short_summary' => $validated['short_summary'],
+            'short_summary' => $this->summaryFromInput($validated),
             'description' => $validated['description'],
             'category_id' => $validated['category_id'],
-            'visibility' => $validated['visibility'],
-            'barangay_id' => $validated['barangay_id'] ?? null,
-            'latitude' => $validated['latitude'] ?? null,
-            'longitude' => $validated['longitude'] ?? null,
+            'visibility' => $visibility,
+            'barangay_id' => null,
+            'latitude' => $validated['latitude'],
+            'longitude' => $validated['longitude'],
             'status' => Complaint::STATUS_RECEIVED,
             'moderation_status' => Complaint::MODERATION_NORMAL,
             'submitted_ip' => $request->ip(),
@@ -358,6 +362,21 @@ class MobileComplaintController extends Controller
         } while (Complaint::query()->where('reference_code', $code)->exists());
 
         return $code;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function summaryFromInput(array $validated): string
+    {
+        $summary = trim((string) ($validated['short_summary'] ?? ''));
+        if ($summary !== '') {
+            return $summary;
+        }
+
+        $description = preg_replace('/\s+/', ' ', trim((string) $validated['description'])) ?: '';
+
+        return Str::limit($description, 280, '');
     }
 
     private function hashAnonymousDeviceId(string $value): string

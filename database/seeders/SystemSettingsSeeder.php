@@ -17,24 +17,34 @@ class SystemSettingsSeeder extends Seeder
         }
 
         $settings = [
-            'app_name_1' => 'Alaminos City Citizen\'s E-Services',
-            'app_name_2' => 'Solutions',
-            'municipality' => LocationsSeeder::getCity(),
-            'province' => LocationsSeeder::getProvince(),
-            'region' => LocationsSeeder::getRegion(),
-            'municipality_code' => LocationsSeeder::getCityCode(),
-            'province_code' => LocationsSeeder::getProvinceCode(),
-            'region_code' => LocationsSeeder::getRegionCode(),
-            'command_center_name' => 'Alaminos City Command Center',
-            'command_center_hotline' => '911',
-            'command_center_alternate_hotline' => '(075) 551-2020',
-            'command_center_email' => 'commandcenter@alaminoscity.gov.ph',
+            'app_name_1' => ['value' => 'Alaminos City Citizen\'s E-Services', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
+            'app_name_2' => ['value' => 'Solutions', 'group' => 'appearance', 'type' => 'text', 'is_public' => true],
+            'municipality' => ['value' => LocationsSeeder::getCity(), 'group' => 'location', 'type' => 'text', 'is_public' => true],
+            'province' => ['value' => LocationsSeeder::getProvince(), 'group' => 'location', 'type' => 'text', 'is_public' => true],
+            'region' => ['value' => LocationsSeeder::getRegion(), 'group' => 'location', 'type' => 'text', 'is_public' => true],
+            'municipality_code' => ['value' => LocationsSeeder::getCityCode(), 'group' => 'location', 'type' => 'text', 'is_public' => false],
+            'province_code' => ['value' => LocationsSeeder::getProvinceCode(), 'group' => 'location', 'type' => 'text', 'is_public' => false],
+            'region_code' => ['value' => LocationsSeeder::getRegionCode(), 'group' => 'location', 'type' => 'text', 'is_public' => false],
+            'command_center_name' => ['value' => 'Alaminos City Command Center', 'group' => 'contact', 'type' => 'text', 'is_public' => true],
+            'command_center_hotline' => ['value' => '911', 'group' => 'contact', 'type' => 'text', 'is_public' => true],
+            'command_center_alternate_hotline' => ['value' => '(075) 551-2020', 'group' => 'contact', 'type' => 'text', 'is_public' => true],
+            'command_center_email' => ['value' => 'commandcenter@alaminoscity.gov.ph', 'group' => 'contact', 'type' => 'email', 'is_public' => true],
+            'modules.bosesmoto.enabled' => ['value' => '1', 'group' => 'modules', 'type' => 'boolean', 'is_public' => false],
+            'modules.bosesmoto.complaints.enabled' => ['value' => '1', 'group' => 'modules', 'type' => 'boolean', 'is_public' => false],
+            'modules.bosesmoto.sentiments.enabled' => ['value' => '1', 'group' => 'modules', 'type' => 'boolean', 'is_public' => false],
+            'modules.bosesmoto.polls.enabled' => ['value' => '1', 'group' => 'modules', 'type' => 'boolean', 'is_public' => false],
         ];
 
-        foreach ($settings as $key => $value) {
+        foreach ($settings as $key => $setting) {
             DB::table('system_settings')->updateOrInsert(
                 ['key' => $key],
-                ['value' => $value, 'updated_at' => now()]
+                [
+                    'value' => $setting['value'],
+                    'group' => $setting['group'],
+                    'type' => $setting['type'],
+                    'is_public' => $setting['is_public'],
+                    'updated_at' => now(),
+                ]
             );
         }
     }

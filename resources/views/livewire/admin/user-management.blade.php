@@ -216,10 +216,10 @@
                 <x-mary-input label="Email" wire:model="email" type="email" placeholder="Enter email address"
                     required error="{{ $errors->first('email') }}" />
 
-                <x-mary-input label="Password" wire:model="password" type="password" placeholder="Enter password"
+                <x-mary-password label="Password" wire:model="password" right placeholder="Enter password"
                     required error="{{ $errors->first('password') }}" />
 
-                <x-mary-input label="Confirm Password" wire:model="password_confirmation" type="password"
+                <x-mary-password label="Confirm Password" wire:model="password_confirmation" right
                     placeholder="Confirm password" required />
 
                 <div>
@@ -273,10 +273,10 @@
                 <x-mary-input label="Email" wire:model="email" type="email" placeholder="Enter email address"
                     required error="{{ $errors->first('email') }}" />
 
-                <x-mary-input label="Password" wire:model="password" type="password"
+                <x-mary-password label="Password" wire:model="password" right
                     placeholder="Enter new password to change" error="{{ $errors->first('password') }}" />
 
-                <x-mary-input label="Confirm Password" wire:model="password_confirmation" type="password"
+                <x-mary-password label="Confirm Password" wire:model="password_confirmation" right
                     placeholder="Confirm new password" />
 
                 <div>

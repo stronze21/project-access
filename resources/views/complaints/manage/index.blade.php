@@ -158,10 +158,10 @@
                                 <p class="mt-1 text-xs text-slate-500">{{ $complaint->reference_code }}</p>
                             </div>
                             <div class="flex flex-col gap-1 text-[11px]">
-                                <span class="rounded-full px-2 py-0.5 font-semibold {{ $statusClass }}">
+                                <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-2 py-0.5 font-semibold {{ $statusClass }}">
                                     {{ str_replace('_', ' ', ucfirst($complaint->status)) }}
                                 </span>
-                                <span class="rounded-full px-2 py-0.5 font-semibold {{ $priorityClass }}">
+                                <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-2 py-0.5 font-semibold {{ $priorityClass }}">
                                     {{ ucfirst($complaint->priority ?? 'N/A') }}
                                 </span>
                             </div>
@@ -206,10 +206,10 @@
                 @endforelse
             </section>
 
-            <section class="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+            <section class="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950/35 md:block">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                        <thead class="bg-slate-50 dark:bg-slate-900/80">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Reference</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Title</th>
@@ -223,7 +223,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Action</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody class="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-950/20">
                             @forelse ($complaints as $complaint)
                                 @php
                                     $statusClass = match ($complaint->status) {
@@ -244,19 +244,19 @@
                                     };
                                 @endphp
 
-                                <tr class="hover:bg-slate-50/70">
+                                <tr class="transition-colors hover:bg-slate-50/70 dark:hover:bg-cyan-950/35">
                                     <td class="px-4 py-3 text-sm text-slate-700">{{ $complaint->reference_code }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         <p class="font-semibold text-slate-900">{{ $complaint->title }}</p>
                                         <p class="text-xs text-slate-500">{{ $complaint->category?->name }}</p>
                                     </td>
                                     <td class="px-4 py-3 text-sm">
-                                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">
+                                        <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">
                                             {{ str_replace('_', ' ', ucfirst($complaint->status)) }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-sm">
-                                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $priorityClass }}">
+                                        <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold {{ $priorityClass }}">
                                             {{ ucfirst($complaint->priority ?? 'N/A') }}
                                         </span>
                                     </td>
@@ -270,7 +270,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-sm">
                                         <a href="{{ route('complaints.manage.show', $complaint) }}"
-                                           class="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                           class="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-cyan-950/40">
                                             Open Case
                                         </a>
                                     </td>
