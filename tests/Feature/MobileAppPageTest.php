@@ -19,7 +19,9 @@ class MobileAppPageTest extends TestCase
         $this->get('/mobile-app')
             ->assertOk()
             ->assertSee('ProjectAccess Mobile')
-            ->assertSee('Features');
+            ->assertSee('Features')
+            ->assertSee('mobile-app-theme-toggle')
+            ->assertDontSee('Municipal Public Feedback System');
     }
 
     public function test_download_returns_latest_apk(): void

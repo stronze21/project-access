@@ -44,7 +44,6 @@
 
                 <nav class="hidden items-center gap-3 text-sm md:flex">
                     <x-theme-toggle />
-                    <a href="{{ route('mobile-app.index') }}" class="text-gray-700 hover:text-gray-900">Mobile App</a>
                     @if ($bosesmotoComplaintsEnabled)
                         <a href="{{ route('complaints.public.index') }}" class="text-gray-700 hover:text-gray-900">Public Complaints</a>
                     @endif
@@ -66,7 +65,6 @@
 
         <nav id="public-mobile-nav" x-cloak x-show="menuOpen" x-transition.opacity class="border-t border-gray-200 bg-white md:hidden">
             <div class="mx-auto max-w-7xl space-y-1 px-4 py-3 sm:px-6">
-                <a href="{{ route('mobile-app.index') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Mobile App</a>
                 @if ($bosesmotoComplaintsEnabled)
                     <a href="{{ route('complaints.public.index') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Public Complaints</a>
                 @endif
