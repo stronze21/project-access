@@ -257,6 +257,18 @@ class ResidentRegistration extends Component
         }
     }
 
+    public function updatedSourceIncomeTypeId($value): void
+    {
+        $isOther = SourceIncomeType::query()
+            ->whereKey($value)
+            ->where('name', 'Others (Please Specify)')
+            ->exists();
+
+        if (! $isOther) {
+            $this->occupation = '';
+        }
+    }
+
     /**
      * Mount the component.
      */

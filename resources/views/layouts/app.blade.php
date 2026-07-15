@@ -277,50 +277,6 @@
                                 </x-nav-link>
                             @endcan
 
-                            @can('manage-legacy-reference-data')
-                                <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }"
-                                    data-testid="legacy-data-navbar">
-                                    <button @click="open = !open" @click.away="open = false"
-                                        class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
-                                        :class="{
-                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }},
-                                            'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]': !{{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }}
-                                        }">
-                                        <span class="flex items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M4 6h16M4 12h16M4 18h16" />
-                                            </svg>
-                                            Legacy Data
-                                        </span>
-                                        <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd"
-                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-
-                                    <div x-show="open" x-transition:enter="transition ease-out duration-200"
-                                        x-transition:enter-start="opacity-0 translate-y-1"
-                                        x-transition:enter-end="opacity-100 translate-y-0"
-                                        x-transition:leave="transition ease-in duration-150"
-                                        x-transition:leave-start="opacity-100 translate-y-0"
-                                        x-transition:leave-end="opacity-0 translate-y-1"
-                                        class="absolute left-0 top-full z-20 mt-2 w-64 origin-top-left rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40"
-                                        style="display: none;">
-                                        <div class="py-1">
-                                            <a href="{{ route('legacy-data.references.index', 'source-income-types') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Source Income Types</a>
-                                            <a href="{{ route('legacy-data.references.index', 'educational-attainments') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Educational Attainments</a>
-                                            <a href="{{ route('legacy-data.references.index', 'civil-statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Civil Statuses</a>
-                                            <a href="{{ route('legacy-data.references.index', 'barangays') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Barangay Mappings</a>
-                                            <a href="{{ route('legacy-data.bhw.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">BHW Master</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endcan
-
                             <!-- Households - only show if user has permission -->
                             @can('view-households')
                                 <x-nav-link href="{{ route('households.index') }}" :active="request()->routeIs('households.*')">
@@ -337,8 +293,10 @@
 
                             <!-- Programs Dropdown - only show if user has any of the related permissions -->
                             @if (auth()->user()->hasAnyPermission(['view-programs', 'view-distributions', 'create-distributions']))
-                                <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }">
-                                    <button @click="open = !open" @click.away="open = false"
+                                <div class="relative hidden sm:inline-flex sm:items-center"
+                                    x-data="{ open: false }"
+                                    @click.away="open = false">
+                                    <button @click="open = !open"
                                         class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
                                         :class="{
                                             'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ request()->routeIs('programs.*') || request()->routeIs('distributions.*') ? 'true' : 'false' }},
@@ -556,14 +514,14 @@
                             </div>
 
                             <!-- Admin Dropdown - only show for appropriate permissions -->
-                            @if (auth()->user()->can('manage-users') || auth()->user()->hasRole('system-administrator'))
+                            @if (auth()->user()->can('manage-users') || auth()->user()->can('manage-legacy-reference-data') || auth()->user()->hasRole('system-administrator'))
                                 <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }">
                                     <button @click="open = !open" @click.away="open = false"
                                         class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
                                         :class="{
-                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
+                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'true' : 'false' }},
                                             'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]':
-                                                !{{ request()->routeIs('admin.*') ? 'true' : 'false' }}
+                                                !{{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'true' : 'false' }}
                                         }">
                                         <span class="flex items-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
@@ -615,6 +573,25 @@
                                                     App Release
                                                 </a>
                                             @endif
+
+                                            @can('manage-legacy-reference-data')
+                                                <div data-testid="legacy-data-navbar" class="group relative mt-2 border-t border-slate-200 pt-1">
+                                                    <button type="button"
+                                                        class="flex w-full items-center justify-between px-4 py-2 text-left text-sm font-semibold {{ request()->routeIs('legacy-data.*') ? 'bg-slate-100 text-[var(--brand-primary)]' : 'text-gray-700 hover:bg-gray-100' }}">
+                                                        <span>BHWIS Integration</span>
+                                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                    <div class="absolute left-full bottom-0 z-30 ml-2 hidden w-64 rounded-xl border border-slate-200 bg-white py-1 shadow-xl group-hover:block group-focus-within:block">
+                                                        <a href="{{ route('legacy-data.references.index', 'source-income-types') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Source Income Types</a>
+                                                        <a href="{{ route('legacy-data.references.index', 'educational-attainments') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Educational Attainments</a>
+                                                        <a href="{{ route('legacy-data.references.index', 'civil-statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Civil Statuses</a>
+                                                        <a href="{{ route('legacy-data.references.index', 'barangays') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Barangay Mappings</a>
+                                                        <a href="{{ route('legacy-data.bhw.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">BHW Master</a>
+                                                    </div>
+                                                </div>
+                                            @endcan
                                         </div>
                                     </div>
                                 </div>
@@ -676,36 +653,6 @@
                                     Residents
                                 </span>
                             </x-responsive-nav-link>
-                        @endcan
-
-                        @can('manage-legacy-reference-data')
-                            <div x-data="{ legacyDataOpen: {{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }} }"
-                                data-testid="legacy-data-mobile-navbar">
-                                <button @click="legacyDataOpen = !legacyDataOpen"
-                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('legacy-data.*') ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium transition duration-150 ease-in-out focus:outline-none">
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M4 6h16M4 12h16M4 18h16" />
-                                        </svg>
-                                        Legacy Data
-                                    </span>
-                                    <svg class="w-4 h-4 ml-auto" :class="{ 'rotate-90': legacyDataOpen }"
-                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                                <div x-show="legacyDataOpen" class="pl-6 mt-1 space-y-1" style="display: none;">
-                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'source-income-types') }}" :active="request()->is('legacy-data/source-income-types')">Source Income Types</x-responsive-nav-link>
-                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'educational-attainments') }}" :active="request()->is('legacy-data/educational-attainments')">Educational Attainments</x-responsive-nav-link>
-                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'civil-statuses') }}" :active="request()->is('legacy-data/civil-statuses')">Civil Statuses</x-responsive-nav-link>
-                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'barangays') }}" :active="request()->is('legacy-data/barangays')">Barangay Mappings</x-responsive-nav-link>
-                                    <x-responsive-nav-link href="{{ route('legacy-data.bhw.index') }}" :active="request()->routeIs('legacy-data.bhw.*')">BHW Master</x-responsive-nav-link>
-                                </div>
-                            </div>
                         @endcan
 
                         <!-- Households - only visible with permission -->
@@ -978,10 +925,10 @@
                         @endcan
 
                         <!-- Admin section - only visible for admin users -->
-                        @if (auth()->user()->can('manage-users') || auth()->user()->hasRole('system-administrator'))
-                            <div x-data="{ adminOpen: false }">
+                        @if (auth()->user()->can('manage-users') || auth()->user()->can('manage-legacy-reference-data') || auth()->user()->hasRole('system-administrator'))
+                            <div x-data="{ adminOpen: {{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'true' : 'false' }} }">
                                 <button @click="adminOpen = !adminOpen"
-                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('admin.*') ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)] focus:outline-none focus:text-[var(--brand-primary-strong)] focus:bg-[var(--brand-mist)] focus:border-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
+                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)] focus:outline-none focus:text-[var(--brand-primary-strong)] focus:bg-[var(--brand-mist)] focus:border-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -1062,6 +1009,28 @@
                                                 Audit Logs
                                             </span>
                                         </x-responsive-nav-link>
+                                    @endcan
+
+                                    @can('manage-legacy-reference-data')
+                                        <div data-testid="legacy-data-mobile-navbar"
+                                            class="mt-3 border-t border-slate-200 pt-2"
+                                            x-data="{ integrationOpen: {{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }} }">
+                                            <button type="button" @click="integrationOpen = !integrationOpen"
+                                                class="flex w-full items-center justify-between border-l-4 px-4 py-3 text-left text-sm font-semibold {{ request()->routeIs('legacy-data.*') ? 'border-[var(--brand-secondary)] bg-[var(--brand-mist)] text-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:bg-slate-50' }}">
+                                                <span>BHWIS Integration</span>
+                                                <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-90': integrationOpen }"
+                                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                            <div x-show="integrationOpen" x-transition class="ml-4 border-l border-slate-200 pl-2" style="display: none;">
+                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'source-income-types') }}" :active="request()->is('legacy-data/source-income-types')">Source Income Types</x-responsive-nav-link>
+                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'educational-attainments') }}" :active="request()->is('legacy-data/educational-attainments')">Educational Attainments</x-responsive-nav-link>
+                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'civil-statuses') }}" :active="request()->is('legacy-data/civil-statuses')">Civil Statuses</x-responsive-nav-link>
+                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'barangays') }}" :active="request()->is('legacy-data/barangays')">Barangay Mappings</x-responsive-nav-link>
+                                                <x-responsive-nav-link href="{{ route('legacy-data.bhw.index') }}" :active="request()->routeIs('legacy-data.bhw.*')">BHW Master</x-responsive-nav-link>
+                                            </div>
+                                        </div>
                                     @endcan
                                 </div>
                             </div>

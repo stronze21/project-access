@@ -18,6 +18,10 @@ class LegacyResidentImport extends Component
     use WithFileUploads;
     use WithPagination;
 
+    private const PROMOTION_CHUNK_SIZE = 1000;
+
+    private const FAMILY_PROMOTION_CHUNK_SIZE = 500;
+
     public array $csvFiles = [];
 
     #[Url]
@@ -32,6 +36,20 @@ class LegacyResidentImport extends Component
     public ?string $notice = null;
 
     public string $noticeType = 'success';
+
+    public bool $promotionRunning = false;
+
+    public string $promotionMode = 'preview';
+
+    public string $promotionPhase = 'personal';
+
+    public int $promotionCursor = 0;
+
+    public string $familyPromotionCursor = '';
+
+    public int $promotionProcessed = 0;
+
+    public int $promotionTotal = 0;
 
     public function mount(): void
     {
@@ -87,26 +105,13 @@ class LegacyResidentImport extends Component
         $this->resetValidation();
     }
 
-    public function preview(LegacyDataPromoter $promoter): void
+    public function preview(): void
     {
         $this->authorizeImporter();
-        $batch = $this->selectedBatch();
-
-        try {
-            $this->promotionReport = $promoter->promote($batch, false);
-            session()->put("legacy_import.previewed.{$batch->id}", $batch->manifest_checksum);
-            $this->noticeType = 'success';
-            $this->notice = 'Promotion preview completed. No canonical records were changed.';
-            $this->confirmation = '';
-            $this->confirmSafePromotion = false;
-        } catch (Throwable $exception) {
-            report($exception);
-            $this->noticeType = 'error';
-            $this->notice = 'Promotion preview failed: '.$exception->getMessage();
-        }
+        $this->beginChunkedPromotion(false);
     }
 
-    public function promote(LegacyDataPromoter $promoter): void
+    public function promote(): void
     {
         $this->authorizeImporter();
         $batch = $this->selectedBatch();
@@ -125,17 +130,90 @@ class LegacyResidentImport extends Component
             return;
         }
 
+        $this->beginChunkedPromotion(true);
+    }
+
+    public function processPromotionChunk(LegacyDataPromoter $promoter): void
+    {
+        if (! $this->promotionRunning) {
+            return;
+        }
+
+        $this->authorizeImporter();
+        $batch = $this->selectedBatch();
+        $commit = $this->promotionMode === 'commit';
+
         try {
-            $this->promotionReport = $promoter->promote($batch, true);
-            session()->forget("legacy_import.previewed.{$batch->id}");
+            if ($this->promotionPhase === 'personal') {
+                $result = $promoter->promotePersonalChunk(
+                    $batch,
+                    $commit,
+                    $this->promotionCursor,
+                    self::PROMOTION_CHUNK_SIZE,
+                );
+                $this->promotionCursor = $result['cursor'];
+                $this->promotionProcessed += $result['residents']['source_rows'];
+                $this->promotionReport['references'] = $result['references'];
+                $this->mergePromotionStats('residents', $result['residents']);
+                $this->mergePromotionStats('households', $result['households']);
+
+                if ($result['has_more']) {
+                    $this->dispatch('legacy-promotion-next');
+
+                    return;
+                }
+
+                $this->promotionPhase = 'family';
+                $this->dispatch('legacy-promotion-next');
+
+                return;
+            }
+
+            if ($this->promotionPhase === 'family') {
+                $result = $promoter->promoteFamilyChunk(
+                    $batch,
+                    $commit,
+                    $this->familyPromotionCursor,
+                    self::FAMILY_PROMOTION_CHUNK_SIZE,
+                );
+                $this->familyPromotionCursor = $result['cursor'];
+                $this->promotionProcessed += $result['processed_rows'];
+                $this->mergePromotionStats('households', $result['households']);
+
+                if ($result['has_more']) {
+                    $this->dispatch('legacy-promotion-next');
+
+                    return;
+                }
+
+                $this->promotionPhase = 'related';
+                $this->dispatch('legacy-promotion-next');
+
+                return;
+            }
+
+            $result = $promoter->promoteRelatedData($batch, $commit);
+            $this->mergePromotionStats('bhw', $result['bhw']);
+            $this->promotionReport['dry_run'] = ! $commit;
+            $this->promotionReport['batch_id'] = $batch->id;
+            $promoter->finalizeChunkedPromotion($batch, $this->promotionReport, $commit);
+            $this->promotionRunning = false;
+
+            if ($commit) {
+                session()->forget("legacy_import.previewed.{$batch->id}");
+                $this->notice = "Batch #{$batch->id} promotion completed.";
+            } else {
+                session()->put("legacy_import.previewed.{$batch->id}", $batch->manifest_checksum);
+                $this->notice = 'Promotion preview completed. No canonical records were changed.';
+            }
             $this->noticeType = 'success';
-            $this->notice = "Batch #{$batch->id} promotion completed.";
             $this->confirmation = '';
             $this->confirmSafePromotion = false;
         } catch (Throwable $exception) {
             report($exception);
+            $this->promotionRunning = false;
             $this->noticeType = 'error';
-            $this->notice = 'Promotion failed: '.$exception->getMessage();
+            $this->notice = ($commit ? 'Promotion' : 'Promotion preview').' failed: '.$exception->getMessage();
         }
     }
 
@@ -169,6 +247,40 @@ class LegacyResidentImport extends Component
     private function previewIsCurrent(LegacyImportBatch $batch): bool
     {
         return session("legacy_import.previewed.{$batch->id}") === $batch->manifest_checksum;
+    }
+
+    private function beginChunkedPromotion(bool $commit): void
+    {
+        $batch = $this->selectedBatch();
+        $this->promotionMode = $commit ? 'commit' : 'preview';
+        $this->promotionPhase = 'personal';
+        $this->promotionCursor = 0;
+        $this->familyPromotionCursor = '';
+        $this->promotionProcessed = 0;
+        $this->promotionTotal = $batch->rows()
+            ->whereIn('source_table', ['personal_info', 'family_members'])
+            ->count();
+        $this->promotionReport = [
+            'dry_run' => ! $commit,
+            'batch_id' => $batch->id,
+            'references' => [],
+            'residents' => [],
+            'households' => [],
+            'bhw' => [],
+        ];
+        $this->promotionRunning = true;
+        $this->notice = null;
+        $this->dispatch('legacy-promotion-next');
+    }
+
+    private function mergePromotionStats(string $section, array $stats): void
+    {
+        foreach ($stats as $metric => $value) {
+            if (is_numeric($value)) {
+                $this->promotionReport[$section][$metric] =
+                    ($this->promotionReport[$section][$metric] ?? 0) + $value;
+            }
+        }
     }
 
     private function authorizeImporter(): void

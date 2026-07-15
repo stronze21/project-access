@@ -104,7 +104,7 @@ class LegacyDataPromoter
                 'dry_run' => ! $commit,
                 'batch_id' => $batch->id,
                 'references' => $context['stats'],
-                'residents' => Arr::except($personal, ['addresses', 'eligible_pins']),
+                'residents' => Arr::except($personal, ['addresses', 'eligible_pins', 'cursor', 'has_more']),
                 'households' => $households,
                 'bhw' => $bhw,
             ];
@@ -122,6 +122,115 @@ class LegacyDataPromoter
         };
 
         return $commit ? DB::transaction($runner) : $runner();
+    }
+
+    /**
+     * Promote one bounded slice of personal information. The returned cursor
+     * lets the browser request the next slice without keeping one PHP request
+     * alive for the complete CSV.
+     */
+    public function promotePersonalChunk(
+        LegacyImportBatch $batch,
+        bool $commit,
+        int $afterId = 0,
+        int $chunkSize = 250,
+    ): array {
+        if (! in_array($batch->status, ['staged', 'promoted_with_conflicts', 'promoted'], true)) {
+            throw new RuntimeException("Batch #{$batch->id} is not ready for promotion.");
+        }
+
+        $runner = function () use ($batch, $commit, $afterId, $chunkSize) {
+            $context = $this->buildReferenceContext($batch, $commit);
+            $personal = $this->promoteResidents($batch, $context, $commit, $afterId, $chunkSize);
+            $households = $this->promoteProvisionalHouseholds(
+                $batch,
+                $personal['addresses'],
+                $personal['eligible_pins'],
+                $context,
+                $commit,
+            );
+
+            return [
+                'cursor' => $personal['cursor'],
+                'has_more' => $personal['has_more'],
+                'references' => $context['stats'],
+                'residents' => Arr::except($personal, ['addresses', 'eligible_pins', 'cursor', 'has_more']),
+                'households' => $households,
+            ];
+        };
+
+        return $commit ? DB::transaction($runner) : $runner();
+    }
+
+    public function promoteFamilyChunk(
+        LegacyImportBatch $batch,
+        bool $commit,
+        string $afterFamily = '',
+        int $chunkSize = 500,
+    ): array {
+        $familyRows = LegacyImportRow::query()
+            ->where('legacy_import_batch_id', $batch->id)
+            ->where('source_table', 'family_members')
+            ->where('raw_payload->FamilyNumber', '>', $afterFamily)
+            ->orderBy('raw_payload->FamilyNumber')
+            ->orderBy('id')
+            ->limit($chunkSize)
+            ->get();
+        $familyNumbers = $familyRows
+            ->map(fn (LegacyImportRow $row) => trim((string) ($row->raw_payload['FamilyNumber'] ?? '')))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $cursor = $familyNumbers === [] ? $afterFamily : max($familyNumbers);
+
+        $runner = function () use ($batch, $commit, $familyNumbers) {
+            $context = $this->buildReferenceContext($batch, $commit);
+
+            return $this->promoteHouseholds($batch, [], [], $context, $commit, $familyNumbers);
+        };
+        $households = $commit ? DB::transaction($runner) : $runner();
+        $hasMore = LegacyImportRow::query()
+            ->where('legacy_import_batch_id', $batch->id)
+            ->where('source_table', 'family_members')
+            ->where('raw_payload->FamilyNumber', '>', $cursor)
+            ->exists();
+
+        return [
+            'cursor' => $cursor,
+            'has_more' => $hasMore,
+            'processed_rows' => $households['source_rows'],
+            'households' => $households,
+        ];
+    }
+
+    /** Complete the smaller BHW export after personal and family chunks. */
+    public function promoteRelatedData(LegacyImportBatch $batch, bool $commit): array
+    {
+        $runner = function () use ($batch, $commit) {
+            $context = $this->buildReferenceContext($batch, $commit);
+
+            return [
+                'bhw' => $this->promoteBhwAssignments($batch, $context, $commit),
+            ];
+        };
+
+        return $commit ? DB::transaction($runner) : $runner();
+    }
+
+    public function finalizeChunkedPromotion(LegacyImportBatch $batch, array $report, bool $commit): void
+    {
+        if (! $commit) {
+            return;
+        }
+
+        $hasConflicts = collect([$report['residents'] ?? [], $report['households'] ?? [], $report['bhw'] ?? []])
+            ->sum(fn (array $stats) => ($stats['conflicts'] ?? 0) + ($stats['incomplete'] ?? 0)) > 0;
+
+        $batch->update([
+            'status' => $hasConflicts ? 'promoted_with_conflicts' : 'promoted',
+            'promoted_at' => now(),
+        ]);
     }
 
     private function buildReferenceContext(LegacyImportBatch $batch, bool $commit): array
@@ -299,7 +408,9 @@ class LegacyDataPromoter
     private function promoteResidents(
         LegacyImportBatch $batch,
         array $context,
-        bool $commit
+        bool $commit,
+        int $afterId = 0,
+        ?int $limit = null,
     ): array {
         $stats = [
             'source_rows' => 0,
@@ -313,139 +424,157 @@ class LegacyDataPromoter
         $addresses = [];
         $eligiblePins = [];
 
-        LegacyImportRow::query()
+        $query = LegacyImportRow::query()
             ->where('legacy_import_batch_id', $batch->id)
             ->where('source_table', 'personal_info')
-            ->orderBy('id')
-            ->chunkById(500, function ($rows) use ($batch, $context, $commit, &$stats, &$addresses, &$eligiblePins) {
-                $pins = $rows->pluck('natural_key')->filter()->unique()->values()->all();
-                $existing = Resident::withTrashed()
-                    ->whereIn('resident_id', $pins)
-                    ->get()
-                    ->keyBy('resident_id');
-                $newRecords = [];
-                $rowStates = [];
+            ->where('id', '>', $afterId)
+            ->orderBy('id');
 
-                foreach ($rows as $row) {
-                    $stats['source_rows']++;
-                    $payload = $row->raw_payload;
-                    $pin = trim((string) ($payload['PIN'] ?? ''));
-                    if ($pin === '' || $row->validation_status !== 'valid') {
-                        $stats['skipped_invalid']++;
-                        if ($pin !== '') {
-                            $rowStates[$pin] = ['status' => 'conflict', 'reason' => 'staging_validation'];
-                        }
+        $lastProcessedId = $afterId;
+        $processRows = function ($rows) use ($batch, $context, $commit, &$stats, &$addresses, &$eligiblePins, &$lastProcessedId) {
+            $lastProcessedId = (int) ($rows->last()?->id ?? $lastProcessedId);
+            $pins = $rows->pluck('natural_key')->filter()->unique()->values()->all();
+            $existing = Resident::withTrashed()
+                ->whereIn('resident_id', $pins)
+                ->get()
+                ->keyBy('resident_id');
+            $newRecords = [];
+            $rowStates = [];
 
-                        continue;
+            foreach ($rows as $row) {
+                $stats['source_rows']++;
+                $payload = $row->raw_payload;
+                $pin = trim((string) ($payload['PIN'] ?? ''));
+                if ($pin === '' || $row->validation_status !== 'valid') {
+                    $stats['skipped_invalid']++;
+                    if ($pin !== '') {
+                        $rowStates[$pin] = ['status' => 'conflict', 'reason' => 'staging_validation'];
                     }
 
-                    $candidate = $this->residentCandidate($payload, $context);
-                    if ($candidate === null) {
-                        $stats['incomplete']++;
-                        $rowStates[$pin] = ['status' => 'incomplete', 'reason' => 'missing_required_fields'];
-
-                        continue;
-                    }
-
-                    if (! $existing->has($pin)) {
-                        $candidate['is_legacy_imported'] = true;
-                        $eligiblePins[$pin] = true;
-                        if (trim((string) ($payload['Address'] ?? '')) !== '') {
-                            $addresses[$pin] = trim((string) $payload['Address']);
-                        }
-                        $newRecords[$pin] = $candidate;
-                        $rowStates[$pin] = ['status' => 'linked', 'reason' => null];
-                        $stats['created']++;
-
-                        continue;
-                    }
-
-                    /** @var Resident $resident */
-                    $resident = $existing->get($pin);
-                    [$backfill, $conflicts] = $this->residentChanges($resident, $candidate);
-                    if ($conflicts !== []) {
-                        $stats['conflicts']++;
-                        $rowStates[$pin] = ['status' => 'conflict', 'reason' => implode(',', $conflicts)];
-                    } else {
-                        $eligiblePins[$pin] = true;
-                        if (trim((string) ($payload['Address'] ?? '')) !== '') {
-                            $addresses[$pin] = trim((string) $payload['Address']);
-                        }
-                        $stats['matched']++;
-                        $rowStates[$pin] = ['status' => 'linked', 'reason' => null];
-                    }
-
-                    if ($backfill !== []) {
-                        $stats['backfilled']++;
-                        if ($commit) {
-                            $oldValues = Arr::only($resident->getAttributes(), array_keys($backfill));
-                            $sourceUpdatedAt = $candidate['updated_at'];
-                            if ($resident->updated_at && $resident->updated_at->greaterThan($sourceUpdatedAt)) {
-                                $sourceUpdatedAt = $resident->updated_at;
-                            }
-                            DB::table('residents')->where('id', $resident->id)->update([
-                                ...$backfill,
-                                'updated_at' => $sourceUpdatedAt,
-                            ]);
-                            $this->recordPromotionEvent(
-                                $batch,
-                                Resident::class,
-                                $resident->id,
-                                'backfill',
-                                $oldValues,
-                                $backfill
-                            );
-                        }
-                    }
+                    continue;
                 }
 
-                if ($commit && $newRecords !== []) {
-                    DB::table('residents')->insert(array_values($newRecords));
-                    $createdResidents = Resident::whereIn('resident_id', array_keys($newRecords))
-                        ->get()
-                        ->keyBy('resident_id');
-                    foreach ($createdResidents as $pin => $resident) {
+                $candidate = $this->residentCandidate($payload, $context);
+                if ($candidate === null) {
+                    $stats['incomplete']++;
+                    $rowStates[$pin] = ['status' => 'incomplete', 'reason' => 'missing_required_fields'];
+
+                    continue;
+                }
+
+                if (! $existing->has($pin)) {
+                    $candidate['is_legacy_imported'] = true;
+                    $eligiblePins[$pin] = true;
+                    if (trim((string) ($payload['Address'] ?? '')) !== '') {
+                        $addresses[$pin] = trim((string) $payload['Address']);
+                    }
+                    $newRecords[$pin] = $candidate;
+                    $rowStates[$pin] = ['status' => 'linked', 'reason' => null];
+                    $stats['created']++;
+
+                    continue;
+                }
+
+                /** @var Resident $resident */
+                $resident = $existing->get($pin);
+                [$backfill, $conflicts] = $this->residentChanges($resident, $candidate);
+                if ($conflicts !== []) {
+                    $stats['conflicts']++;
+                    $rowStates[$pin] = ['status' => 'conflict', 'reason' => implode(',', $conflicts)];
+                } else {
+                    $eligiblePins[$pin] = true;
+                    if (trim((string) ($payload['Address'] ?? '')) !== '') {
+                        $addresses[$pin] = trim((string) $payload['Address']);
+                    }
+                    $stats['matched']++;
+                    $rowStates[$pin] = ['status' => 'linked', 'reason' => null];
+                }
+
+                if ($backfill !== []) {
+                    $stats['backfilled']++;
+                    if ($commit) {
+                        $oldValues = Arr::only($resident->getAttributes(), array_keys($backfill));
+                        $sourceUpdatedAt = $candidate['updated_at'];
+                        if ($resident->updated_at && $resident->updated_at->greaterThan($sourceUpdatedAt)) {
+                            $sourceUpdatedAt = $resident->updated_at;
+                        }
+                        DB::table('residents')->where('id', $resident->id)->update([
+                            ...$backfill,
+                            'updated_at' => $sourceUpdatedAt,
+                        ]);
                         $this->recordPromotionEvent(
                             $batch,
                             Resident::class,
                             $resident->id,
-                            'create',
-                            null,
-                            $newRecords[$pin]
+                            'backfill',
+                            $oldValues,
+                            $backfill
                         );
                     }
-                    foreach ($createdResidents as $pin => $resident) {
-                        $existing->put($pin, $resident);
-                    }
                 }
+            }
 
-                if ($commit && $rowStates !== []) {
-                    $now = now();
-                    $links = [];
-                    foreach ($rowStates as $pin => $state) {
-                        $links[] = [
-                            'source_system' => LegacyCsvImporter::SOURCE_SYSTEM,
-                            'legacy_pin' => $pin,
-                            'resident_id' => $existing->get($pin)?->id,
-                            'source_batch_id' => $batch->id,
-                            'status' => $state['status'],
-                            'match_method' => $existing->has($pin) ? 'exact_resident_id' : null,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ];
-                    }
-                    DB::table('legacy_resident_links')->upsert(
-                        $links,
-                        ['source_system', 'legacy_pin'],
-                        ['resident_id', 'source_batch_id', 'status', 'match_method', 'updated_at']
+            if ($commit && $newRecords !== []) {
+                DB::table('residents')->insert(array_values($newRecords));
+                $createdResidents = Resident::whereIn('resident_id', array_keys($newRecords))
+                    ->get()
+                    ->keyBy('resident_id');
+                foreach ($createdResidents as $pin => $resident) {
+                    $this->recordPromotionEvent(
+                        $batch,
+                        Resident::class,
+                        $resident->id,
+                        'create',
+                        null,
+                        $newRecords[$pin]
                     );
                 }
-            });
+                foreach ($createdResidents as $pin => $resident) {
+                    $existing->put($pin, $resident);
+                }
+            }
+
+            if ($commit && $rowStates !== []) {
+                $now = now();
+                $links = [];
+                foreach ($rowStates as $pin => $state) {
+                    $links[] = [
+                        'source_system' => LegacyCsvImporter::SOURCE_SYSTEM,
+                        'legacy_pin' => $pin,
+                        'resident_id' => $existing->get($pin)?->id,
+                        'source_batch_id' => $batch->id,
+                        'status' => $state['status'],
+                        'match_method' => $existing->has($pin) ? 'exact_resident_id' : null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                DB::table('legacy_resident_links')->upsert(
+                    $links,
+                    ['source_system', 'legacy_pin'],
+                    ['resident_id', 'source_batch_id', 'status', 'match_method', 'updated_at']
+                );
+            }
+        };
+
+        if ($limit !== null) {
+            $processRows($query->limit($limit)->get());
+        } else {
+            $query->chunkById(500, $processRows);
+        }
+
+        $hasMore = $limit !== null && LegacyImportRow::query()
+            ->where('legacy_import_batch_id', $batch->id)
+            ->where('source_table', 'personal_info')
+            ->where('id', '>', $lastProcessedId)
+            ->exists();
 
         return [
             ...$stats,
             'addresses' => $addresses,
             'eligible_pins' => array_keys($eligiblePins),
+            'cursor' => $lastProcessedId,
+            'has_more' => $hasMore,
         ];
     }
 
@@ -719,7 +848,8 @@ class LegacyDataPromoter
         array $addresses,
         array $eligiblePins,
         array $context,
-        bool $commit
+        bool $commit,
+        ?array $onlyFamilies = null,
     ): array {
         $stats = [
             'source_rows' => 0,
@@ -735,7 +865,14 @@ class LegacyDataPromoter
         $pinFamilies = [];
         $provisionalHouseholdIds = [];
 
-        foreach ($this->sourceRows($batch, 'family_members') as $row) {
+        $familyRows = LegacyImportRow::query()
+            ->where('legacy_import_batch_id', $batch->id)
+            ->where('source_table', 'family_members');
+        if ($onlyFamilies !== null) {
+            $familyRows->whereIn('raw_payload->FamilyNumber', $onlyFamilies);
+        }
+
+        foreach ($familyRows->lazyById(1000) as $row) {
             $stats['source_rows']++;
             if ($row->validation_status !== 'valid') {
                 continue;
@@ -748,6 +885,22 @@ class LegacyDataPromoter
             }
             $families[$familyNumber][] = $payload;
             $pinFamilies[$pin][$familyNumber] = true;
+        }
+
+        if ($onlyFamilies !== null && $pinFamilies !== []) {
+            $selectedPins = array_fill_keys(array_keys($pinFamilies), true);
+            $pinFamilies = [];
+            foreach ($this->sourceRows($batch, 'family_members') as $row) {
+                if ($row->validation_status !== 'valid') {
+                    continue;
+                }
+                $payload = $row->raw_payload;
+                $pin = trim((string) ($payload['PIN'] ?? ''));
+                $familyNumber = trim((string) ($payload['FamilyNumber'] ?? ''));
+                if (isset($selectedPins[$pin]) && $familyNumber !== '') {
+                    $pinFamilies[$pin][$familyNumber] = true;
+                }
+            }
         }
 
         $conflictingPins = array_filter($pinFamilies, fn ($familySet) => count($familySet) > 1);

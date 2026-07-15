@@ -42,7 +42,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(
-                ['source_system', 'legacy_barangay_code', 'legacy_zone_id', 'name'],
+                ['source_system', 'legacy_barangay_code', 'legacy_zone_id'],
                 'barangay_zones_legacy_identity_unique'
             );
             $table->index('brgy_code');

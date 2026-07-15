@@ -21,6 +21,9 @@
                     <x-mary-menu-item icon="o-server-stack" href="{{ route('residents.legacy-import.index') }}">
                         Legacy Staged Import
                     </x-mary-menu-item>
+                    <x-mary-menu-item icon="o-academic-cap" href="{{ route('residents.scholar-pin-import') }}">
+                        Scholar PIN Import
+                    </x-mary-menu-item>
                 @endcan
                 @can('export-residents')
                     <x-mary-menu-item icon="o-arrow-up-tray" href="{{ route('residents.export') }}">

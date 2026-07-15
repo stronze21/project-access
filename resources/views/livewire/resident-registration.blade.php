@@ -137,16 +137,18 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-4">
-                        <x-mary-input label="Occupation" wire:model="occupation"
-                            error="{{ $errors->first('occupation') }}" />
+                        <x-mary-select label="Source Income Type" wire:model.live="sourceIncomeTypeId"
+                            :options="$sourceIncomeTypes->map(fn ($income) => ['name' => $income->name, 'id' => $income->id])->all()"
+                            option-value="id" option-label="name" placeholder="Select income source"
+                            error="{{ $errors->first('sourceIncomeTypeId') }}" />
                         <x-mary-input label="Monthly Income" wire:model="monthlyIncome" type="number" step="0.01"
                             error="{{ $errors->first('monthlyIncome') }}" />
                     </div>
                     <div class="grid grid-cols-2 gap-4 mb-4">
-                        <x-mary-select label="Source Income Type" wire:model="sourceIncomeTypeId"
-                            :options="$sourceIncomeTypes->map(fn ($income) => ['name' => $income->name, 'id' => $income->id])->all()"
-                            option-value="id" option-label="name" placeholder="Select income source"
-                            error="{{ $errors->first('sourceIncomeTypeId') }}" />
+                        @if (strcasecmp((string) ($sourceIncomeTypes->firstWhere('id', $sourceIncomeTypeId)?->name ?? ''), 'Others (Please Specify)') === 0)
+                            <x-mary-input label="Please Specify Income Source" wire:model="occupation"
+                                error="{{ $errors->first('occupation') }}" />
+                        @endif
                         <x-mary-input label="Ethnicity" wire:model="ethnicity"
                             placeholder="Enter ethnicity or cultural group"
                             error="{{ $errors->first('ethnicity') }}" />

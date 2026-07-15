@@ -38,6 +38,7 @@ use App\Livewire\ResidentList;
 use App\Livewire\ResidentRegistration;
 use App\Livewire\ResidentShow;
 use App\Livewire\ResidentSignatureUpdate;
+use App\Livewire\ScholarPinImport;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -108,6 +109,10 @@ Route::middleware([
         Route::get('/legacy-import', LegacyResidentImport::class)
             ->middleware('permission:import-residents')
             ->name('residents.legacy-import.index');
+
+        Route::get('/scholar-pin-import', ScholarPinImport::class)
+            ->middleware('permission:import-residents')
+            ->name('residents.scholar-pin-import');
 
         // New route for signature update
         Route::get('/{residentId}/update-signature', ResidentSignatureUpdate::class)

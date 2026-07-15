@@ -160,20 +160,21 @@
                                         <dd class="font-medium text-gray-900">{{ ucfirst($resident->civil_status) }}
                                         </dd>
                                     </div>
+                                    @php
+                                        $incomeSource = trim((string) ($resident->sourceIncomeType?->name ?? ''));
+                                        $occupation = trim((string) ($resident->occupation ?? ''));
+                                        $occupationIncomeSource = strcasecmp($incomeSource, 'Others (Please Specify)') === 0
+                                            ? ($occupation ?: $incomeSource)
+                                            : ($incomeSource ?: $occupation);
+                                    @endphp
                                     <div class="flex justify-between py-1">
-                                        <dt class="text-gray-600">Occupation:</dt>
-                                        <dd class="font-medium text-gray-900">{{ $resident->occupation ?: 'N/A' }}</dd>
+                                        <dt class="text-gray-600">Occupation / Income Source:</dt>
+                                        <dd class="font-medium text-gray-900">{{ $occupationIncomeSource ?: 'N/A' }}</dd>
                                     </div>
                                     <div class="flex justify-between py-1">
                                         <dt class="text-gray-600">Monthly Income:</dt>
                                         <dd class="font-medium text-gray-900">
                                             {{ $resident->monthly_income ? '₱ ' . number_format($resident->monthly_income, 2) : 'N/A' }}
-                                        </dd>
-                                    </div>
-                                    <div class="flex justify-between py-1">
-                                        <dt class="text-gray-600">Income Source:</dt>
-                                        <dd class="font-medium text-gray-900">
-                                            {{ $resident->sourceIncomeType?->name ?: 'N/A' }}
                                         </dd>
                                     </div>
                                     <div class="flex justify-between py-1">

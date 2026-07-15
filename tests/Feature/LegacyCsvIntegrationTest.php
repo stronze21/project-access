@@ -6,6 +6,7 @@ use App\Livewire\LegacyBhwManager;
 use App\Livewire\LegacyReferenceDataManager;
 use App\Livewire\LegacyResidentImport;
 use App\Livewire\ResidentRegistration;
+use App\Livewire\ResidentShow;
 use App\Models\BarangayHealthWorkerAssignment;
 use App\Models\BarangayZone;
 use App\Models\Household;
@@ -15,6 +16,7 @@ use App\Models\SourceIncomeType;
 use App\Models\User;
 use App\Services\Legacy\LegacyCsvImporter;
 use App\Services\Legacy\LegacyDataPromoter;
+use App\Services\ScholarPinImporter;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -24,6 +26,7 @@ use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
+use ZipArchive;
 
 class LegacyCsvIntegrationTest extends TestCase
 {
@@ -297,6 +300,9 @@ class LegacyCsvIntegrationTest extends TestCase
         ]);
 
         $familyBatch = LegacyImportBatch::findOrFail($importer->import([$family], false)['batch_id']);
+        $chunkPreview = $promoter->promoteFamilyChunk($familyBatch, false, '', 1);
+        $this->assertSame(2, $chunkPreview['processed_rows']);
+        $this->assertFalse($chunkPreview['has_more']);
         $result = $promoter->promote($familyBatch, true);
 
         $this->assertSame(1, $result['households']['created']);
@@ -374,6 +380,9 @@ class LegacyCsvIntegrationTest extends TestCase
         $this->assertDatabaseCount('residents', 0);
 
         $component->call('preview')->assertHasNoErrors();
+        while ($component->get('promotionRunning')) {
+            $component->call('processPromotionChunk')->assertHasNoErrors();
+        }
         $this->assertDatabaseCount('residents', 0);
 
         $component
@@ -381,6 +390,9 @@ class LegacyCsvIntegrationTest extends TestCase
             ->set('confirmSafePromotion', true)
             ->call('promote')
             ->assertHasNoErrors();
+        while ($component->get('promotionRunning')) {
+            $component->call('processPromotionChunk')->assertHasNoErrors();
+        }
 
         $this->assertDatabaseHas('residents', [
             'resident_id' => '00-00004',
@@ -536,6 +548,67 @@ class LegacyCsvIntegrationTest extends TestCase
         $this->assertSame($incomeType->id, $form->sourceIncomeTypeId);
         $this->assertSame('Pangasinense', $form->ethnicity);
         $this->assertSame('College Undergraduate', $form->educationalAttainment);
+
+        Livewire::test(ResidentShow::class, ['residentId' => $resident->id])
+            ->assertSee('Occupation / Income Source:')
+            ->assertSee('Scholarship Allowance')
+            ->assertDontSee('>Occupation:<', false)
+            ->assertDontSee('>Income Source:<', false);
+
+        $incomeType->update(['name' => 'Others (Please Specify)']);
+        $resident->update(['occupation' => 'Seasonal Farm Worker']);
+
+        Livewire::test(ResidentShow::class, ['residentId' => $resident->id])
+            ->assertSee('Occupation / Income Source:')
+            ->assertSee('Seasonal Farm Worker');
+    }
+
+    public function test_scholar_pin_workbook_marks_matches_without_clearing_existing_scholars(): void
+    {
+        Resident::create([
+            'resident_id' => '06-35510',
+            'first_name' => 'New',
+            'last_name' => 'Scholar',
+            'birth_date' => '2000-01-01',
+            'gender' => 'female',
+            'civil_status' => 'single',
+            'is_active' => true,
+        ]);
+        Resident::create([
+            'resident_id' => '06-68994',
+            'first_name' => 'Existing',
+            'last_name' => 'Scholar',
+            'birth_date' => '2000-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+            'is_scholar' => true,
+            'is_active' => true,
+        ]);
+        $path = $this->fixtureDirectory.'/scholars.xlsx';
+        $zip = new ZipArchive;
+        $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>
+                <row r="1"><c r="A1" t="inlineStr"><is><t>PIN</t></is></c></row>
+                <row r="2"><c r="A2" t="inlineStr"><is><t>06-35510</t></is></c></row>
+                <row r="3"><c r="A3" t="inlineStr"><is><t>06-68994</t></is></c></row>
+                <row r="4"><c r="A4" t="inlineStr"><is><t>06-99999</t></is></c></row>
+                <row r="5"><c r="A5" t="inlineStr"><is><t>06-35510</t></is></c></row>
+                <row r="6"><c r="A6" t="inlineStr"><is><t>bad-pin</t></is></c></row>
+            </sheetData></worksheet>');
+        $zip->close();
+
+        $report = app(ScholarPinImporter::class)->import($path);
+
+        $this->assertSame(5, $report['source_rows']);
+        $this->assertSame(3, $report['unique_valid']);
+        $this->assertSame(2, $report['matched']);
+        $this->assertSame(1, $report['already_scholars']);
+        $this->assertSame(1, $report['updated']);
+        $this->assertSame(['06-99999'], $report['unmatched']);
+        $this->assertSame(['bad-pin'], $report['invalid']);
+        $this->assertTrue(Resident::where('resident_id', '06-35510')->firstOrFail()->is_scholar);
+        $this->assertTrue(Resident::where('resident_id', '06-68994')->firstOrFail()->is_scholar);
     }
 
     private function personalHeaders(): array

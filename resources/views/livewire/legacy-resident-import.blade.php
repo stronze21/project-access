@@ -1,4 +1,7 @@
-<div class="space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+<div
+    class="space-y-6 px-4 py-8 sm:px-6 lg:px-8"
+    x-on:legacy-promotion-next.window="setTimeout(() => $wire.processPromotionChunk(), 75)"
+>
     <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
             <h1 class="text-2xl font-bold text-base-content">Legacy Resident Import</h1>
@@ -124,14 +127,39 @@
                 </div></div>
             @endif
 
+            @if ($promotionRunning)
+                @php
+                    $promotionPercent = $promotionTotal > 0
+                        ? min(100, (int) round(($promotionProcessed / $promotionTotal) * 100))
+                        : ($promotionPhase === 'related' ? 100 : 0);
+                @endphp
+                <div class="rounded-box border border-primary/30 bg-primary/10 p-5" wire:loading.class="opacity-75" wire:target="processPromotionChunk">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-semibold">{{ $promotionMode === 'commit' ? 'Promoting' : 'Previewing' }} batch #{{ $selectedBatch->id }}</h3>
+                            <p class="text-sm text-base-content/60">
+                                {{ match ($promotionPhase) {
+                                    'personal' => 'Processing personal information in 1,000-row requests.',
+                                    'family' => 'Processing family members in 500-row requests while preserving family boundaries.',
+                                    default => 'Finishing related BHW data.',
+                                } }}
+                            </p>
+                        </div>
+                        <span class="font-mono text-sm">{{ $promotionPercent }}%</span>
+                    </div>
+                    <progress class="progress progress-primary mt-3 w-full" value="{{ $promotionPercent }}" max="100"></progress>
+                    <p class="mt-2 text-xs text-base-content/50">Processed {{ number_format($promotionProcessed) }} of {{ number_format($promotionTotal) }} personal and family-member rows. Keep this page open.</p>
+                </div>
+            @endif
+
             <div class="grid gap-6 border-t border-base-300 pt-6 lg:grid-cols-2">
-                <div class="card border border-info/30 bg-info/10"><div class="card-body"><h3 class="card-title text-base">1. Preview canonical changes</h3><p class="text-sm">Calculates changes and conflicts without writing canonical data.</p><div class="card-actions"><button type="button" wire:click="preview" class="btn btn-info" wire:loading.attr="disabled">Run Promotion Preview</button></div></div></div>
+                <div class="card border border-info/30 bg-info/10"><div class="card-body"><h3 class="card-title text-base">1. Preview canonical changes</h3><p class="text-sm">Calculates changes and conflicts without writing canonical data. Large batches may take several minutes; keep this page open while it runs.</p><div class="card-actions"><button type="button" wire:click="preview" class="btn btn-info" wire:loading.attr="disabled" @disabled($promotionRunning)>Run Promotion Preview</button></div></div></div>
                 <div class="card border border-error/30 bg-error/10"><div class="card-body">
-                    <h3 class="card-title text-base">2. Promote safe records</h3><p class="text-sm">Only complete records and null-field backfills are applied.</p>
+                    <h3 class="card-title text-base">2. Promote safe records</h3><p class="text-sm">Only complete records and null-field backfills are applied. Large batches run synchronously, so keep this page open until promotion finishes.</p>
                     <fieldset class="fieldset"><legend class="fieldset-legend">Type <code>PROMOTE-{{ $selectedBatch->id }}</code></legend><input type="text" wire:model="confirmation" class="input input-bordered w-full" @disabled(! $previewIsCurrent)>@error('confirmation')<p class="text-error text-sm">{{ $message }}</p>@enderror</fieldset>
                     <label class="label cursor-pointer justify-start gap-3"><input type="checkbox" wire:model="confirmSafePromotion" class="checkbox checkbox-error" @disabled(! $previewIsCurrent)><span class="label-text">I reviewed the latest preview and understand that safe records will be committed.</span></label>
                     @error('confirmSafePromotion')<p class="text-error text-sm">{{ $message }}</p>@enderror
-                    <div class="card-actions"><button type="button" wire:click="promote" class="btn btn-error" @disabled(! $previewIsCurrent) wire:loading.attr="disabled">Promote Safe Records</button></div>
+                    <div class="card-actions"><button type="button" wire:click="promote" class="btn btn-error" @disabled(! $previewIsCurrent || $promotionRunning) wire:loading.attr="disabled">Promote Safe Records</button></div>
                     @unless ($previewIsCurrent)<p class="text-xs text-error">Run a fresh preview to enable promotion.</p>@endunless
                 </div></div>
             </div>
