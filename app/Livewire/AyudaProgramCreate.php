@@ -4,10 +4,10 @@ namespace App\Livewire;
 
 use App\Models\AyudaProgram;
 use App\Models\EligibilityCriteria;
-use Livewire\Component;
-use Livewire\Attributes\Validate;
-use Mary\Traits\Toast;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Validate;
+use Livewire\Component;
+use Mary\Traits\Toast;
 
 class AyudaProgramCreate extends Component
 {
@@ -54,27 +54,30 @@ class AyudaProgramCreate extends Component
     public $maxBeneficiaries;
 
     public $requiresVerification = false;
+
     public $isActive = true;
 
     // Eligibility criteria
     public $criteria = [];
 
     public $assistanceTypes = [
-            ['id' => 'cash', 'name' => 'Cash Aid'],
-            ['id' => 'goods', 'name' => 'Goods/Supplies'],
-            ['id' => 'services', 'name' => 'Services'],
-            ['id' => 'mixed', 'name' => 'Mixed (Cash & Goods/Services)'],
-        ],
-        $assistanceFrequencies = [
-            ['id' => 'one-time', 'name' => 'One-time'],
-            ['id' => 'weekly', 'name' => 'Weekly'],
-            ['id' => 'monthly', 'name' => 'Monthly'],
-            ['id' => 'quarterly', 'name' => 'Quarterly'],
-            ['id' => 'annual', 'name' => 'Annual'],
-        ];
+        ['id' => 'cash', 'name' => 'Cash Aid'],
+        ['id' => 'goods', 'name' => 'Goods/Supplies'],
+        ['id' => 'services', 'name' => 'Services'],
+        ['id' => 'mixed', 'name' => 'Mixed (Cash & Goods/Services)'],
+    ];
+
+    public $assistanceFrequencies = [
+        ['id' => 'one-time', 'name' => 'One-time'],
+        ['id' => 'weekly', 'name' => 'Weekly'],
+        ['id' => 'monthly', 'name' => 'Monthly'],
+        ['id' => 'quarterly', 'name' => 'Quarterly'],
+        ['id' => 'annual', 'name' => 'Annual'],
+    ];
 
     // Mode
     public $isEdit = false;
+
     public $programId = null;
 
     // Criterion types for dropdown
@@ -94,8 +97,9 @@ class AyudaProgramCreate extends Component
         ['key' => 'pregnant', 'name' => 'Pregnant'],
         ['key' => 'lactating', 'name' => 'Lactating Mother'],
         ['key' => 'indigenous', 'name' => 'Indigenous Person'],
+        ['key' => 'scholar', 'name' => 'Scholar'],
         ['key' => 'education', 'name' => 'Educational Attainment'],
-        ['key' => 'occupation', 'name' => 'Occupation']
+        ['key' => 'occupation', 'name' => 'Occupation'],
     ];
 
     // Operators for dropdown
@@ -130,8 +134,6 @@ class AyudaProgramCreate extends Component
         'requiresVerification' => 'boolean',
         'isActive' => 'boolean',
     ];
-
-
 
     /**
      * Mount the component
@@ -183,7 +185,7 @@ class AyudaProgramCreate extends Component
                 'type' => $criterion->criterion_type,
                 'operator' => $criterion->operator,
                 'value' => $criterion->value,
-                'required' => $criterion->is_required
+                'required' => $criterion->is_required,
             ];
         }
 
@@ -204,7 +206,7 @@ class AyudaProgramCreate extends Component
             'type' => 'age',
             'operator' => 'greater_than_or_equal',
             'value' => '',
-            'required' => true
+            'required' => true,
         ];
     }
 
@@ -226,7 +228,7 @@ class AyudaProgramCreate extends Component
         $criteriaRules = [];
 
         foreach ($this->criteria as $index => $criterion) {
-            if (!empty($criterion['name']) || !empty($criterion['value'])) {
+            if (! empty($criterion['name']) || ! empty($criterion['value'])) {
                 $criteriaRules["criteria.{$index}.name"] = 'required|string|max:100';
                 $criteriaRules["criteria.{$index}.type"] = 'required|string';
                 $criteriaRules["criteria.{$index}.operator"] = 'required|string';
@@ -244,7 +246,7 @@ class AyudaProgramCreate extends Component
     {
         $this->validate();
 
-        if (!empty($this->criteria)) {
+        if (! empty($this->criteria)) {
             $this->validateCriteria();
         }
 
@@ -280,7 +282,7 @@ class AyudaProgramCreate extends Component
             }
 
             // Handle eligibility criteria
-            if (!empty($this->criteria)) {
+            if (! empty($this->criteria)) {
                 $this->saveCriteria($program);
             }
 
@@ -292,7 +294,7 @@ class AyudaProgramCreate extends Component
         } catch (\Exception $e) {
             DB::rollBack();
 
-            $this->error('Error: ' . $e->getMessage());
+            $this->error('Error: '.$e->getMessage());
         }
     }
 
@@ -325,7 +327,7 @@ class AyudaProgramCreate extends Component
                 'is_required' => $criterion['required'] ?? true,
             ];
 
-            if (!empty($criterion['id'])) {
+            if (! empty($criterion['id'])) {
                 // Update existing criterion
                 $existingCriterion = EligibilityCriteria::find($criterion['id']);
                 if ($existingCriterion) {
@@ -341,7 +343,7 @@ class AyudaProgramCreate extends Component
 
         // Delete criteria that weren't updated
         $toDelete = array_diff($existingIds, $savedIds);
-        if (!empty($toDelete)) {
+        if (! empty($toDelete)) {
             EligibilityCriteria::whereIn('id', $toDelete)->delete();
         }
     }
@@ -351,7 +353,7 @@ class AyudaProgramCreate extends Component
      */
     public function resetForm()
     {
-        if (!$this->isEdit) {
+        if (! $this->isEdit) {
             $this->reset([
                 'name',
                 'code',
@@ -367,7 +369,7 @@ class AyudaProgramCreate extends Component
                 'totalBudget',
                 'maxBeneficiaries',
                 'requiresVerification',
-                'isActive'
+                'isActive',
             ]);
 
             $this->startDate = now()->format('Y-m-d');

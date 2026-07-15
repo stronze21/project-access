@@ -116,14 +116,16 @@
                             placeholder="Select gender" />
 
                         <x-mary-select label="Civil Status" wire:model="civilStatus" required
-                            error="{{ $errors->first('civilStatus') }}" :options="[
-                                ['name' => 'Single', 'id' => 'single'],
-                                ['name' => 'Married', 'id' => 'married'],
-                                ['name' => 'Widowed', 'id' => 'widowed'],
-                                ['name' => 'Divorced', 'id' => 'divorced'],
-                                ['name' => 'Separated', 'id' => 'separated'],
-                                ['name' => 'Other', 'id' => 'other'],
-                            ]" option-value="id"
+                            error="{{ $errors->first('civilStatus') }}" :options="$civilStatuses->isNotEmpty()
+                                ? $civilStatuses->map(fn ($status) => ['name' => $status->name, 'id' => $status->canonical_value])->unique('id')->values()->all()
+                                : [
+                                    ['name' => 'Single', 'id' => 'single'],
+                                    ['name' => 'Married', 'id' => 'married'],
+                                    ['name' => 'Widowed', 'id' => 'widowed'],
+                                    ['name' => 'Divorced', 'id' => 'divorced'],
+                                    ['name' => 'Separated', 'id' => 'separated'],
+                                    ['name' => 'Other', 'id' => 'other'],
+                                ]" option-value="id"
                             placeholder="Select civil status" />
                     </div>
 
@@ -139,6 +141,15 @@
                             error="{{ $errors->first('occupation') }}" />
                         <x-mary-input label="Monthly Income" wire:model="monthlyIncome" type="number" step="0.01"
                             error="{{ $errors->first('monthlyIncome') }}" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <x-mary-select label="Source Income Type" wire:model="sourceIncomeTypeId"
+                            :options="$sourceIncomeTypes->map(fn ($income) => ['name' => $income->name, 'id' => $income->id])->all()"
+                            option-value="id" option-label="name" placeholder="Select income source"
+                            error="{{ $errors->first('sourceIncomeTypeId') }}" />
+                        <x-mary-input label="Ethnicity" wire:model="ethnicity"
+                            placeholder="Enter ethnicity or cultural group"
+                            error="{{ $errors->first('ethnicity') }}" />
                     </div>
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <x-mary-select label="Blood Type" wire:model="bloodType"
@@ -157,15 +168,17 @@
                     </div>
                     <div class="mb-4">
                         <x-mary-select label="Educational Attainment" wire:model="educationalAttainment"
-                            :options="[
-                                ['value' => 'no_formal_education', 'label' => 'No Formal Education'],
-                                ['value' => 'elementary', 'label' => 'Elementary School'],
-                                ['value' => 'high_school', 'label' => 'High School'],
-                                ['value' => 'vocational', 'label' => 'Vocational/Technical Course'],
-                                ['value' => 'some_college', 'label' => 'College Undergraduate'],
-                                ['value' => 'college', 'label' => 'College Graduate'],
-                                ['value' => 'post_graduate', 'label' => 'Post Graduate'],
-                            ]" option-value="value" option-label="label"
+                            :options="$educationalAttainments->isNotEmpty()
+                                ? $educationalAttainments->map(fn ($education) => ['value' => $education->name, 'label' => $education->name])->all()
+                                : [
+                                    ['value' => 'No Formal Education', 'label' => 'No Formal Education'],
+                                    ['value' => 'Elementary School', 'label' => 'Elementary School'],
+                                    ['value' => 'High School', 'label' => 'High School'],
+                                    ['value' => 'Vocational/Technical Course', 'label' => 'Vocational/Technical Course'],
+                                    ['value' => 'College Undergraduate', 'label' => 'College Undergraduate'],
+                                    ['value' => 'College Graduate', 'label' => 'College Graduate'],
+                                    ['value' => 'Post Graduate', 'label' => 'Post Graduate'],
+                                ]" option-value="value" option-label="label"
                             placeholder="Select educational attainment"
                             error="{{ $errors->first('educationalAttainment') }}" />
                     </div>
@@ -461,9 +474,23 @@
                     </x-mary-modal>
 
                     <h4 class="mb-2 font-medium">Status Indicators</h4>
+                    @if ($isEdit && ($isBHW || $isLegacyImported))
+                        <div class="mb-4 flex flex-wrap gap-2">
+                            @if ($isBHW)<span class="badge badge-info">BHW assignment</span>@endif
+                            @if ($isLegacyImported)<span class="badge badge-secondary">Legacy imported</span>@endif
+                        </div>
+                    @endif
                     <div class="grid grid-cols-2 mb-4 gap-x-4 gap-y-2">
                         <x-mary-checkbox label="Person with Disability (PWD)" wire:model="isPWD" />
                         <x-mary-checkbox label="4Ps" wire:model="is4ps" />
+                        <x-mary-checkbox label="Scholar" wire:model="isScholar" />
+                        @can('configure-system')
+                            <x-mary-checkbox label="Active Resident" wire:model="isActive" />
+                        @else
+                            <span class="badge {{ $isActive ? 'badge-success' : 'badge-ghost' }}">
+                                {{ $isActive ? 'Active Resident' : 'Inactive Resident' }}
+                            </span>
+                        @endcan
                         @if (isset($birthDate) && Carbon\Carbon::parse($birthDate)->age >= 60)
                             <x-mary-checkbox label="Senior Citizen" wire:model="isSeniorCitizen" />
                         @endif

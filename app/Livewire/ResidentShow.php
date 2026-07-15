@@ -2,28 +2,35 @@
 
 namespace App\Livewire;
 
-use App\Models\Resident;
 use App\Models\Distribution;
+use App\Models\Resident;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
-use Illuminate\Support\Facades\Hash;
 
 class ResidentShow extends Component
 {
-    use WithPagination;
     use Toast;
+    use WithPagination;
 
     public $resident;
+
     public $residentId;
+
     public $showQrCode = false;
+
     public $perPage = 10;
 
     // Portal account fields
     public $showPortalAccountModal = false;
+
     public $portalEmail;
+
     public $portalMpin;
+
     public $portalMpinConfirmation;
+
     public $resetPassword = false;
 
     /**
@@ -40,7 +47,7 @@ class ResidentShow extends Component
      */
     protected function loadResident()
     {
-        $this->resident = Resident::with('household')->findOrFail($this->residentId);
+        $this->resident = Resident::with(['household', 'sourceIncomeType'])->findOrFail($this->residentId);
         $this->portalEmail = $this->resident->email;
     }
 
@@ -49,7 +56,7 @@ class ResidentShow extends Component
      */
     public function toggleQrCode()
     {
-        $this->showQrCode = !$this->showQrCode;
+        $this->showQrCode = ! $this->showQrCode;
     }
 
     /**
@@ -60,7 +67,7 @@ class ResidentShow extends Component
         $this->resident->is_active = $status === 'active';
         $this->resident->save();
 
-        $this->success("Resident marked as " . ($this->resident->is_active ? 'active' : 'inactive'));
+        $this->success('Resident marked as '.($this->resident->is_active ? 'active' : 'inactive'));
 
         $this->loadResident();
     }
@@ -84,7 +91,7 @@ class ResidentShow extends Component
     public function savePortalAccount()
     {
         $rules = [
-            'portalEmail' => 'required|email|unique:residents,email,' . $this->residentId,
+            'portalEmail' => 'required|email|unique:residents,email,'.$this->residentId,
         ];
 
         if ($this->resetPassword) {
@@ -116,7 +123,7 @@ class ResidentShow extends Component
             $this->showPortalAccountModal = false;
             $this->loadResident();
         } catch (\Exception $e) {
-            $this->error('Error updating portal account: ' . $e->getMessage());
+            $this->error('Error updating portal account: '.$e->getMessage());
         }
     }
 
@@ -140,7 +147,7 @@ class ResidentShow extends Component
             $this->portalMpin = '';
             $this->portalMpinConfirmation = '';
         } catch (\Exception $e) {
-            $this->error('Error resetting MPIN: ' . $e->getMessage());
+            $this->error('Error resetting MPIN: '.$e->getMessage());
         }
     }
 
@@ -159,7 +166,7 @@ class ResidentShow extends Component
             $this->success('Portal access disabled successfully');
             $this->loadResident();
         } catch (\Exception $e) {
-            $this->error('Error disabling portal access: ' . $e->getMessage());
+            $this->error('Error disabling portal access: '.$e->getMessage());
         }
     }
 
@@ -180,7 +187,7 @@ class ResidentShow extends Component
     public function render()
     {
         return view('livewire.resident-show', [
-            'distributions' => $this->getDistributions()
+            'distributions' => $this->getDistributions(),
         ]);
     }
 }

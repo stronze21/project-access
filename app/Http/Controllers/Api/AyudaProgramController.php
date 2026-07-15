@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AyudaProgram;
-use App\Models\Resident;
 use App\Models\EligibilityCriteria;
-use Illuminate\Http\Request;
+use App\Models\Resident;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class AyudaProgramController extends Controller
@@ -22,9 +22,9 @@ class AyudaProgramController extends Controller
         // Apply filters if provided
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('code', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('code', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -58,8 +58,8 @@ class AyudaProgramController extends Controller
                 'current_page' => $programs->currentPage(),
                 'last_page' => $programs->lastPage(),
                 'per_page' => $programs->perPage(),
-                'total' => $programs->total()
-            ]
+                'total' => $programs->total(),
+            ],
         ]);
     }
 
@@ -124,7 +124,7 @@ class AyudaProgramController extends Controller
 
         return response()->json([
             'message' => 'Ayuda program created successfully',
-            'data' => $program
+            'data' => $program,
         ], 201);
     }
 
@@ -139,7 +139,7 @@ class AyudaProgramController extends Controller
         $program->append(['status', 'progress_percentage', 'remaining_budget']);
 
         return response()->json([
-            'data' => $program
+            'data' => $program,
         ]);
     }
 
@@ -150,7 +150,7 @@ class AyudaProgramController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:100',
-            'code' => 'nullable|string|max:50|unique:ayuda_programs,code,' . $id,
+            'code' => 'nullable|string|max:50|unique:ayuda_programs,code,'.$id,
             'description' => 'nullable|string|max:1000',
             'type' => 'sometimes|required|string|in:cash,goods,services,mixed',
             'amount' => 'nullable|numeric|min:0',
@@ -181,7 +181,7 @@ class AyudaProgramController extends Controller
 
         return response()->json([
             'message' => 'Ayuda program updated successfully',
-            'data' => $program
+            'data' => $program,
         ]);
     }
 
@@ -197,7 +197,7 @@ class AyudaProgramController extends Controller
         if ($distributionCount > 0) {
             return response()->json([
                 'message' => 'Cannot delete program with existing distributions',
-                'distribution_count' => $distributionCount
+                'distribution_count' => $distributionCount,
             ], 422);
         }
 
@@ -208,7 +208,7 @@ class AyudaProgramController extends Controller
         $program->delete();
 
         return response()->json([
-            'message' => 'Ayuda program deleted successfully'
+            'message' => 'Ayuda program deleted successfully',
         ]);
     }
 
@@ -259,7 +259,7 @@ class AyudaProgramController extends Controller
 
         return response()->json([
             'message' => 'Eligibility criteria updated successfully',
-            'data' => $program->eligibilityCriteria
+            'data' => $program->eligibilityCriteria,
         ]);
     }
 
@@ -337,6 +337,9 @@ class AyudaProgramController extends Controller
                 case '4ps':
                     $residentValue = $resident->is_4ps;
                     break;
+                case 'scholar':
+                    $residentValue = $resident->is_scholar;
+                    break;
                 case 'occupation':
                     $residentValue = $resident->occupation;
                     break;
@@ -346,7 +349,7 @@ class AyudaProgramController extends Controller
             }
 
             // For non-required criteria, if the value is null, skip the check
-            if (!$criterion->is_required && ($residentValue === null || $residentValue === '')) {
+            if (! $criterion->is_required && ($residentValue === null || $residentValue === '')) {
                 continue;
             }
 
@@ -392,7 +395,7 @@ class AyudaProgramController extends Controller
                     break;
                 case 'not_in':
                     $values = explode(',', $criterionValue);
-                    $meets = !in_array($residentValue, $values);
+                    $meets = ! in_array($residentValue, $values);
                     break;
                 case 'contains':
                     $meets = is_string($residentValue) &&
@@ -410,18 +413,18 @@ class AyudaProgramController extends Controller
                              str_ends_with($residentValue, $criterionValue);
                     break;
                 case 'between':
-                    list($min, $max) = explode(',', $criterionValue);
+                    [$min, $max] = explode(',', $criterionValue);
                     $meets = $residentValue >= $min && $residentValue <= $max;
                     break;
             }
 
-            if (!$meets) {
+            if (! $meets) {
                 $isEligible = false;
                 $failedCriteria[] = [
                     'criterion' => $criterion->criterion_name,
                     'resident_value' => $residentValue,
                     'required_value' => $criterion->value,
-                    'operator' => $criterion->operator
+                    'operator' => $criterion->operator,
                 ];
             }
         }
@@ -438,7 +441,7 @@ class AyudaProgramController extends Controller
                 'criterion' => 'Previous Distribution',
                 'resident_value' => 'Already received',
                 'required_value' => 'No previous distribution',
-                'operator' => 'Not applicable'
+                'operator' => 'Not applicable',
             ];
         }
 
@@ -448,13 +451,13 @@ class AyudaProgramController extends Controller
                 'failed_criteria' => $failedCriteria,
                 'resident' => [
                     'id' => $resident->id,
-                    'name' => $resident->full_name
+                    'name' => $resident->full_name,
                 ],
                 'program' => [
                     'id' => $program->id,
-                    'name' => $program->name
-                ]
-            ]
+                    'name' => $program->name,
+                ],
+            ],
         ]);
     }
 

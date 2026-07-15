@@ -14,12 +14,25 @@
                     </x-mary-button>
                 </x-slot>
 
-                <x-mary-menu-item icon="o-arrow-down-tray" href="{{ route('residents.import') }}">
-                    Import Residents
-                </x-mary-menu-item>
-                <x-mary-menu-item icon="o-arrow-up-tray" href="{{ route('residents.export') }}">
-                    Export Residents
-                </x-mary-menu-item>
+                @can('import-residents')
+                    <x-mary-menu-item icon="o-arrow-down-tray" href="{{ route('residents.import') }}">
+                        Standard Import
+                    </x-mary-menu-item>
+                    <x-mary-menu-item icon="o-server-stack" href="{{ route('residents.legacy-import.index') }}">
+                        Legacy Staged Import
+                    </x-mary-menu-item>
+                @endcan
+                @can('export-residents')
+                    <x-mary-menu-item icon="o-arrow-up-tray" href="{{ route('residents.export') }}">
+                        Export Residents
+                    </x-mary-menu-item>
+                @endcan
+                @can('manage-legacy-reference-data')
+                    <x-mary-menu-item icon="o-cog-6-tooth"
+                        href="{{ route('legacy-data.references.index', 'source-income-types') }}">
+                        Manage Legacy Data
+                    </x-mary-menu-item>
+                @endcan
             </x-mary-dropdown>
 
             <x-mary-button wire:click="toggleFilters" class="tagged-color" icon="o-funnel">
@@ -309,6 +322,18 @@
                                         @if ($resident->is_pwd)
                                             <span
                                                 class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">PWD</span>
+                                        @endif
+                                        @if ($resident->is_bhw)
+                                            <span
+                                                class="ml-1 inline-flex items-center rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">BHW</span>
+                                        @endif
+                                        @if ($resident->is_scholar)
+                                            <span
+                                                class="ml-1 inline-flex items-center rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Scholar</span>
+                                        @endif
+                                        @if ($resident->is_legacy_imported)
+                                            <span
+                                                class="ml-1 inline-flex items-center rounded bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">BHWIS</span>
                                         @endif
                                     </div>
                                 </div>

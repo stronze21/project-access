@@ -5,6 +5,10 @@
                 {{ __('Import Residents') }}
             </h2>
             <div class="flex space-x-2">
+                <x-mary-button link="{{ route('residents.legacy-import.index') }}"
+                    class="tagged-color btn-secondary btn-outline btn-secline" icon="o-server-stack">
+                    Legacy Staged Import
+                </x-mary-button>
                 <x-mary-button link="{{ route('residents.index') }}"
                     class="tagged-color btn-secondary btn-outline btn-secline" icon="o-arrow-left">
                     Back to Residents

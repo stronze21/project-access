@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Resident;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ResidentController extends Controller
 {
@@ -25,10 +25,10 @@ class ResidentController extends Controller
         // Apply filters if provided
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('last_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('middle_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('resident_id', 'like', '%' . $request->search . '%')
+                $q->where('first_name', 'like', '%'.$request->search.'%')
+                    ->orWhere('last_name', 'like', '%'.$request->search.'%')
+                    ->orWhere('middle_name', 'like', '%'.$request->search.'%')
+                    ->orWhere('resident_id', 'like', '%'.$request->search.'%')
                     ->orWhere('qr_code', $request->search)
                     ->orWhere('rfid_number', $request->search);
             });
@@ -66,8 +66,8 @@ class ResidentController extends Controller
                 'current_page' => $residents->currentPage(),
                 'last_page' => $residents->lastPage(),
                 'per_page' => $residents->perPage(),
-                'total' => $residents->total()
-            ]
+                'total' => $residents->total(),
+            ],
         ]);
     }
 
@@ -88,8 +88,10 @@ class ResidentController extends Controller
             'contact_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'occupation' => 'nullable|string|max:100',
+            'source_income_type_id' => 'nullable|integer|exists:source_income_types,id',
             'monthly_income' => 'nullable|numeric|min:0|max:999999.99',
             'educational_attainment' => 'nullable|string',
+            'ethnicity' => 'nullable|string|max:255',
             'blood_type' => 'nullable|string|max:10',
             'is_registered_voter' => 'boolean',
             'precinct_no' => 'nullable|string|max:50',
@@ -100,6 +102,8 @@ class ResidentController extends Controller
             'is_lactating' => 'boolean',
             'is_indigenous' => 'boolean',
             'is_4ps' => 'boolean',
+            'is_scholar' => 'boolean',
+            'is_active' => 'boolean',
             'special_sector' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
             'signature' => 'nullable|string',
@@ -118,7 +122,7 @@ class ResidentController extends Controller
 
         return response()->json([
             'message' => 'Resident created successfully',
-            'data' => $resident
+            'data' => $resident,
         ], 201);
     }
 
@@ -130,7 +134,7 @@ class ResidentController extends Controller
         $resident = Resident::with('household')->findOrFail($id);
 
         return response()->json([
-            'data' => $resident
+            'data' => $resident,
         ]);
     }
 
@@ -153,8 +157,10 @@ class ResidentController extends Controller
             'contact_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'occupation' => 'nullable|string|max:100',
+            'source_income_type_id' => 'nullable|integer|exists:source_income_types,id',
             'monthly_income' => 'nullable|numeric|min:0|max:999999.99',
             'educational_attainment' => 'nullable|string',
+            'ethnicity' => 'nullable|string|max:255',
             'blood_type' => 'nullable|string|max:10',
             'is_registered_voter' => 'boolean',
             'precinct_no' => 'nullable|string|max:50',
@@ -165,6 +171,8 @@ class ResidentController extends Controller
             'is_lactating' => 'boolean',
             'is_indigenous' => 'boolean',
             'is_4ps' => 'boolean',
+            'is_scholar' => 'boolean',
+            'is_active' => 'boolean',
             'special_sector' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
             'signature' => 'nullable|string',
@@ -183,7 +191,7 @@ class ResidentController extends Controller
 
         return response()->json([
             'message' => 'Resident updated successfully',
-            'data' => $resident
+            'data' => $resident,
         ]);
     }
 
@@ -196,7 +204,7 @@ class ResidentController extends Controller
         $resident->delete();
 
         return response()->json([
-            'message' => 'Resident deleted successfully'
+            'message' => 'Resident deleted successfully',
         ]);
     }
 
@@ -225,7 +233,7 @@ class ResidentController extends Controller
 
         return response()->json([
             'message' => 'Resident\'s household updated successfully',
-            'data' => $resident->load('household')
+            'data' => $resident->load('household'),
         ]);
     }
 
@@ -258,8 +266,8 @@ class ResidentController extends Controller
             'message' => 'Photo uploaded successfully',
             'data' => [
                 'photo_path' => $photoPath,
-                'photo_url' => Storage::url($photoPath)
-            ]
+                'photo_url' => Storage::url($photoPath),
+            ],
         ]);
     }
 
@@ -287,8 +295,8 @@ class ResidentController extends Controller
         return response()->json([
             'message' => 'QR code generated successfully',
             'data' => [
-                'qr_code' => $qrCode
-            ]
+                'qr_code' => $qrCode,
+            ],
         ]);
     }
 
@@ -316,6 +324,7 @@ class ResidentController extends Controller
         foreach ($residents as $resident) {
             $resident->append('full_name');
         }
+
         return response()->json($residents);
     }
 
@@ -346,8 +355,8 @@ class ResidentController extends Controller
             'data' => [
                 'resident_id' => $resident->resident_id,
                 'full_name' => $resident->full_name,
-                'signature_status' => $resident->signature_status
-            ]
+                'signature_status' => $resident->signature_status,
+            ],
         ]);
     }
 
@@ -363,10 +372,10 @@ class ResidentController extends Controller
                 ->where('resident_id', $residentId)
                 ->first();
 
-            if (!$resident) {
+            if (! $resident) {
                 return response()->json([
                     'error' => 'Resident not found',
-                    'message' => "No resident found with ID: {$residentId}"
+                    'message' => "No resident found with ID: {$residentId}",
                 ], 404);
             }
 
@@ -376,7 +385,7 @@ class ResidentController extends Controller
                 try {
                     $birthDate = \Carbon\Carbon::parse($resident->birth_date)->format('F d, Y');
                 } catch (\Exception $e) {
-                    $birthDate = (string)$resident->birth_date;
+                    $birthDate = (string) $resident->birth_date;
                 }
             }
 
@@ -388,18 +397,18 @@ class ResidentController extends Controller
                 }
             }
 
-            $photoUrl = !empty($resident->photo_path)
-                ? url('storage/' . $resident->photo_path)
+            $photoUrl = ! empty($resident->photo_path)
+                ? url('storage/'.$resident->photo_path)
                 : null;
 
             // Handle emergency contact (flexible)
             $emergencyContact = 'N/A';
-            if (!empty($resident->emergency_contact)) {
+            if (! empty($resident->emergency_contact)) {
                 $emergencyContact = $resident->emergency_contact;
-            } elseif (!empty($resident->emergency_contact_name) || !empty($resident->emergency_contact_number)) {
+            } elseif (! empty($resident->emergency_contact_name) || ! empty($resident->emergency_contact_number)) {
                 $parts = array_filter([
                     $resident->emergency_contact_name ?? '',
-                    $resident->emergency_contact_number ?? ''
+                    $resident->emergency_contact_number ?? '',
                 ]);
                 $emergencyContact = implode(' - ', $parts);
             }
@@ -409,7 +418,7 @@ class ResidentController extends Controller
                 'first_name' => strtoupper($resident->first_name ?? ''),
                 'middle_name' => strtoupper($resident->middle_name ?? ''),
                 'last_name' => strtoupper($resident->last_name ?? ''),
-                'full_name' => $resident->full_name ?? strtoupper(trim(($resident->first_name ?? '') . ' ' . ($resident->last_name ?? ''))),
+                'full_name' => $resident->full_name ?? strtoupper(trim(($resident->first_name ?? '').' '.($resident->last_name ?? ''))),
                 'birth_date' => $birthDate,
                 'gender' => strtolower($resident->gender ?? 'N/A'),
                 'civil_status' => strtolower($resident->civil_status ?? 'N/A'),
@@ -425,19 +434,19 @@ class ResidentController extends Controller
                     'barangay' => optional($resident->household)->barangay ?? 'N/A',
                     'city_municipality' => optional($resident->household)->city_municipality ?? 'Alicia',
                     'province' => optional($resident->household)->province ?? 'Isabela',
-                ]
+                ],
             ];
 
             return response()->json($data, 200);
         } catch (\Exception $e) {
             \Log::error('ID Card API Error', [
                 'resident_id' => $residentId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'error' => 'Server error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -450,13 +459,13 @@ class ResidentController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'resident_ids' => 'required|array',
-                'resident_ids.*' => 'required|string'
+                'resident_ids.*' => 'required|string',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => 'Validation error',
-                    'message' => $validator->errors()
+                    'message' => $validator->errors(),
                 ], 422);
             }
 
@@ -469,7 +478,7 @@ class ResidentController extends Controller
             if ($residents->isEmpty()) {
                 return response()->json([
                     'error' => 'No residents found',
-                    'message' => 'None of the provided resident IDs were found'
+                    'message' => 'None of the provided resident IDs were found',
                 ], 404);
             }
 
@@ -486,7 +495,7 @@ class ResidentController extends Controller
 
                 // Get photo URL
                 $photoUrl = $resident->photo_path
-                    ? url('storage/' . $resident->photo_path)
+                    ? url('storage/'.$resident->photo_path)
                     : null;
 
                 // Get signature base64
@@ -495,7 +504,7 @@ class ResidentController extends Controller
                 // Format emergency contact
                 $emergencyContact = 'N/A';
                 if ($resident->emergency_contact_name && $resident->emergency_contact_number) {
-                    $emergencyContact = $resident->emergency_contact_name . ' - ' . $resident->emergency_contact_number;
+                    $emergencyContact = $resident->emergency_contact_name.' - '.$resident->emergency_contact_number;
                 } elseif ($resident->emergency_contact_name) {
                     $emergencyContact = $resident->emergency_contact_name;
                 } elseif ($resident->emergency_contact_number) {
@@ -523,22 +532,22 @@ class ResidentController extends Controller
                         'barangay' => $resident->household->barangay ?? 'N/A',
                         'city_municipality' => $resident->household->city_municipality ?? 'Alicia',
                         'province' => $resident->household->province ?? 'Isabela',
-                    ]
+                    ],
                 ];
             });
 
             return response()->json([
                 'count' => $data->count(),
-                'data' => $data
+                'data' => $data,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Batch ID Card Error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'error' => 'Server error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -550,13 +559,13 @@ class ResidentController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'query' => 'required|string|min:2'
+                'query' => 'required|string|min:2',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => 'Validation error',
-                    'message' => $validator->errors()
+                    'message' => $validator->errors(),
                 ], 422);
             }
 
@@ -574,7 +583,7 @@ class ResidentController extends Controller
             if ($residents->isEmpty()) {
                 return response()->json([
                     'count' => 0,
-                    'data' => []
+                    'data' => [],
                 ], 200);
             }
 
@@ -583,27 +592,27 @@ class ResidentController extends Controller
                     'resident_id' => $resident->resident_id,
                     'full_name' => $resident->full_name,
                     'address' => $resident->household
-                        ? $resident->household->address . ', ' . $resident->household->barangay
+                        ? $resident->household->address.', '.$resident->household->barangay
                         : 'N/A',
                     'photo_url' => $resident->photo_path
-                        ? url('storage/' . $resident->photo_path)
+                        ? url('storage/'.$resident->photo_path)
                         : null,
-                    'has_signature' => !empty($resident->signature)
+                    'has_signature' => ! empty($resident->signature),
                 ];
             });
 
             return response()->json([
                 'count' => $data->count(),
-                'data' => $data
+                'data' => $data,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Search ID Card Error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'error' => 'Server error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -620,7 +629,7 @@ class ResidentController extends Controller
                 'R-202503-0751',
                 'R-202503-0620',
                 'R-202503-0755',
-                'R-202504-2467'
+                'R-202504-2467',
             ];
 
             $residents = Resident::with(['household'])
@@ -632,25 +641,25 @@ class ResidentController extends Controller
                     'resident_id' => $resident->resident_id,
                     'full_name' => $resident->full_name,
                     'address' => $resident->household
-                        ? $resident->household->address . ', ' . $resident->household->barangay
+                        ? $resident->household->address.', '.$resident->household->barangay
                         : 'N/A',
-                    'has_signature' => !empty($resident->signature),
-                    'has_photo' => !empty($resident->photo_path)
+                    'has_signature' => ! empty($resident->signature),
+                    'has_photo' => ! empty($resident->photo_path),
                 ];
             });
 
             return response()->json([
                 'count' => $data->count(),
-                'data' => $data
+                'data' => $data,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Allowed ID Card Error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'error' => 'Server error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

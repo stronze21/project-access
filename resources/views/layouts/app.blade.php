@@ -277,6 +277,50 @@
                                 </x-nav-link>
                             @endcan
 
+                            @can('manage-legacy-reference-data')
+                                <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }"
+                                    data-testid="legacy-data-navbar">
+                                    <button @click="open = !open" @click.away="open = false"
+                                        class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
+                                        :class="{
+                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }},
+                                            'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]': !{{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }}
+                                        }">
+                                        <span class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 6h16M4 12h16M4 18h16" />
+                                            </svg>
+                                            Legacy Data
+                                        </span>
+                                        <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                                        x-transition:enter-start="opacity-0 translate-y-1"
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-150"
+                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                        x-transition:leave-end="opacity-0 translate-y-1"
+                                        class="absolute left-0 top-full z-20 mt-2 w-64 origin-top-left rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40"
+                                        style="display: none;">
+                                        <div class="py-1">
+                                            <a href="{{ route('legacy-data.references.index', 'source-income-types') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Source Income Types</a>
+                                            <a href="{{ route('legacy-data.references.index', 'educational-attainments') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Educational Attainments</a>
+                                            <a href="{{ route('legacy-data.references.index', 'civil-statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Civil Statuses</a>
+                                            <a href="{{ route('legacy-data.references.index', 'barangays') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Barangay Mappings</a>
+                                            <a href="{{ route('legacy-data.bhw.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">BHW Master</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endcan
+
                             <!-- Households - only show if user has permission -->
                             @can('view-households')
                                 <x-nav-link href="{{ route('households.index') }}" :active="request()->routeIs('households.*')">
@@ -632,6 +676,36 @@
                                     Residents
                                 </span>
                             </x-responsive-nav-link>
+                        @endcan
+
+                        @can('manage-legacy-reference-data')
+                            <div x-data="{ legacyDataOpen: {{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }} }"
+                                data-testid="legacy-data-mobile-navbar">
+                                <button @click="legacyDataOpen = !legacyDataOpen"
+                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ request()->routeIs('legacy-data.*') ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium transition duration-150 ease-in-out focus:outline-none">
+                                    <span class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 6h16M4 12h16M4 18h16" />
+                                        </svg>
+                                        Legacy Data
+                                    </span>
+                                    <svg class="w-4 h-4 ml-auto" :class="{ 'rotate-90': legacyDataOpen }"
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <div x-show="legacyDataOpen" class="pl-6 mt-1 space-y-1" style="display: none;">
+                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'source-income-types') }}" :active="request()->is('legacy-data/source-income-types')">Source Income Types</x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'educational-attainments') }}" :active="request()->is('legacy-data/educational-attainments')">Educational Attainments</x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'civil-statuses') }}" :active="request()->is('legacy-data/civil-statuses')">Civil Statuses</x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'barangays') }}" :active="request()->is('legacy-data/barangays')">Barangay Mappings</x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('legacy-data.bhw.index') }}" :active="request()->routeIs('legacy-data.bhw.*')">BHW Master</x-responsive-nav-link>
+                                </div>
+                            </div>
                         @endcan
 
                         <!-- Households - only visible with permission -->

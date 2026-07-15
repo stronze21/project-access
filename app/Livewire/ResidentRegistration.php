@@ -2,28 +2,31 @@
 
 namespace App\Livewire;
 
-use Carbon\Carbon;
-use App\Models\Region;
-use Mary\Traits\Toast;
-use Livewire\Component;
-use App\Models\Province;
-use App\Models\Resident;
-use App\Models\Household;
-use Livewire\Attributes\On;
-use App\Models\SystemSetting;
-use App\Services\RfidService;
-use Livewire\WithFileUploads;
-use App\Services\QrCodeService;
 use App\Models\CityMunicipality;
-use Livewire\Attributes\Validate;
+use App\Models\CivilStatus;
+use App\Models\EducationalAttainment;
+use App\Models\Household;
+use App\Models\Province;
+use App\Models\Region;
+use App\Models\Resident;
+use App\Models\SourceIncomeType;
+use App\Models\SystemSetting;
+use App\Services\QrCodeService;
+use App\Services\RfidService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\On;
+use Livewire\Attributes\Validate;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Mary\Traits\Toast;
 
 class ResidentRegistration extends Component
 {
-    use WithFileUploads;
     use Toast;
+    use WithFileUploads;
 
     // Form data
     #[Validate('required|string|min:2|max:50')]
@@ -51,7 +54,7 @@ class ResidentRegistration extends Component
     public $civilStatus = '';
 
     // Updated validation rule for Philippine phone numbers
-   #[Validate('nullable|string|max:20|philippine_phone')]
+    #[Validate('nullable|string|max:20|philippine_phone')]
     public $contactNumber = '';
 
     #[Validate('nullable|email|max:100')]
@@ -63,12 +66,17 @@ class ResidentRegistration extends Component
     #[Validate('nullable|string|max:100')]
     public $occupation = '';
 
-
     #[Validate('nullable|numeric|min:0|max:999999.99')]
     public $monthlyIncome = 0; // Set default value to 0
 
-    #[Validate('nullable|string|max:100')]
+    #[Validate('nullable|string|max:255')]
     public $educationalAttainment = '';
+
+    #[Validate('nullable|integer|exists:source_income_types,id')]
+    public $sourceIncomeTypeId = '';
+
+    #[Validate('nullable|string|max:255')]
+    public $ethnicity = '';
 
     // Signature
     #[Validate('nullable|string')]
@@ -94,13 +102,28 @@ class ResidentRegistration extends Component
 
     // Boolean flags
     public $isRegisteredVoter = false;
+
     public $isPWD = false;
+
     public $isSeniorCitizen = false;
+
     public $isSoloParent = false;
+
     public $isPregnant = false;
+
     public $isLactating = false;
+
     public $isIndigenous = false;
+
     public $is4ps = false;
+
+    public $isScholar = false;
+
+    public $isActive = true;
+
+    public $isBHW = false;
+
+    public $isLegacyImported = false;
 
     // Household related - keep only what's necessary for address
     #[Validate('required|string|min:5|max:255')]
@@ -108,14 +131,20 @@ class ResidentRegistration extends Component
 
     // Location data from the AddressSelector
     public $barangay = '';
+
     public $cityMunicipality = '';
+
     public $province = '';
+
     public $region = '';
 
     // PSGC Codes
     public $regionCode = '';
+
     public $provinceCode = '';
+
     public $cityMunicipalityCode = '';
+
     public $barangayCode = '';
 
     // Automatically set relationship to head
@@ -131,7 +160,9 @@ class ResidentRegistration extends Component
 
     // Mode
     public $isEdit = false;
+
     public $residentId = null;
+
     public $householdId = null;
 
     // QR scanning
@@ -143,6 +174,7 @@ class ResidentRegistration extends Component
 
     // Modals
     public $showSignatureModal = false;
+
     public $showWebcamModal = false;
 
     // Webcam captured photo
@@ -155,7 +187,7 @@ class ResidentRegistration extends Component
     public $emergencyContactRelationship = '';
 
     // Updated validation rule for Philippine phone numbers
-   #[Validate('nullable|string|max:20|philippine_phone')]
+    #[Validate('nullable|string|max:20|philippine_phone')]
     public $emergencyContactNumber = '';
 
     #[Validate('nullable|string|max:50')]
@@ -163,7 +195,9 @@ class ResidentRegistration extends Component
 
     #[Validate('nullable|string|max:10')]
     public $bloodType = '';
+
     protected $qrCodeService;
+
     protected $rfidService;
 
     /**
@@ -178,21 +212,21 @@ class ResidentRegistration extends Component
     // Add a method to normalize phone number before validation
     public function updatedContactNumber($value)
     {
-        if (!empty($value)) {
+        if (! empty($value)) {
             // Remove any non-numeric characters except the + sign at the beginning
             $phoneNumber = preg_replace('/[^0-9+]/', '', $value);
 
             // Convert +63 format to 0 format
             if (str_starts_with($phoneNumber, '+63')) {
-                $phoneNumber = '0' . substr($phoneNumber, 3);
+                $phoneNumber = '0'.substr($phoneNumber, 3);
             }
             // Convert 63 format to 0 format (without +)
-            else if (str_starts_with($phoneNumber, '63') && strlen($phoneNumber) >= 11) {
-                $phoneNumber = '0' . substr($phoneNumber, 2);
+            elseif (str_starts_with($phoneNumber, '63') && strlen($phoneNumber) >= 11) {
+                $phoneNumber = '0'.substr($phoneNumber, 2);
             }
             // Add 0 if number doesn't start with 0
-            else if (!str_starts_with($phoneNumber, '0') && strlen($phoneNumber) === 10) {
-                $phoneNumber = '0' . $phoneNumber;
+            elseif (! str_starts_with($phoneNumber, '0') && strlen($phoneNumber) === 10) {
+                $phoneNumber = '0'.$phoneNumber;
             }
 
             $this->contactNumber = $phoneNumber;
@@ -202,21 +236,21 @@ class ResidentRegistration extends Component
     // The same logic will be useful for emergency contact number
     public function updatedEmergencyContactNumber($value)
     {
-        if (!empty($value)) {
+        if (! empty($value)) {
             // Remove any non-numeric characters except the + sign at the beginning
             $phoneNumber = preg_replace('/[^0-9+]/', '', $value);
 
             // Convert +63 format to 0 format
             if (str_starts_with($phoneNumber, '+63')) {
-                $phoneNumber = '0' . substr($phoneNumber, 3);
+                $phoneNumber = '0'.substr($phoneNumber, 3);
             }
             // Convert 63 format to 0 format (without +)
-            else if (str_starts_with($phoneNumber, '63') && strlen($phoneNumber) >= 11) {
-                $phoneNumber = '0' . substr($phoneNumber, 2);
+            elseif (str_starts_with($phoneNumber, '63') && strlen($phoneNumber) >= 11) {
+                $phoneNumber = '0'.substr($phoneNumber, 2);
             }
             // Add 0 if number doesn't start with 0
-            else if (!str_starts_with($phoneNumber, '0') && strlen($phoneNumber) === 10) {
-                $phoneNumber = '0' . $phoneNumber;
+            elseif (! str_starts_with($phoneNumber, '0') && strlen($phoneNumber) === 10) {
+                $phoneNumber = '0'.$phoneNumber;
             }
 
             $this->emergencyContactNumber = $phoneNumber;
@@ -314,7 +348,7 @@ class ResidentRegistration extends Component
                 $path = $this->signatureFile->getRealPath();
                 $type = pathinfo($path, PATHINFO_EXTENSION);
                 $data = file_get_contents($path);
-                $dataUrl = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                $dataUrl = 'data:image/'.$type.';base64,'.base64_encode($data);
 
                 // Set as the signature
                 $this->signature = $dataUrl;
@@ -323,7 +357,7 @@ class ResidentRegistration extends Component
                 $this->success('Signature file uploaded successfully!');
             }
         } catch (\Exception $e) {
-            Log::error('Error processing signature file: ' . $e->getMessage());
+            Log::error('Error processing signature file: '.$e->getMessage());
             $this->error('Error processing signature file. Please try again.');
         }
     }
@@ -352,6 +386,8 @@ class ResidentRegistration extends Component
         $this->occupation = $resident->occupation;
         $this->monthlyIncome = $resident->monthly_income;
         $this->educationalAttainment = $resident->educational_attainment;
+        $this->sourceIncomeTypeId = $resident->source_income_type_id ?? '';
+        $this->ethnicity = $resident->ethnicity;
         $this->signature = $resident->signature;
         $this->dateIssue = $resident->date_issue ? $resident->date_issue->format('Y-m-d') : now()->format('Y-m-d');
         $this->specialSector = $resident->special_sector;
@@ -366,6 +402,10 @@ class ResidentRegistration extends Component
         $this->isLactating = $resident->is_lactating;
         $this->isIndigenous = $resident->is_indigenous;
         $this->is4ps = $resident->is_4ps;
+        $this->isScholar = $resident->is_scholar;
+        $this->isActive = $resident->is_active;
+        $this->isBHW = $resident->is_bhw;
+        $this->isLegacyImported = $resident->is_legacy_imported;
 
         // Household
         $this->householdId = $resident->household_id;
@@ -412,15 +452,15 @@ class ResidentRegistration extends Component
         $this->tempSignature = null;
     }
 
-
     /**
      * Save signature from modal to main signature property with auto-cropping
      */
     public function saveSignature()
     {
         // If the signature is empty, don't process it
-        if (!$this->tempSignature) {
+        if (! $this->tempSignature) {
             $this->showSignatureModal = false;
+
             return;
         }
 
@@ -442,7 +482,7 @@ class ResidentRegistration extends Component
     /**
      * Auto-crop a signature to remove excess whitespace
      *
-     * @param string $signatureData The signature data URL
+     * @param  string  $signatureData  The signature data URL
      * @return string The cropped signature data URL
      */
     private function cropSignature($signatureData)
@@ -456,13 +496,13 @@ class ResidentRegistration extends Component
 
             // Decode the base64 data
             $imageData = base64_decode($parts[1]);
-            if (!$imageData) {
+            if (! $imageData) {
                 return $signatureData; // Return original if decoding fails
             }
 
             // Create image from the decoded data
             $image = imagecreatefromstring($imageData);
-            if (!$image) {
+            if (! $image) {
                 return $signatureData; // Return original if can't create image
             }
 
@@ -508,8 +548,9 @@ class ResidentRegistration extends Component
             }
 
             // If no signature found, return the original
-            if (!$found) {
+            if (! $found) {
                 imagedestroy($image);
+
                 return $signatureData;
             }
 
@@ -561,10 +602,11 @@ class ResidentRegistration extends Component
             imagedestroy($croppedImage);
 
             // Return as data URL
-            return 'data:image/png;base64,' . base64_encode($croppedData);
+            return 'data:image/png;base64,'.base64_encode($croppedData);
         } catch (\Exception $e) {
             // If any error occurs, return the original
-            Log::error('Error cropping signature: ' . $e->getMessage());
+            Log::error('Error cropping signature: '.$e->getMessage());
+
             return $signatureData;
         }
     }
@@ -643,6 +685,7 @@ class ResidentRegistration extends Component
                 'contact_number' => $this->contactNumber,
                 'email' => $this->email,
                 'occupation' => $this->occupation,
+                'source_income_type_id' => $this->sourceIncomeTypeId ?: null,
                 'monthly_income' => $monthlyIncome, // Use the sanitized value here
                 'educational_attainment' => $this->educationalAttainment,
                 'is_registered_voter' => $this->isRegisteredVoter,
@@ -653,7 +696,9 @@ class ResidentRegistration extends Component
                 'is_pregnant' => $this->isPregnant,
                 'is_lactating' => $this->isLactating,
                 'is_indigenous' => $this->isIndigenous,
+                'ethnicity' => $this->ethnicity,
                 'is_4ps' => $this->is4ps,
+                'is_scholar' => $this->isScholar,
                 'special_sector' => $this->specialSector,
                 'household_id' => $this->householdId,
                 'relationship_to_head' => $this->relationshipToHead,
@@ -664,6 +709,10 @@ class ResidentRegistration extends Component
                 'emergency_contact_relationship' => $this->emergencyContactRelationship,
                 'emergency_contact_number' => $this->emergencyContactNumber,
             ];
+
+            if (! $this->isEdit || auth()->user()?->can('configure-system')) {
+                $residentData['is_active'] = $this->isActive;
+            }
 
             if ($this->isEdit) {
                 $resident = Resident::findOrFail($this->residentId);
@@ -684,8 +733,8 @@ class ResidentRegistration extends Component
                 $imageData = explode(',', $this->capturedPhoto);
                 if (count($imageData) > 1) {
                     $imageData = base64_decode($imageData[1]);
-                    $filename = 'resident-' . $resident->id . '-webcam-' . time() . '.png';
-                    $path = 'resident-photos/' . $filename;
+                    $filename = 'resident-'.$resident->id.'-webcam-'.time().'.png';
+                    $path = 'resident-photos/'.$filename;
 
                     Storage::disk('public')->put($path, $imageData);
                     $resident->photo_path = $path;
@@ -696,7 +745,7 @@ class ResidentRegistration extends Component
             }
 
             // Generate QR code if not exists
-            if (!$resident->qr_code) {
+            if (! $resident->qr_code) {
                 $this->qrCodeService->generateResidentQrCode($resident);
             }
 
@@ -709,17 +758,17 @@ class ResidentRegistration extends Component
 
             $this->success($this->isEdit ? 'Resident updated successfully!' : 'Resident registered successfully!');
 
-            if (!$this->isEdit) {
+            if (! $this->isEdit) {
                 $this->resetForm();
             }
 
             return redirect()->route('residents.show', $resident->id);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to save resident: ' . $e->getMessage());
+            Log::error('Failed to save resident: '.$e->getMessage());
             Log::error($e->getTraceAsString());
 
-            $this->error('Error: ' . $e->getMessage());
+            $this->error('Error: '.$e->getMessage());
         }
     }
 
@@ -744,6 +793,8 @@ class ResidentRegistration extends Component
             'occupation',
             'monthlyIncome',
             'educationalAttainment',
+            'sourceIncomeTypeId',
+            'ethnicity',
             'isRegisteredVoter',
             'precinctNo', // Add this line
             'isPWD',
@@ -752,6 +803,11 @@ class ResidentRegistration extends Component
             'isPregnant',
             'isLactating',
             'isIndigenous',
+            'is4ps',
+            'isScholar',
+            'isActive',
+            'isBHW',
+            'isLegacyImported',
             'specialSector',
             'householdId',
             'address',
@@ -785,6 +841,7 @@ class ResidentRegistration extends Component
         $this->dateIssue = now()->format('Y-m-d');
         $this->relationshipToHead = 'head';
         $this->signatureMethod = 'digital';
+        $this->isActive = true;
     }
 
     /**
@@ -801,6 +858,21 @@ class ResidentRegistration extends Component
      */
     public function render()
     {
-        return view('livewire.resident-registration');
+        return view('livewire.resident-registration', [
+            'sourceIncomeTypes' => SourceIncomeType::query()
+                ->where('is_active', true)
+                ->when($this->sourceIncomeTypeId, fn ($query) => $query->orWhere('id', $this->sourceIncomeTypeId))
+                ->orderBy('name')
+                ->get(),
+            'educationalAttainments' => EducationalAttainment::query()
+                ->where('is_active', true)
+                ->when($this->educationalAttainment, fn ($query) => $query->orWhere('name', $this->educationalAttainment))
+                ->orderBy('name')
+                ->get(),
+            'civilStatuses' => CivilStatus::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 }

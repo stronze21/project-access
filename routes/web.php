@@ -1,52 +1,46 @@
 <?php
 
-use App\Livewire\Reports;
-use App\Livewire\Dashboard;
-use App\Livewire\ResidentList;
-use App\Livewire\ResidentShow;
-use App\Livewire\HouseholdList;
-use App\Livewire\HouseholdShow;
-use App\Livewire\QrRfidScanner;
-use App\Livewire\HouseholdsList;
-use App\Livewire\HouseholdCreate;
-use App\Livewire\AyudaProgramShow;
-use App\Livewire\DistributionList;
-use App\Livewire\DistributionShow;
-use App\Livewire\AyudaDistribution;
-use App\Livewire\AyudaProgramsList;
-use App\Livewire\BatchVerification;
-use App\Livewire\DistributionsList;
-use App\Livewire\AyudaProgramCreate;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AccountDeletionRequestController;
+use App\Http\Controllers\BatchImageDownloadController;
+use App\Http\Controllers\MobileAppController;
+use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\ReportExportController;
+use App\Http\Controllers\ResidentCsvController;
+use App\Http\Controllers\ResidentIdCardController;
+use App\Http\Controllers\SupportRequestController;
+use App\Livewire\Admin\CitizenServicesManager;
 use App\Livewire\Admin\RoleManagement;
 use App\Livewire\Admin\UserManagement;
-use App\Livewire\Admin\CitizenServicesManager;
-use App\Livewire\ResidentRegistration;
-use App\Livewire\DistributionBatchForm;
-use App\Livewire\DistributionBatchList;
-use App\Livewire\DistributionBatchShow;
-use App\Livewire\HouseholdRegistration;
-use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\Storage;
+use App\Livewire\AyudaDistribution;
+use App\Livewire\AyudaProgramCreate;
+use App\Livewire\AyudaProgramShow;
+use App\Livewire\AyudaProgramsList;
+use App\Livewire\BarangayBatchDistribution;
+use App\Livewire\BatchVerification;
+use App\Livewire\Dashboard;
 use App\Livewire\DistributionBatchCreate;
 use App\Livewire\DistributionBatchesList;
-use App\Livewire\ResidentSignatureUpdate;
-use App\Http\Controllers\QrCodeController;
-use App\Livewire\AyudaProgram\ProgramForm;
-use App\Livewire\AyudaProgram\ProgramList;
-use App\Livewire\AyudaProgram\ProgramShow;
-use App\Livewire\Reports\ReportController;
-use App\Livewire\BarangayBatchDistribution;
-use App\Livewire\Reports\DistributionsReport;
+use App\Livewire\DistributionBatchShow;
+use App\Livewire\DistributionShow;
+use App\Livewire\DistributionsList;
+use App\Livewire\HouseholdCreate;
+use App\Livewire\HouseholdShow;
+use App\Livewire\HouseholdsList;
+use App\Livewire\LegacyBhwManager;
+use App\Livewire\LegacyReferenceDataManager;
+use App\Livewire\LegacyResidentImport;
+use App\Livewire\QrRfidScanner;
 use App\Livewire\RegistrationOfficerDashboard;
-use App\Http\Controllers\ResidentCsvController;
-use App\Http\Controllers\ReportExportController;
-use App\Http\Controllers\MobileAppController;
-use App\Http\Controllers\ResidentIdCardController;
-use App\Http\Controllers\BatchImageDownloadController;
-use App\Http\Controllers\AccountDeletionRequestController;
-use App\Http\Controllers\SupportRequestController;
-
+use App\Livewire\Reports;
+use App\Livewire\Reports\DistributionsReport;
+use App\Livewire\Reports\ReportController;
+use App\Livewire\ResidentList;
+use App\Livewire\ResidentRegistration;
+use App\Livewire\ResidentShow;
+use App\Livewire\ResidentSignatureUpdate;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -93,13 +87,27 @@ Route::middleware([
             ->name('residents.create');
 
         // Export
-        Route::get('/export', [ResidentCsvController::class, 'export'])->name('residents.export');
-        Route::get('/export/download', [ResidentCsvController::class, 'download'])->name('residents.export.download');
+        Route::get('/export', [ResidentCsvController::class, 'export'])
+            ->middleware('permission:export-residents')
+            ->name('residents.export');
+        Route::get('/export/download', [ResidentCsvController::class, 'download'])
+            ->middleware('permission:export-residents')
+            ->name('residents.export.download');
 
         // Import
-        Route::get('/import', [ResidentCsvController::class, 'import'])->name('residents.import');
-        Route::post('/import/process', [ResidentCsvController::class, 'processImport'])->name('residents.import.process');
-        Route::get('/import/template', [ResidentCsvController::class, 'downloadTemplate'])->name('residents.import.template');
+        Route::get('/import', [ResidentCsvController::class, 'import'])
+            ->middleware('permission:import-residents')
+            ->name('residents.import');
+        Route::post('/import/process', [ResidentCsvController::class, 'processImport'])
+            ->middleware('permission:import-residents')
+            ->name('residents.import.process');
+        Route::get('/import/template', [ResidentCsvController::class, 'downloadTemplate'])
+            ->middleware('permission:import-residents')
+            ->name('residents.import.template');
+
+        Route::get('/legacy-import', LegacyResidentImport::class)
+            ->middleware('permission:import-residents')
+            ->name('residents.legacy-import.index');
 
         // New route for signature update
         Route::get('/{residentId}/update-signature', ResidentSignatureUpdate::class)
@@ -125,6 +133,17 @@ Route::middleware([
         Route::get('/batch-images/download', [BatchImageDownloadController::class, 'download'])
             ->name('residents.batch-images.download');
     });
+
+    Route::prefix('legacy-data')
+        ->middleware('permission:manage-legacy-reference-data')
+        ->name('legacy-data.')
+        ->group(function () {
+            Route::get('/bhw-master', LegacyBhwManager::class)->name('bhw.index');
+
+            Route::get('/{type}', LegacyReferenceDataManager::class)
+                ->whereIn('type', ['source-income-types', 'educational-attainments', 'civil-statuses', 'barangays'])
+                ->name('references.index');
+        });
 
     // Households Management
     Route::prefix('households')->middleware('permission:view-households')->group(function () {
@@ -168,7 +187,6 @@ Route::middleware([
             Route::get('/create', AyudaDistribution::class)->name('distributions.create');
             Route::get('/batch-distrib/{batchId}', AyudaDistribution::class)->name('distributions.batch');
         });
-
 
         // Distribution batches
         Route::middleware('permission:manage-distribution-batches')->group(function () {
@@ -221,13 +239,13 @@ Route::middleware([
         // Prevent path traversal and validate extension
         $filename = basename($filename);
 
-        if (!str_ends_with($filename, '.csv')) {
+        if (! str_ends_with($filename, '.csv')) {
             abort(404);
         }
 
-        $filePath = public_path('exports/' . $filename);
+        $filePath = public_path('exports/'.$filename);
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             abort(404);
         }
 
@@ -278,11 +296,12 @@ Route::middleware([
     Route::post('/delete-temp-signature', function (Request $request) {
         $filename = $request->input('filename');
         if ($filename) {
-            $filePath = storage_path('app/public/temp_signatures/' . $filename);
+            $filePath = storage_path('app/public/temp_signatures/'.$filename);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
         }
+
         return response()->json(['success' => true]);
     })->name('delete.temp.signature');
 });

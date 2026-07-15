@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Household extends Model
 {
@@ -18,6 +18,9 @@ class Household extends Model
      */
     protected $fillable = [
         'household_id',
+        'building_registry_number',
+        'is_provisional',
+        'provisional_for_pin',
         'address',
         'barangay',
         'barangay_code',
@@ -45,6 +48,7 @@ class Household extends Model
      */
     protected $casts = [
         'monthly_income' => 'decimal:2',
+        'is_provisional' => 'boolean',
         'has_electricity' => 'boolean',
         'has_water_supply' => 'boolean',
         'is_active' => 'boolean',
@@ -52,23 +56,21 @@ class Household extends Model
 
     /**
      * Generate a unique household ID.
-     *
-     * @return string
      */
     public static function generateHouseholdId(): string
     {
-        $prefix = 'HH-' . date('Ym') . '-';
-        $lastHousehold = self::where('household_id', 'like', $prefix . '%')
+        $prefix = 'HH-'.date('Ym').'-';
+        $lastHousehold = self::where('household_id', 'like', $prefix.'%')
             ->orderBy('id', 'desc')
             ->first();
 
         $sequence = 1;
         if ($lastHousehold) {
             $parts = explode('-', $lastHousehold->household_id);
-            $sequence = (int)end($parts) + 1;
+            $sequence = (int) end($parts) + 1;
         }
 
-        return $prefix . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -128,7 +130,7 @@ class Household extends Model
             $this->address,
             $this->barangay,
             $this->city_municipality,
-            $this->province
+            $this->province,
         ];
 
         if ($this->postal_code) {

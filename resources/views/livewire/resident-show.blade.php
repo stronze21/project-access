@@ -97,6 +97,27 @@
                                 </span>
                             @endif
 
+                            @if ($resident->is_bhw)
+                                <span
+                                    class="inline-flex items-center rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
+                                    Barangay Health Worker
+                                </span>
+                            @endif
+
+                            @if ($resident->is_scholar)
+                                <span
+                                    class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                                    Scholar
+                                </span>
+                            @endif
+
+                            @if ($resident->is_legacy_imported)
+                                <span
+                                    class="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800">
+                                    Legacy Imported
+                                </span>
+                            @endif
+
                             @if ($resident->special_sector)
                                 <span
                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
@@ -148,6 +169,22 @@
                                         <dd class="font-medium text-gray-900">
                                             {{ $resident->monthly_income ? '₱ ' . number_format($resident->monthly_income, 2) : 'N/A' }}
                                         </dd>
+                                    </div>
+                                    <div class="flex justify-between py-1">
+                                        <dt class="text-gray-600">Income Source:</dt>
+                                        <dd class="font-medium text-gray-900">
+                                            {{ $resident->sourceIncomeType?->name ?: 'N/A' }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between py-1">
+                                        <dt class="text-gray-600">Education:</dt>
+                                        <dd class="font-medium text-gray-900">
+                                            {{ $resident->educational_attainment ?: 'N/A' }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between py-1">
+                                        <dt class="text-gray-600">Ethnicity:</dt>
+                                        <dd class="font-medium text-gray-900">{{ $resident->ethnicity ?: 'N/A' }}</dd>
                                     </div>
                                     @if ($resident->precinct_no)
                                         <div class="flex justify-between py-1">
@@ -278,6 +315,18 @@
 
                         <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
                             {{ $resident->is_registered_voter ? 'Registered Voter' : 'Not a Voter' }}
+                        </x-mary-badge>
+
+                        <x-mary-badge class="badge-{{ $resident->is_bhw ? 'success' : 'gray' }}">
+                            {{ $resident->is_bhw ? 'Barangay Health Worker' : 'Not BHW' }}
+                        </x-mary-badge>
+
+                        <x-mary-badge class="badge-{{ $resident->is_scholar ? 'success' : 'gray' }}">
+                            {{ $resident->is_scholar ? 'Scholar' : 'Not Scholar' }}
+                        </x-mary-badge>
+
+                        <x-mary-badge class="badge-{{ $resident->is_legacy_imported ? 'secondary' : 'gray' }}">
+                            {{ $resident->is_legacy_imported ? 'Legacy Imported' : 'Native Record' }}
                         </x-mary-badge>
                     </div>
                 </div>

@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use Carbon\Carbon;
 
 class Resident extends Authenticatable
 {
@@ -42,6 +42,7 @@ class Resident extends Authenticatable
         'id_card_path',
         'relationship_to_head',
         'occupation',
+        'source_income_type_id',
         'monthly_income',
         'educational_attainment',
         'is_registered_voter',
@@ -52,13 +53,18 @@ class Resident extends Authenticatable
         'is_pregnant',
         'is_lactating',
         'is_indigenous',
+        'ethnicity',
         'is_4ps',
+        'is_scholar',
+        'is_bhw',
+        'is_legacy_imported',
         'special_sector',
         'is_active',
         'notes',
         'signature',
         'date_issue',
         'last_login_at',
+        'locked_at',
 
         'emergency_contact_name',
         'emergency_contact_relationship',
@@ -85,6 +91,7 @@ class Resident extends Authenticatable
         'birth_date' => 'date',
         'date_issue' => 'date',
         'last_login_at' => 'datetime',
+        'locked_at' => 'datetime',
         'monthly_income' => 'decimal:2',
         'password' => 'hashed',
         'mpin' => 'hashed',
@@ -97,6 +104,9 @@ class Resident extends Authenticatable
         'is_indigenous' => 'boolean',
         'is_active' => 'boolean',
         'is_4ps' => 'boolean',
+        'is_scholar' => 'boolean',
+        'is_bhw' => 'boolean',
+        'is_legacy_imported' => 'boolean',
     ];
 
     /**
@@ -107,7 +117,7 @@ class Resident extends Authenticatable
     protected static function booted()
     {
         static::creating(function ($resident) {
-            if (!$resident->resident_id) {
+            if (! $resident->resident_id) {
                 $resident->resident_id = self::generateResidentId();
             }
 
@@ -117,7 +127,7 @@ class Resident extends Authenticatable
             }
 
             // Auto-set date_issue to current date if not provided
-            if (!$resident->date_issue) {
+            if (! $resident->date_issue) {
                 $resident->date_issue = now();
             }
         });
@@ -133,33 +143,29 @@ class Resident extends Authenticatable
 
     /**
      * Generate a unique resident ID.
-     *
-     * @return string
      */
     public static function generateResidentId(): string
     {
-        $prefix = 'R-' . date('Ym') . '-';
-        $lastResident = self::where('resident_id', 'like', $prefix . '%')
+        $prefix = 'R-'.date('Ym').'-';
+        $lastResident = self::where('resident_id', 'like', $prefix.'%')
             ->orderBy('id', 'desc')
             ->first();
 
         $sequence = 1;
         if ($lastResident) {
             $parts = explode('-', $lastResident->resident_id);
-            $sequence = (int)end($parts) + 1;
+            $sequence = (int) end($parts) + 1;
         }
 
-        return $prefix . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 
     /**
      * Generate a unique QR code for the resident.
-     *
-     * @return string
      */
     public function generateQrCode(): string
     {
-        $this->qr_code = 'QR-R-' . strtoupper(substr(md5($this->id . time()), 0, 10));
+        $this->qr_code = 'QR-R-'.strtoupper(substr(md5($this->id.time()), 0, 10));
         $this->save();
 
         return $this->qr_code;
@@ -167,8 +173,6 @@ class Resident extends Authenticatable
 
     /**
      * Get the resident's age.
-     *
-     * @return int
      */
     public function getAge(): int
     {
@@ -181,10 +185,10 @@ class Resident extends Authenticatable
     public function getFullNameAttribute(): string
     {
         $parts = [
-            $this->last_name . ',',
+            $this->last_name.',',
             $this->first_name,
             $this->suffix,
-            $this->middle_name ? substr($this->middle_name, 0, 1) . '.' : null,
+            $this->middle_name ? substr($this->middle_name, 0, 1).'.' : null,
         ];
 
         return implode(' ', array_filter($parts));
@@ -203,6 +207,16 @@ class Resident extends Authenticatable
         return $this->belongsTo(Household::class);
     }
 
+    public function sourceIncomeType(): BelongsTo
+    {
+        return $this->belongsTo(SourceIncomeType::class);
+    }
+
+    public function bhwAssignments(): HasMany
+    {
+        return $this->hasMany(BarangayHealthWorkerAssignment::class);
+    }
+
     /**
      * Get all distributions for this resident.
      */
@@ -213,14 +227,11 @@ class Resident extends Authenticatable
 
     /**
      * Check if this resident is eligible for a given ayuda program.
-     *
-     * @param AyudaProgram $program
-     * @return bool
      */
     public function isEligibleFor(AyudaProgram $program): bool
     {
         foreach ($program->eligibilityCriteria as $criterion) {
-            if ($criterion->is_required && !$criterion->checkEligibility($this)) {
+            if ($criterion->is_required && ! $criterion->checkEligibility($this)) {
                 return false;
             }
         }
@@ -271,7 +282,6 @@ class Resident extends Authenticatable
     /**
      * Get the resident value for a given criterion.
      *
-     * @param EligibilityCriteria $criterion
      * @return mixed
      */
     protected function getValueForCriterion(EligibilityCriteria $criterion)
@@ -296,7 +306,10 @@ class Resident extends Authenticatable
             case 'special_sector':
                 return $this->special_sector;
             case '4Ps':
+            case '4ps':
                 return $this->is_4ps;
+            case 'scholar':
+                return $this->is_scholar;
             default:
                 return null;
         }

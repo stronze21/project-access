@@ -28,7 +28,6 @@ class ResidentCsvController extends Controller
         $this->csvService = $csvService;
     }
 
-
     /**
      * Show the export options page
      */
@@ -50,7 +49,7 @@ class ResidentCsvController extends Controller
 
         return view('residents.export', [
             'barangayList' => $barangayList,
-            'specialSectorList' => $specialSectorList
+            'specialSectorList' => $specialSectorList,
         ]);
     }
 
@@ -62,11 +61,11 @@ class ResidentCsvController extends Controller
         $filters = $request->only('barangay', 'special_sector', 'status');
         $csv = $this->csvService->exportToCsv($filters);
 
-        $filename = 'residents_export_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'residents_export_'.now()->format('Y-m-d_His').'.csv';
 
         return response($csv)
             ->header('Content-Type', 'text/csv; charset=UTF-8')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
     /**
@@ -97,7 +96,7 @@ class ResidentCsvController extends Controller
             // Delete the temporary file
             Storage::delete($path);
 
-            if (!empty($importStats['errors'])) {
+            if (! empty($importStats['errors'])) {
                 return redirect()->route('residents.import')
                     ->with('warning', 'Import completed with errors')
                     ->with('importStats', $importStats);
@@ -108,7 +107,7 @@ class ResidentCsvController extends Controller
                 ->with('importStats', $importStats);
         } catch (\Exception $e) {
             return redirect()->route('residents.import')
-                ->with('error', 'Import failed: ' . $e->getMessage());
+                ->with('error', 'Import failed: '.$e->getMessage());
         }
     }
 
@@ -123,8 +122,8 @@ class ResidentCsvController extends Controller
             'email', 'occupation', 'monthly_income', 'educational_attainment',
             'special_sector', 'is_registered_voter', 'is_pwd', 'is_senior_citizen',
             'is_solo_parent', 'is_pregnant', 'is_lactating', 'is_indigenous',
-            'is_active', 'date_issue', 'notes', 'address', 'barangay',
-            'city_municipality', 'province', 'region'
+            'is_4ps', 'is_scholar', 'is_active', 'date_issue', 'notes', 'address', 'barangay',
+            'city_municipality', 'province', 'region',
         ];
 
         $sampleData = [
@@ -133,24 +132,24 @@ class ResidentCsvController extends Controller
                 '1990-01-15', 'Manila', 'male', 'married', '09191234567',
                 'juan@example.com', 'Teacher', '25000', 'college',
                 '4Ps', 'Yes', 'No', 'No',
-                'No', 'No', 'No', 'No',
+                'No', 'No', 'No', 'No', 'No', 'No',
                 'Yes', '2023-01-01', 'Additional notes', '123 Main St, Purok 3', 'Barangay A',
-                'Alicia', 'Isabela', 'Region II'
+                'Alicia', 'Isabela', 'Region II',
             ],
             [
                 '', 'Maria', 'Santos', 'Garcia', '',
                 '1985-05-20', 'Quezon City', 'female', 'single', '09187654321',
                 'maria@example.com', 'Nurse', '30000', 'college',
                 'SOLO PARENT', 'Yes', 'No', 'No',
-                'Yes', 'No', 'No', 'No',
+                'Yes', 'No', 'No', 'No', 'No', 'No',
                 'Yes', '2023-01-02', '', '456 Second St, Purok 2', 'Barangay B',
-                'Alicia', 'Isabela', 'Region II'
-            ]
+                'Alicia', 'Isabela', 'Region II',
+            ],
         ];
 
         $output = fopen('php://temp', 'w+');
         // Add BOM for Excel UTF-8 compatibility
-        fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+        fwrite($output, $bom = (chr(0xEF).chr(0xBB).chr(0xBF)));
 
         // Write headers and sample data
         fputcsv($output, $headers);
