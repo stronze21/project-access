@@ -179,7 +179,35 @@ class Resident extends Authenticatable
      */
     public function getAge(): int
     {
-        return $this->birth_date ? Carbon::parse($this->birth_date)->age : 0;
+        return $this->birthDateIso() ? Carbon::createFromFormat('!Y-m-d', $this->birthDateIso())->age : 0;
+    }
+
+    /**
+     * Return the birth date as a calendar-only ISO value without timezone conversion.
+     */
+    public function birthDateIso(): ?string
+    {
+        $rawBirthDate = $this->getRawOriginal('birth_date');
+
+        if (! is_string($rawBirthDate) || $rawBirthDate === '') {
+            return null;
+        }
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}/', $rawBirthDate, $matches)
+            ? $matches[0]
+            : null;
+    }
+
+    /**
+     * Format the stored birth date while preserving its exact calendar day.
+     */
+    public function formattedBirthDate(string $format = 'F d, Y'): ?string
+    {
+        $birthDate = $this->birthDateIso();
+
+        return $birthDate
+            ? Carbon::createFromFormat('!Y-m-d', $birthDate)->format($format)
+            : null;
     }
 
     /**

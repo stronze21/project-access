@@ -1,0 +1,15 @@
+{
+  "name": "SmartCity ACCESS Resident Portal",
+  "short_name": "ACCESS",
+  "id": "/resident-portal/",
+  "start_url": "/resident-portal",
+  "scope": "/resident-portal/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#f5f7fa",
+  "theme_color": "#2b67a2",
+  "icons": [
+    { "src": "/resident-portal/images/appicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

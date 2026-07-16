@@ -178,13 +178,13 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
 */
 
 // Resident Portal - Public (auth) routes
-Route::prefix('resident-portal')->name('resident-portal.')->group(function () {
+Route::prefix('resident-portal')->name('api.resident-portal.')->group(function () {
     Route::post('/login', [ResidentAuthController::class, 'login'])->name('login');
     Route::post('/register', [ResidentAuthController::class, 'register'])->name('register');
 });
 
 // Resident Portal - Protected routes (require Sanctum token)
-Route::prefix('resident-portal')->name('resident-portal.')->middleware('auth:sanctum')->group(function () {
+Route::prefix('resident-portal')->name('api.resident-portal.')->middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [ResidentAuthController::class, 'logout'])->name('logout');
     Route::post('/change-password', [ResidentAuthController::class, 'changePassword'])->name('change-password');

@@ -9,7 +9,7 @@
     }
 
     $givenName = trim($resident->first_name . ' ' . ($resident->suffix ?? ''));
-    $birthdate = $resident->birth_date?->format('F d, Y') ?? '';
+    $birthdate = $resident->formattedBirthDate() ?? '';
 @endphp
 
 <section class="print-page card-front" data-resident-id="{{ $resident->resident_id }}" data-side="front">

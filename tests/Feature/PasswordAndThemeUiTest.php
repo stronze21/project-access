@@ -17,6 +17,8 @@ class PasswordAndThemeUiTest extends TestCase
         $response->assertSee('data-password-toggle', false);
         $response->assertSee('project-access-theme', false);
         $response->assertSee('Switch to dark mode', false);
+        $response->assertSee('Mobile App');
+        $response->assertSee('href="'.route('mobile-app.index').'"', false);
     }
 
     public function test_password_reset_page_renders_reveal_controls_for_both_password_fields(): void

@@ -44,5 +44,22 @@
                 </x-button>
             </div>
         </form>
+
+        <div class="my-5 flex items-center gap-3" aria-hidden="true">
+            <span class="h-px flex-1 bg-slate-200"></span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Public access</span>
+            <span class="h-px flex-1 bg-slate-200"></span>
+        </div>
+
+        <a
+            href="{{ route('mobile-app.index') }}"
+            class="inline-flex w-full items-center justify-center rounded-md border border-[var(--brand-primary)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--brand-primary)] shadow-sm transition hover:bg-[var(--brand-mist)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-secondary)] focus:ring-offset-2"
+        >
+            <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="6" y="2.5" width="12" height="19" rx="2.5" stroke-width="1.8" />
+                <path d="M10 5h4M10.5 18.5h3" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            Mobile App
+        </a>
     </x-authentication-card>
 </x-guest-layout>

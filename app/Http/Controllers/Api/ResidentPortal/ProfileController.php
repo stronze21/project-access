@@ -145,7 +145,7 @@ class ProfileController extends Controller
                 'last_name' => $resident->last_name,
                 'middle_name' => $resident->middle_name,
                 'suffix' => $resident->suffix,
-                'birth_date' => $resident->birth_date?->format('Y-m-d'),
+                'birth_date' => $resident->birthDateIso(),
                 'gender' => $resident->gender,
                 'civil_status' => $resident->civil_status,
                 'blood_type' => $resident->blood_type,

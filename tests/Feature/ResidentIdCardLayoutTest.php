@@ -17,6 +17,7 @@ class ResidentIdCardLayoutTest extends TestCase
         $resident = $this->createResident([
             'qr_code' => 'R-TEST-1',
             'signature' => 'data:image/png;base64,dGVzdA==',
+            'birth_date' => '1991-01-31',
         ]);
 
         $response = $this->withoutMiddleware()->get(route('residents.id-card.landscape', $resident));
@@ -27,6 +28,7 @@ class ResidentIdCardLayoutTest extends TestCase
             ->assertSee('Gender:')
             ->assertSee('DELA CRUZ')
             ->assertSee('JUAN')
+            ->assertSee('January 31, 1991')
             ->assertSee('R-202607-0001')
             ->assertSee(route('qrcode.resident', $resident), false)
             ->assertSee('images/id-cards/access-id-front.png', false)
@@ -38,6 +40,27 @@ class ResidentIdCardLayoutTest extends TestCase
 
         $this->assertFileExists(public_path('images/id-cards/access-id-front.png'));
         $this->assertFileExists(public_path('images/id-cards/access-id-back.jpg'));
+    }
+
+    public function test_id_card_birth_date_is_not_shifted_by_the_application_timezone(): void
+    {
+        $originalTimezone = date_default_timezone_get();
+
+        try {
+            config(['app.timezone' => 'America/Los_Angeles']);
+            date_default_timezone_set('America/Los_Angeles');
+
+            $resident = $this->createResident(['birth_date' => '1991-01-31']);
+
+            $this->withoutMiddleware()
+                ->get(route('residents.id-card.landscape', $resident))
+                ->assertOk()
+                ->assertSee('January 31, 1991');
+
+            $this->assertSame('1991-01-31', $resident->fresh()->birthDateIso());
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
     }
 
     public function test_resident_qr_code_is_rendered_as_svg_without_imagick(): void

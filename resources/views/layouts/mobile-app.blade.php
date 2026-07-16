@@ -10,6 +10,12 @@
     <x-theme-script />
     <title>{{ $appTitle }}</title>
     <link rel="icon" type="image/png" href="{{ asset('logo1.png') }}">
+    <link rel="manifest" href="{{ asset('resident-portal/manifest.webmanifest') }}">
+    <meta name="theme-color" content="#23689b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SmartCity ACCESS">
+    <link rel="apple-touch-icon" href="{{ asset('resident-portal/images/appicon.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -128,5 +134,9 @@
             });
         })();
     </script>
+    <script
+        src="{{ asset('resident-portal/install.js') }}?v={{ filemtime(public_path('resident-portal/install.js')) }}"
+        defer
+    ></script>
 </body>
 </html>

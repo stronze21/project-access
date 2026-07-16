@@ -62,6 +62,27 @@ return [
             ]) : [],
         ],
 
+        // ADD THIS NEW CONNECTION PROFILE RIGHT BELOW IT:
+        'local_pc' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_LOCAL_HOST', '127.0.0.1'),
+            'port' => env('DB_LOCAL_PORT', '3308'),
+            'database' => env('DB_LOCAL_DATABASE', 'forge'),
+            'username' => env('DB_LOCAL_USERNAME', 'forge'),
+            'password' => env('DB_LOCAL_PASSWORD', ''),
+            'unix_socket' => env('DB_LOCAL_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

@@ -39,6 +39,7 @@ use App\Livewire\ResidentRegistration;
 use App\Livewire\ResidentShow;
 use App\Livewire\ResidentSignatureUpdate;
 use App\Livewire\ScholarPinImport;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -58,7 +59,20 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+require __DIR__ . '/resident_portal.php';
+
 require __DIR__.'/bosesmoto.php';
+
+Route::get('/test-tunnel', function () {
+    try {
+        // Tries to ping your secondary connection 'local_pc'
+        DB::connection('local_pc')->getPdo();
+        return "Success! Hostinger connected directly to your local PC database.";
+    } catch (\Exception $e) {
+        return "Connection failed: " . $e->getMessage();
+    }
+});
+
 
 Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
 Route::get('/terms', [AccountDeletionRequestController::class, 'terms'])->name('legal.terms');

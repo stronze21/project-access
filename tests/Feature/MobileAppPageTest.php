@@ -21,7 +21,14 @@ class MobileAppPageTest extends TestCase
             ->assertSee('ProjectAccess Mobile')
             ->assertSee('Features')
             ->assertSee('mobile-app-theme-toggle')
+            ->assertSee('TestFlight')
+            ->assertSee('fill="#0A84FF"', false)
+            ->assertSee('resident-portal-install')
+            ->assertSee('resident-portal/manifest.webmanifest', false)
+            ->assertSee('resident-portal/install.js', false)
             ->assertDontSee('Municipal Public Feedback System');
+
+        $this->assertFileExists(public_path('resident-portal/sw.js'));
     }
 
     public function test_download_returns_latest_apk(): void

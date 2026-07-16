@@ -27,6 +27,19 @@
                             </button>
                         @endif
 
+                        <button
+                            type="button"
+                            id="resident-portal-install"
+                            data-portal-url="{{ url('/resident-portal') }}"
+                            class="inline-flex items-center justify-center rounded-md bg-[#23689b] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1b527a] focus:outline-none focus:ring-2 focus:ring-[#23689b] focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+                        >
+                            <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <rect x="1.5" y="1.5" width="21" height="21" rx="5" fill="#0A84FF" stroke="white" stroke-opacity=".45" />
+                                <path d="M8.1 16.8 13.6 7.2M10.15 13.25h7.15M6.7 13.25h1.8M15.05 9.7l3 5.2" stroke="white" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <span data-install-label>TestFlight</span>
+                        </button>
+
                         <div class="text-sm font-medium text-slate-600 dark:text-slate-200">
                             Version {{ $release['version_name'] }}
                             <span class="text-slate-400">|</span>
@@ -166,4 +179,23 @@
             @endif
         </aside>
     </section>
+
+    <dialog id="resident-portal-install-dialog" class="w-[min(92vw,30rem)] rounded-xl border-0 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 dark:bg-slate-900 dark:text-white">
+        <div class="p-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-[#23689b] dark:text-sky-300">Resident Portal</p>
+                    <h2 class="mt-1 text-2xl font-bold">Add ACCESS to your Home Screen</h2>
+                </div>
+                <button type="button" data-install-dialog-close class="rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="Close install instructions">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-width="2" d="m6 6 12 12M18 6 6 18" /></svg>
+                </button>
+            </div>
+            <div data-install-message class="mt-5 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-200"></div>
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" data-install-dialog-close class="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold dark:border-slate-600">Close</button>
+                <a href="{{ url('/resident-portal') }}" class="rounded-md bg-[#23689b] px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-[#1b527a]">Open Resident Portal</a>
+            </div>
+        </div>
+    </dialog>
 @endsection
