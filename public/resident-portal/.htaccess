@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # This directory contains the portal's static assets, but its URL prefix is
+    # also handled by Laravel. Serve real assets and route everything else to
+    # the application's front controller.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    RewriteRule ^ ../index.php [L]
+</IfModule>
