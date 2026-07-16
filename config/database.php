@@ -133,6 +133,23 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'bhwis' => [
+            'driver' => 'sqlsrv',
+            'host' => env('BHWIS_HOST', '127.0.0.1'),
+            'port' => env('BHWIS_PORT', '1433'),
+            'database' => env('BHWIS_DATABASE'),
+            'username' => env('BHWIS_USERNAME'),
+            'password' => env('BHWIS_PASSWORD'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'encrypt' => env('BHWIS_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('BHWIS_TRUST_SERVER_CERTIFICATE', 'true'),
+            'options' => extension_loaded('pdo_sqlsrv') ? [
+                PDO::SQLSRV_ATTR_QUERY_TIMEOUT => (int) env('BHWIS_TIMEOUT_SECONDS', 10),
+            ] : [],
+        ],
+
     ],
 
     /*

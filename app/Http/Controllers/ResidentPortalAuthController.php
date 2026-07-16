@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ActivationRateLimitedException;
+use App\Exceptions\BhwisUnavailableException;
+use App\Exceptions\ResidentAlreadyActivatedException;
+use App\Exceptions\ResidentIdentityMismatchException;
 use App\Models\Resident;
+use App\Services\Bhwis\ResidentActivationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -61,35 +66,34 @@ class ResidentPortalAuthController extends Controller
         return redirect()->intended(route('resident-portal.home'));
     }
 
-    public function register(Request $request): RedirectResponse
+    public function register(Request $request, ResidentActivationService $activation): RedirectResponse
     {
         $validated = $request->validate([
             'resident_id' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'birth_date' => ['required', 'date'],
             'mpin' => ['required', 'digits:6', 'confirmed'],
+            'terms_accepted' => ['required', 'accepted'],
+            'privacy_notice_acknowledged' => ['required', 'accepted'],
+            'bhwis_import_consented' => ['required', 'accepted'],
         ]);
 
-        $resident = Resident::query()
-            ->where('resident_id', $validated['resident_id'])
-            ->whereRaw('LOWER(last_name) = ?', [strtolower($validated['last_name'])])
-            ->whereDate('birth_date', $validated['birth_date'])
-            ->first();
-
-        if (! $resident) {
+        try {
+            $resident = $activation->activate($validated, $request, 'web');
+        } catch (ResidentIdentityMismatchException) {
             return back()->withInput($request->except(['mpin', 'mpin_confirmation']))
                 ->withErrors(['resident_id' => 'No matching resident record was found.']);
-        }
-
-        if ($resident->mpin || $resident->password) {
+        } catch (ResidentAlreadyActivatedException) {
             return back()->withErrors(['resident_id' => 'This resident account is already activated.']);
+        } catch (BhwisUnavailableException) {
+            return back()->withInput($request->except(['mpin', 'mpin_confirmation']))
+                ->withErrors(['resident_id' => 'Resident verification is temporarily unavailable. Please try again later.'])
+                ->setStatusCode(503);
+        } catch (ActivationRateLimitedException $e) {
+            return back()->withErrors(['resident_id' => 'Too many activation attempts. Please try again later.'])
+                ->setStatusCode(429);
         }
 
-        if (! $resident->is_active) {
-            return back()->withErrors(['resident_id' => 'This resident record is inactive.']);
-        }
-
-        $resident->forceFill(['mpin' => Hash::make($validated['mpin']), 'last_login_at' => now()])->save();
         Auth::guard('resident')->login($resident, true);
         $request->session()->regenerate();
         $request->session()->put([

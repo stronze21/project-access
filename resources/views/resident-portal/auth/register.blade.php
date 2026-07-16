@@ -16,6 +16,9 @@
             <label>Birth date<input type="date" name="birth_date" value="{{ old('birth_date') }}" required></label>
             <label>Create 6-digit MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin" required autocomplete="new-password"></label>
             <label>Confirm MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin_confirmation" required autocomplete="new-password"></label>
+            <label class="auth-consent"><input type="checkbox" name="terms_accepted" value="1" @checked(old('terms_accepted')) required> I agree to the <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener">Terms of Use</a>.</label>
+            <label class="auth-consent"><input type="checkbox" name="privacy_notice_acknowledged" value="1" @checked(old('privacy_notice_acknowledged')) required> I have read and acknowledge the <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener">Privacy Notice</a>.</label>
+            <label class="auth-consent"><input type="checkbox" name="bhwis_import_consented" value="1" @checked(old('bhwis_import_consented')) required> I consent to retrieving and importing my registered BHWIS information for account activation.</label>
             <button class="primary-button" type="submit">Activate account</button>
         </form>
     </section>

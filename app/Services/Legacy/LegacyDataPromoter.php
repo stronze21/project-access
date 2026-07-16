@@ -22,7 +22,7 @@ class LegacyDataPromoter
 {
     private ?array $psgcBarangayRecords = null;
 
-    private const CIVIL_STATUS_MAP = [
+    public const CIVIL_STATUS_MAP = [
         '1' => 'single',
         '2' => 'married',
         '3' => 'widowed',
@@ -40,7 +40,7 @@ class LegacyDataPromoter
         'divorced' => 'divorced',
     ];
 
-    private const DEFAULT_CIVIL_STATUS_REFERENCES = [
+    public const DEFAULT_CIVIL_STATUS_REFERENCES = [
         '1' => ['name' => 'Single', 'canonical_value' => 'single'],
         '2' => ['name' => 'Married', 'canonical_value' => 'married'],
         '3' => ['name' => 'Widow/Widower', 'canonical_value' => 'widowed'],
@@ -50,7 +50,7 @@ class LegacyDataPromoter
         '7' => ['name' => 'Divorced', 'canonical_value' => 'divorced'],
     ];
 
-    private const DEFAULT_EDUCATION_MAP = [
+    public const DEFAULT_EDUCATION_MAP = [
         '1' => 'Elementary Undergraduate',
         '2' => 'Elementary Graduate',
         '3' => 'High School Undergraduate',
@@ -65,7 +65,7 @@ class LegacyDataPromoter
         '12' => 'Others',
     ];
 
-    private const DEFAULT_INCOME_MAP = [
+    public const DEFAULT_INCOME_MAP = [
         '1' => 'Farm Owner',
         '2' => 'Farm Worker/Fisherman',
         '3' => 'Housemaid/Laundrywoman',

@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers\Api\ResidentPortal;
 
+use App\Exceptions\ActivationRateLimitedException;
+use App\Exceptions\BhwisUnavailableException;
+use App\Exceptions\ResidentAlreadyActivatedException;
+use App\Exceptions\ResidentIdentityMismatchException;
 use App\Http\Controllers\Controller;
 use App\Models\Resident;
+use App\Services\Bhwis\ResidentActivationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -79,7 +84,7 @@ class AuthController extends Controller
      * Residents must already exist in the system (registered by an officer).
      * They activate their mobile account by providing their resident_id and setting an MPIN.
      */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request, ResidentActivationService $activation): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'resident_id' => 'required|string',
@@ -88,6 +93,9 @@ class AuthController extends Controller
             'mpin' => 'required_without:password|nullable|digits:6|confirmed',
             'password' => 'required_without:mpin|nullable|string|min:8|confirmed',
             'device_name' => 'nullable|string|max:255',
+            'terms_accepted' => 'required|accepted',
+            'privacy_notice_acknowledged' => 'required|accepted',
+            'bhwis_import_consented' => 'required|accepted',
         ]);
 
         if ($validator->fails()) {
@@ -97,31 +105,30 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Find the resident by their ID and verify identity
-        $resident = Resident::where('resident_id', $request->resident_id)
-            ->whereRaw('LOWER(last_name) = ?', [strtolower($request->last_name)])
-            ->whereDate('birth_date', $request->birth_date)
-            ->first();
-
-        if (! $resident) {
+        try {
+            $resident = $activation->activate($validator->validated(), $request, 'api');
+        } catch (ResidentIdentityMismatchException) {
             return response()->json([
                 'message' => 'No matching resident record found. Please verify your information or contact your barangay office.',
                 'errors' => ['resident_id' => ['No matching resident record found.']],
             ], 404);
-        }
-
-        if ($resident->mpin || $resident->password) {
+        } catch (ResidentAlreadyActivatedException) {
             return response()->json([
                 'message' => 'This resident account has already been activated. Please login instead.',
                 'errors' => ['resident_id' => ['Account already activated.']],
             ], 409);
+        } catch (BhwisUnavailableException) {
+            return response()->json([
+                'message' => 'Resident verification is temporarily unavailable. Please try again later.',
+                'errors' => ['resident_id' => ['Resident verification is temporarily unavailable.']],
+                'retryable' => true,
+            ], 503);
+        } catch (ActivationRateLimitedException $e) {
+            return response()->json([
+                'message' => 'Too many activation attempts. Please try again later.',
+                'retry_after' => $e->retryAfter,
+            ], 429)->header('Retry-After', (string) $e->retryAfter);
         }
-
-        $resident->update([
-            'mpin' => $request->filled('mpin') ? Hash::make($request->mpin) : null,
-            'password' => $request->filled('password') ? Hash::make($request->password) : null,
-            'last_login_at' => now(),
-        ]);
 
         $deviceName = $request->device_name ?? ($request->userAgent() ?? 'mobile-app');
         $token = $resident->createToken($deviceName, ['resident-portal'])->plainTextToken;
