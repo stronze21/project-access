@@ -135,6 +135,10 @@
         })();
     </script>
     <script
+        src="{{ asset('resident-portal/device.js') }}?v={{ filemtime(public_path('resident-portal/device.js')) }}"
+        defer
+    ></script>
+    <script
         src="{{ asset('resident-portal/install.js') }}?v={{ filemtime(public_path('resident-portal/install.js')) }}"
         defer
     ></script>

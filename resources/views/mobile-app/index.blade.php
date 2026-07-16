@@ -7,7 +7,7 @@
             <div class="max-w-2xl">
                 <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#1fa99a]/20 bg-[#e7faf6] px-3 py-1 text-sm font-semibold text-[#0c7464] dark:border-teal-300/25 dark:bg-teal-300/10 dark:text-teal-200">
                     <span class="h-2 w-2 rounded-full bg-[#0f9f84]"></span>
-                    Android citizen services app
+                    Resident services for <span data-device-platform-label>your device</span>
                 </div>
 
                 <h1 class="text-4xl font-extrabold leading-tight text-slate-950 dark:text-white sm:text-5xl lg:text-6xl">{{ $release['name'] }}</h1>
@@ -37,7 +37,7 @@
                                 <rect x="1.5" y="1.5" width="21" height="21" rx="5" fill="#0A84FF" stroke="white" stroke-opacity=".45" />
                                 <path d="M8.1 16.8 13.6 7.2M10.15 13.25h7.15M6.7 13.25h1.8M15.05 9.7l3 5.2" stroke="white" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                            <span data-install-label>TestFlight</span>
+                            <span data-install-label>Install Resident Portal</span>
                         </button>
 
                         <div class="text-sm font-medium text-slate-600 dark:text-slate-200">

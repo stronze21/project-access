@@ -66,6 +66,7 @@
             </nav>
         @endunless
     </div>
+    <script src="{{ asset('resident-portal/device.js') }}?v={{ filemtime(public_path('resident-portal/device.js')) }}" defer></script>
     <script src="{{ asset('resident-portal/app.js') }}?v={{ filemtime(public_path('resident-portal/app.js')) }}" defer></script>
 </body>
 </html>
