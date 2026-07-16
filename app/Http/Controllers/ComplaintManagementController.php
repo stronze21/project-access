@@ -85,7 +85,7 @@ class ComplaintManagementController extends Controller
             'complaints' => $query->paginate(15)->withQueryString(),
             'queueStats' => $queueStats,
             'activeFilterLabels' => $activeFilterLabels,
-            'hasActiveFilters' => !empty($activeFilterLabels),
+            'hasActiveFilters' => ! empty($activeFilterLabels),
             'scopeLabel' => $scopeLabel,
             'isRestrictedScope' => $isRestrictedScope,
             'statuses' => config('complaints.workflow.statuses', []),
@@ -116,7 +116,7 @@ class ComplaintManagementController extends Controller
         ]);
 
         $officers = User::query()
-            ->where('role', User::ROLE_ACTION_OFFICER)
+            ->actionOfficers()
             ->when($complaint->assigned_department_id, fn ($q) => $q->where('department_id', $complaint->assigned_department_id))
             ->orderBy('name')
             ->get(['id', 'name', 'department_id']);
@@ -159,7 +159,7 @@ class ComplaintManagementController extends Controller
 
     private function applyAssignedTodayFocus(Builder $query, User $user): ?string
     {
-        if (!$user->isActionOfficer()) {
+        if (! $user->isActionOfficer()) {
             return null;
         }
 

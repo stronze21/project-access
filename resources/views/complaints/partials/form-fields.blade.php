@@ -38,14 +38,14 @@
 
 <div>
     <x-input-label for="description" :value="__('Full Description (internal only)')" />
-    <textarea id="description" name="description" rows="5" class="mt-1 block w-full rounded-md border-gray-300" required>{{ old('description', $isEdit ? $complaint->description : '') }}</textarea>
+    <textarea id="description" name="description" rows="5" class="mt-1 block w-full rounded-md border-base-300 textarea textarea-bordered" required>{{ old('description', $isEdit ? $complaint->description : '') }}</textarea>
     <x-input-error :messages="$errors->get('description')" class="mt-2" />
 </div>
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <div>
         <x-input-label for="category_id" :value="__('Category')" />
-        <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border-gray-300" required>
+        <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border-base-300 select select-bordered" required>
             <option value="">Select category</option>
             @foreach ($categories as $category)
                 <option value="{{ $category->id }}" @selected((string) old('category_id', $isEdit ? $complaint->category_id : '') === (string) $category->id)>
@@ -57,7 +57,7 @@
     </div>
     <div>
         <x-input-label for="visibility" :value="__('Visibility')" />
-        <select id="visibility" name="visibility" class="mt-1 block w-full rounded-md border-gray-300" required>
+        <select id="visibility" name="visibility" class="mt-1 block w-full rounded-md border-base-300 select select-bordered" required>
             @foreach ($visibilityOptions as $value => $label)
                 <option value="{{ $value }}" @selected(old('visibility', $isEdit ? $complaint->visibility : \App\Models\Complaint::VISIBILITY_PUBLIC_ANONYMOUS) === $value)>
                     {{ $label }}
@@ -71,7 +71,7 @@
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <div>
         <x-input-label for="barangay_id" :value="__('Barangay (optional)')" />
-        <select id="barangay_id" name="barangay_id" class="mt-1 block w-full rounded-md border-gray-300">
+        <select id="barangay_id" name="barangay_id" class="mt-1 block w-full rounded-md border-base-300 select select-bordered">
             <option value="">Select barangay</option>
             @foreach ($barangays as $barangay)
                 <option value="{{ $barangay->id }}" @selected((string) old('barangay_id', $isEdit ? $complaint->barangay_id : '') === (string) $barangay->id)>
@@ -85,49 +85,49 @@
         <x-input-label for="latitude" :value="__('Latitude (optional)')" />
         <x-text-input id="latitude" name="latitude" type="text" class="mt-1 block w-full"
             :value="old('latitude', $isEdit ? $complaint->latitude : '')" />
-        <p class="mt-1 text-xs text-gray-500">Use "Pin My Location" below to fill automatically.</p>
+        <p class="mt-1 text-xs text-base-content/60">Use "Pin My Location" below to fill automatically.</p>
         <x-input-error :messages="$errors->get('latitude')" class="mt-2" />
     </div>
     <div>
         <x-input-label for="longitude" :value="__('Longitude (optional)')" />
         <x-text-input id="longitude" name="longitude" type="text" class="mt-1 block w-full"
             :value="old('longitude', $isEdit ? $complaint->longitude : '')" />
-        <p class="mt-1 text-xs text-gray-500">You can still edit manually if needed.</p>
+        <p class="mt-1 text-xs text-base-content/60">You can still edit manually if needed.</p>
         <x-input-error :messages="$errors->get('longitude')" class="mt-2" />
     </div>
 </div>
 
-<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+<div class="rounded-xl border border-base-300 bg-base-200 p-3 sm:p-4">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <p class="text-sm font-semibold text-slate-900">Location Pin (optional)</p>
-            <p class="text-xs text-slate-600">Tap the button to detect your current location and place a pin on the map.</p>
+            <p class="text-sm font-semibold text-base-content">Location Pin (optional)</p>
+            <p class="text-xs text-base-content/70">Tap the button to detect your current location and place a pin on the map.</p>
         </div>
         <button type="button"
                 id="pin-my-location"
-                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">
+                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 btn btn-primary btn-xs">
             Pin My Location
         </button>
     </div>
 
-    <p id="pin-location-status" class="mt-2 text-xs text-slate-600"></p>
+    <p id="pin-location-status" class="mt-2 text-xs text-base-content/70"></p>
 
     <div id="pin-location-map-wrapper" class="mt-3 hidden">
-        <div id="pin-location-map" class="h-64 w-full rounded-lg border border-slate-300"></div>
-        <p class="mt-2 text-xs text-slate-600">Tip: tap on the map or drag the marker to adjust your pin.</p>
+        <div id="pin-location-map" class="h-64 w-full rounded-lg border border-base-300"></div>
+        <p class="mt-2 text-xs text-base-content/70">Tip: tap on the map or drag the marker to adjust your pin.</p>
     </div>
 </div>
 
 <div>
     <x-input-label for="official_ids" :value="__('Tag Public Officials (optional)')" />
-    <select id="official_ids" name="official_ids[]" class="mt-1 block w-full rounded-md border-gray-300" multiple>
+    <select id="official_ids" name="official_ids[]" class="mt-1 block w-full rounded-md border-base-300 select select-bordered" multiple>
         @foreach ($officials as $official)
             <option value="{{ $official->id }}" @selected(in_array((int) $official->id, $selectedOfficials, true))>
                 {{ $official->position }} - {{ $official->name }}
             </option>
         @endforeach
     </select>
-    <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple.</p>
+    <p class="mt-1 text-xs text-base-content/60">Hold Ctrl/Cmd to select multiple.</p>
     <x-input-error :messages="$errors->get('official_ids')" class="mt-2" />
     <x-input-error :messages="$errors->get('official_ids.*')" class="mt-2" />
 </div>
@@ -136,7 +136,7 @@
     <x-input-label for="attachments" :value="__('Attachments (max 5 files, 20MB each)')" />
     <input id="attachments" name="attachments[]" type="file" multiple
            accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.pdf,.doc,.docx,.xls,.xlsx"
-           class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+           class="mt-1 block w-full rounded-md border border-base-300 px-3 py-2 text-sm file-input file-input-bordered">
     <x-input-error :messages="$errors->get('attachments')" class="mt-2" />
     <x-input-error :messages="$errors->get('attachments.*')" class="mt-2" />
 </div>

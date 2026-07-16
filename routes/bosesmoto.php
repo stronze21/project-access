@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\ActionOfficerController;
 use App\Http\Controllers\ComplaintAttachmentController;
 use App\Http\Controllers\ComplaintAuditController;
+use App\Http\Controllers\ComplaintBarangayController;
 use App\Http\Controllers\ComplaintCategoryController;
 use App\Http\Controllers\ComplaintCommentController;
 use App\Http\Controllers\ComplaintController;
@@ -14,11 +16,13 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PublicOfficialController;
+use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\SentimentCommentController;
 use App\Http\Controllers\SentimentFeedController;
 use App\Http\Controllers\SentimentFollowController;
 use App\Http\Controllers\SentimentReactionController;
 use App\Http\Controllers\SentimentReportController;
+use App\Http\Controllers\SosDepartmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('module.enabled:bosesmoto,complaints')->group(function () {
@@ -112,6 +116,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             });
 
         Route::prefix('management/reference')->middleware('role:Admin|Super Admin|system-administrator')->group(function () {
+            Route::get('/', ReferenceDataController::class)->name('complaints.references.index');
             Route::get('/categories', [ComplaintCategoryController::class, 'index'])->name('complaints.categories.index');
             Route::post('/categories', [ComplaintCategoryController::class, 'store'])->name('complaints.categories.store');
             Route::put('/categories/{category}', [ComplaintCategoryController::class, 'update'])->name('complaints.categories.update');
@@ -124,6 +129,18 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::post('/public-officials', [PublicOfficialController::class, 'store'])->name('complaints.officials.store');
             Route::put('/public-officials/{official}', [PublicOfficialController::class, 'update'])->name('complaints.officials.update');
             Route::delete('/public-officials/{official}', [PublicOfficialController::class, 'destroy'])->name('complaints.officials.destroy');
+            Route::get('/barangays', [ComplaintBarangayController::class, 'index'])->name('complaints.barangays.index');
+            Route::post('/barangays', [ComplaintBarangayController::class, 'store'])->name('complaints.barangays.store');
+            Route::put('/barangays/{barangay}', [ComplaintBarangayController::class, 'update'])->name('complaints.barangays.update');
+            Route::delete('/barangays/{barangay}', [ComplaintBarangayController::class, 'destroy'])->name('complaints.barangays.destroy');
+            Route::get('/action-officers', [ActionOfficerController::class, 'index'])->name('complaints.action-officers.index');
+            Route::post('/action-officers', [ActionOfficerController::class, 'store'])->name('complaints.action-officers.store');
+            Route::put('/action-officers/{officer}', [ActionOfficerController::class, 'update'])->name('complaints.action-officers.update');
+            Route::delete('/action-officers/{officer}', [ActionOfficerController::class, 'destroy'])->name('complaints.action-officers.destroy');
+            Route::get('/sos-departments', [SosDepartmentController::class, 'index'])->name('complaints.sos-departments.index');
+            Route::post('/sos-departments', [SosDepartmentController::class, 'store'])->name('complaints.sos-departments.store');
+            Route::put('/sos-departments/{sosDepartment}', [SosDepartmentController::class, 'update'])->name('complaints.sos-departments.update');
+            Route::delete('/sos-departments/{sosDepartment}', [SosDepartmentController::class, 'destroy'])->name('complaints.sos-departments.destroy');
         });
 
         Route::get('/management/audit-logs', [ComplaintAuditController::class, 'index'])

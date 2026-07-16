@@ -133,7 +133,6 @@ Route::middleware([
         // Single ID Card
         Route::get('/id-card/{id}', [ResidentIdCardController::class, 'show'])->name('residents.id-card');
         Route::get('/id-card/{id}/landscape', [ResidentIdCardController::class, 'showLandscape'])->name('residents.id-card.landscape');
-        Route::get('/id-card/{id}/portrait', [ResidentIdCardController::class, 'showPortrait'])->name('residents.id-card.portrait');
 
         Route::get('/batch-images/download', [BatchImageDownloadController::class, 'download'])
             ->name('residents.batch-images.download');

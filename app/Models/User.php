@@ -3,25 +3,31 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Laravel\Sanctum\HasApiTokens;
-use Laravel\Jetstream\HasProfilePhoto;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Jetstream\HasProfilePhoto;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     public const ROLE_ADMIN = 'Admin';
+
     public const ROLE_SUPER_ADMIN = 'Super Admin';
+
     public const ROLE_MAYOR = 'Mayor';
+
     public const ROLE_DEPARTMENT_HEAD = 'Department Head';
+
     public const ROLE_ACTION_OFFICER = 'Action Officer';
+
     public const ROLE_CITIZEN = 'Citizen';
 
     public const ROLES = [
@@ -37,10 +43,11 @@ class User extends Authenticatable
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
     use HasProfilePhoto;
+    use HasRoles;
     use Notifiable;
-    use TwoFactorAuthenticatable;
-    use HasRoles; // Add this trait for Spatie Permissions
+    use TwoFactorAuthenticatable; // Add this trait for Spatie Permissions
 
     /**
      * The attributes that are mass assignable.
@@ -181,6 +188,21 @@ class User extends Authenticatable
         return $this->hasAnyRole([self::ROLE_ACTION_OFFICER, 'action-officer']);
     }
 
+    public function scopeActionOfficers(Builder $query): Builder
+    {
+        return $this->scopeWithRoleNames($query, [self::ROLE_ACTION_OFFICER, 'action-officer']);
+    }
+
+    public function scopeDepartmentHeads(Builder $query): Builder
+    {
+        return $this->scopeWithRoleNames($query, [self::ROLE_DEPARTMENT_HEAD, 'department-head']);
+    }
+
+    public function scopeMayors(Builder $query): Builder
+    {
+        return $this->scopeWithRoleNames($query, [self::ROLE_MAYOR, 'mayor']);
+    }
+
     public function isCitizen(): bool
     {
         return $this->hasAnyRole([self::ROLE_CITIZEN, 'citizen']);
@@ -245,5 +267,10 @@ class User extends Authenticatable
             'citizen' => self::ROLE_CITIZEN,
             default => $roleName ?: self::ROLE_CITIZEN,
         };
+    }
+
+    private function scopeWithRoleNames(Builder $query, array $roleNames): Builder
+    {
+        return $query->whereHas('roles', fn (Builder $roles) => $roles->whereIn('name', $roleNames));
     }
 }

@@ -7,6 +7,7 @@ use App\Models\PublicOfficial;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PublicOfficialController extends Controller
 {
@@ -60,7 +61,7 @@ class PublicOfficialController extends Controller
             'officials' => $query->orderBy('position')->orderBy('name')->paginate(12)->withQueryString(),
             'stats' => $stats,
             'activeFilterLabels' => $activeFilterLabels,
-            'hasActiveFilters' => !empty($activeFilterLabels),
+            'hasActiveFilters' => ! empty($activeFilterLabels),
         ]);
     }
 
@@ -70,7 +71,12 @@ class PublicOfficialController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'position' => ['required', 'string', 'max:255'],
+            'position' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('public_officials', 'position')->where(fn ($query) => $query->where('name', $request->input('name'))),
+            ],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -89,7 +95,14 @@ class PublicOfficialController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'position' => ['required', 'string', 'max:255'],
+            'position' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('public_officials', 'position')
+                    ->where(fn ($query) => $query->where('name', $request->input('name')))
+                    ->ignore($official->id),
+            ],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -105,6 +118,11 @@ class PublicOfficialController extends Controller
     public function destroy(Request $request, PublicOfficial $official): RedirectResponse
     {
         $this->authorize('manageReferenceData', Complaint::class);
+
+        if ($official->complaints()->exists()) {
+            return back()->withErrors(['official' => 'This official is linked to complaints. Deactivate the record instead.']);
+        }
+
         $official->delete();
 
         return back()->with('status', 'Public official removed.');

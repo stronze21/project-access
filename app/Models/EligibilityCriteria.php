@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class EligibilityCriteria extends Model
 {
@@ -51,16 +50,13 @@ class EligibilityCriteria extends Model
 
     /**
      * Check if a resident meets this criterion.
-     *
-     * @param Resident $resident
-     * @return bool
      */
     public function checkEligibility(Resident $resident): bool
     {
         $residentValue = $this->getResidentValue($resident);
 
         // Skip non-required criteria if value is null/empty
-        if (!$this->is_required && ($residentValue === null || $residentValue === '')) {
+        if (! $this->is_required && ($residentValue === null || $residentValue === '')) {
             return true;
         }
 
@@ -70,7 +66,6 @@ class EligibilityCriteria extends Model
     /**
      * Get the relevant resident value for this criterion.
      *
-     * @param Resident $resident
      * @return mixed
      */
     protected function getResidentValue(Resident $resident)
@@ -122,6 +117,9 @@ class EligibilityCriteria extends Model
             case 'indigenous':
                 return $resident->is_indigenous;
 
+            case 'scholar':
+                return $resident->is_scholar;
+
             case 'occupation':
                 return $resident->occupation;
 
@@ -136,8 +134,7 @@ class EligibilityCriteria extends Model
     /**
      * Compare the resident value with the criterion value based on the operator.
      *
-     * @param mixed $residentValue
-     * @return bool
+     * @param  mixed  $residentValue
      */
     protected function compareValues($residentValue): bool
     {
@@ -177,11 +174,13 @@ class EligibilityCriteria extends Model
 
             case 'in':
                 $values = explode(',', $criterionValue);
+
                 return in_array($residentValue, $values);
 
             case 'not_in':
                 $values = explode(',', $criterionValue);
-                return !in_array($residentValue, $values);
+
+                return ! in_array($residentValue, $values);
 
             case 'contains':
                 return is_string($residentValue) &&
@@ -199,7 +198,8 @@ class EligibilityCriteria extends Model
                        str_ends_with($residentValue, $criterionValue);
 
             case 'between':
-                list($min, $max) = explode(',', $criterionValue);
+                [$min, $max] = explode(',', $criterionValue);
+
                 return $residentValue >= $min && $residentValue <= $max;
 
             default:

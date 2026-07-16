@@ -92,6 +92,12 @@ class AyudaProgramController extends Controller
             'eligibility_criteria.*.is_required' => 'boolean',
         ]);
 
+        $this->validateScholarCriteria(
+            $validator,
+            $request->input('eligibility_criteria', []),
+            'eligibility_criteria'
+        );
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
@@ -226,6 +232,8 @@ class AyudaProgramController extends Controller
             'criteria.*.value' => 'required|string|max:255',
             'criteria.*.is_required' => 'boolean',
         ]);
+
+        $this->validateScholarCriteria($validator, $request->input('criteria', []), 'criteria');
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -459,6 +467,38 @@ class AyudaProgramController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Add the value/operator constraints required by scholar flag criteria.
+     */
+    private function validateScholarCriteria($validator, $criteria, string $prefix): void
+    {
+        $validator->after(function ($validator) use ($criteria, $prefix): void {
+            if (! is_array($criteria)) {
+                return;
+            }
+
+            foreach ($criteria as $index => $criterion) {
+                if (! is_array($criterion) || ($criterion['criterion_type'] ?? null) !== 'scholar') {
+                    continue;
+                }
+
+                if (! in_array($criterion['operator'] ?? null, ['equals', 'not_equals'], true)) {
+                    $validator->errors()->add(
+                        "{$prefix}.{$index}.operator",
+                        'A scholar criterion must use the equals or not equals operator.'
+                    );
+                }
+
+                if (! in_array($criterion['value'] ?? null, ['true', 'false'], true)) {
+                    $validator->errors()->add(
+                        "{$prefix}.{$index}.value",
+                        'A scholar criterion value must be true or false.'
+                    );
+                }
+            }
+        });
     }
 
     /**

@@ -365,7 +365,10 @@ class LegacyCsvIntegrationTest extends TestCase
         $this->actingAs($user)
             ->get(route('residents.legacy-import.index'))
             ->assertOk()
-            ->assertSee('Legacy Resident Import')
+            ->assertSee('Import Manager')
+            ->assertSee('Scholar PIN Imports')
+            ->assertSee(route('residents.legacy-import.index'), false)
+            ->assertSee(route('residents.scholar-pin-import'), false)
             ->assertSee('Validate and Stage');
 
         $csv = $this->csvString($this->personalHeaders(), [$this->personalRow('00-00004')]);

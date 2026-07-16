@@ -15,7 +15,7 @@ class ProfileController extends Controller
      */
     public function show(Request $request): JsonResponse
     {
-        $resident = $request->user()->load('household');
+        $resident = $request->user()->load(['household', 'sourceIncomeType']);
 
         return response()->json([
             'data' => $resident,
@@ -56,7 +56,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'data' => $resident->fresh()->load('household'),
+            'data' => $resident->fresh()->load(['household', 'sourceIncomeType']),
         ]);
     }
 
@@ -120,9 +120,7 @@ class ProfileController extends Controller
     {
         $resident = $request->user();
 
-        if (!$resident->qr_code) {
-            $resident->generateQrCode();
-        }
+        $resident->generateQrCode();
 
         return response()->json([
             'qr_code' => $resident->qr_code,
@@ -136,7 +134,8 @@ class ProfileController extends Controller
      */
     public function idCard(Request $request): JsonResponse
     {
-        $resident = $request->user()->load('household');
+        $resident = $request->user()->load(['household', 'sourceIncomeType']);
+        $resident->generateQrCode();
 
         return response()->json([
             'data' => [
@@ -152,7 +151,25 @@ class ProfileController extends Controller
                 'blood_type' => $resident->blood_type,
                 'contact_number' => $resident->contact_number,
                 'email' => $resident->email,
+                'occupation' => $resident->occupation,
+                'source_income_type_id' => $resident->source_income_type_id,
+                'source_income_type' => $resident->sourceIncomeType,
+                'monthly_income' => $resident->monthly_income,
+                'educational_attainment' => $resident->educational_attainment,
+                'ethnicity' => $resident->ethnicity,
+                'is_registered_voter' => $resident->is_registered_voter,
+                'is_pwd' => $resident->is_pwd,
+                'is_senior_citizen' => $resident->is_senior_citizen,
+                'is_solo_parent' => $resident->is_solo_parent,
+                'is_pregnant' => $resident->is_pregnant,
+                'is_lactating' => $resident->is_lactating,
+                'is_indigenous' => $resident->is_indigenous,
+                'is_4ps' => $resident->is_4ps,
+                'is_scholar' => $resident->is_scholar,
+                'is_bhw' => $resident->is_bhw,
+                'is_legacy_imported' => $resident->is_legacy_imported,
                 'address' => $resident->household?->full_address ?? null,
+                'building_registry_number' => $resident->household?->building_registry_number,
                 'photo_url' => $resident->photo_path
                     ? Storage::disk('public')->url($resident->photo_path)
                     : null,

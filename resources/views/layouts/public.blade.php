@@ -15,11 +15,11 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100 text-gray-900 antialiased">
-    <header x-data="{ menuOpen: false }" class="bg-white border-b border-gray-200">
+<body class="min-h-screen bg-base-200 text-base-content antialiased">
+    <header x-data="{ menuOpen: false }" class="navbar relative border-b border-base-300 bg-base-100 shadow-sm">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex min-h-16 items-center justify-between py-2 sm:py-0">
-                <a href="{{ $bosesmotoComplaintsEnabled ? route('complaints.public.index') : route('login') }}" class="max-w-[13rem] text-xs font-semibold leading-tight text-gray-800 sm:max-w-none sm:text-sm">
+                <a href="{{ $bosesmotoComplaintsEnabled ? route('complaints.public.index') : route('login') }}" class="btn btn-ghost max-w-[13rem] justify-start px-0 text-xs font-semibold leading-tight text-base-content sm:max-w-none sm:text-sm">
                     Municipal Public Feedback System
                 </a>
 
@@ -27,7 +27,7 @@
                     <x-theme-toggle />
                     <button
                     type="button"
-                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 md:hidden"
+                    class="btn btn-square btn-ghost btn-sm md:hidden"
                     @click="menuOpen = !menuOpen"
                     :aria-expanded="menuOpen.toString()"
                     aria-controls="public-mobile-nav"
@@ -45,40 +45,40 @@
                 <nav class="hidden items-center gap-3 text-sm md:flex">
                     <x-theme-toggle />
                     @if ($bosesmotoComplaintsEnabled)
-                        <a href="{{ route('complaints.public.index') }}" class="text-gray-700 hover:text-gray-900">Public Complaints</a>
+                        <a href="{{ route('complaints.public.index') }}" class="btn btn-ghost btn-sm">Public Complaints</a>
                     @endif
                     @auth
                         @if ($bosesmotoComplaintsEnabled && !auth()->user()->isInternalUser())
-                            <a href="{{ route('complaints.anonymous.create') }}" class="text-gray-700 hover:text-gray-900">Submit Anonymous</a>
+                            <a href="{{ route('complaints.anonymous.create') }}" class="btn btn-ghost btn-sm">Submit Anonymous</a>
                         @endif
-                        <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-gray-900">Dashboard</a>
+                        <a href="{{ route('dashboard') }}" class="btn btn-ghost btn-sm">Dashboard</a>
                     @else
                         @if ($bosesmotoComplaintsEnabled)
-                            <a href="{{ route('complaints.anonymous.create') }}" class="text-gray-700 hover:text-gray-900">Submit Anonymous</a>
+                            <a href="{{ route('complaints.anonymous.create') }}" class="btn btn-ghost btn-sm">Submit Anonymous</a>
                         @endif
-                        <a href="{{ route('login') }}" class="text-gray-700 hover:text-gray-900">Login</a>
-                        <a href="{{ route('register') }}" class="inline-flex rounded-md bg-blue-600 px-3 py-1.5 font-semibold text-white hover:bg-blue-700">Register</a>
+                        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Register</a>
                     @endauth
                 </nav>
             </div>
         </div>
 
-        <nav id="public-mobile-nav" x-cloak x-show="menuOpen" x-transition.opacity class="border-t border-gray-200 bg-white md:hidden">
-            <div class="mx-auto max-w-7xl space-y-1 px-4 py-3 sm:px-6">
+        <nav id="public-mobile-nav" x-cloak x-show="menuOpen" x-transition.opacity class="absolute left-0 top-full z-50 w-full border-t border-base-300 bg-base-100 shadow-lg md:hidden">
+            <div class="menu mx-auto max-w-7xl px-4 py-3 sm:px-6">
                 @if ($bosesmotoComplaintsEnabled)
-                    <a href="{{ route('complaints.public.index') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Public Complaints</a>
+                    <a href="{{ route('complaints.public.index') }}">Public Complaints</a>
                 @endif
                 @auth
                     @if ($bosesmotoComplaintsEnabled && !auth()->user()->isInternalUser())
-                        <a href="{{ route('complaints.anonymous.create') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Submit Anonymous</a>
+                        <a href="{{ route('complaints.anonymous.create') }}">Submit Anonymous</a>
                     @endif
-                    <a href="{{ route('dashboard') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Dashboard</a>
+                    <a href="{{ route('dashboard') }}">Dashboard</a>
                 @else
                     @if ($bosesmotoComplaintsEnabled)
-                        <a href="{{ route('complaints.anonymous.create') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Submit Anonymous</a>
+                        <a href="{{ route('complaints.anonymous.create') }}">Submit Anonymous</a>
                     @endif
-                    <a href="{{ route('login') }}" class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900">Login</a>
-                    <a href="{{ route('register') }}" class="block rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700">Register</a>
+                    <a href="{{ route('login') }}">Login</a>
+                    <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Register</a>
                 @endauth
             </div>
         </nav>
@@ -87,7 +87,7 @@
     <main class="py-6">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             @if (session('status'))
-                <div class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <div class="alert alert-success mb-4 text-sm">
                     {{ session('status') }}
                 </div>
             @endif

@@ -27,7 +27,7 @@ class ComplaintAuditController extends Controller
                     ->orWhereHas('actor', function ($actorQuery) use ($search) {
                         $actorQuery
                             ->where('name', 'like', '%'.$search.'%')
-                            ->orWhere('role', 'like', '%'.$search.'%');
+                            ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'like', '%'.$search.'%'));
                     })
                     ->orWhereHas('complaint', function ($complaintQuery) use ($search) {
                         $complaintQuery
@@ -94,7 +94,7 @@ class ComplaintAuditController extends Controller
             'eventTypes' => (clone $baseQuery)->select('event_type')->distinct()->orderBy('event_type')->pluck('event_type'),
             'stats' => $stats,
             'activeFilterLabels' => $activeFilterLabels,
-            'hasActiveFilters' => !empty($activeFilterLabels),
+            'hasActiveFilters' => ! empty($activeFilterLabels),
         ]);
     }
 }

@@ -13,15 +13,15 @@ class BatchImageDownloadService
     /**
      * Generate a ZIP file containing images for the specified residents.
      *
-     * @param array $residentIds Array of resident IDs
-     * @param array $imageTypes Types of images to include ('qr_code', 'signature', 'photo')
+     * @param  array  $residentIds  Array of resident IDs
+     * @param  array  $imageTypes  Types of images to include ('qr_code', 'signature', 'photo')
      * @return string Path to the generated ZIP file
      */
     public function generateBatchZip(array $residentIds, array $imageTypes = ['qr_code', 'signature', 'photo']): string
     {
         // Create temp directory if it doesn't exist
         $tempDir = storage_path('app/temp');
-        if (!File::exists($tempDir)) {
+        if (! File::exists($tempDir)) {
             File::makeDirectory($tempDir, 0755, true);
         }
 
@@ -29,16 +29,16 @@ class BatchImageDownloadService
         $qrCodeService = app(QrCodeService::class);
 
         // Create ZIP file
-        $zipFileName = 'resident_images_' . time() . '.zip';
-        $zipFilePath = $tempDir . '/' . $zipFileName;
+        $zipFileName = 'resident_images_'.time().'.zip';
+        $zipFilePath = $tempDir.'/'.$zipFileName;
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($zipFilePath, ZipArchive::CREATE) !== true) {
-            throw new \Exception("Cannot create ZIP file");
+            throw new \Exception('Cannot create ZIP file');
         }
 
         // Log summary header
-        Log::info("Starting batch image download for " . count($residentIds) . " residents");
+        Log::info('Starting batch image download for '.count($residentIds).' residents');
 
         // Get residents
         $residents = Resident::whereIn('id', $residentIds)->get();
@@ -47,7 +47,7 @@ class BatchImageDownloadService
 
         foreach ($residents as $resident) {
             $residentName = $this->sanitizeFileName($resident->full_name);
-            $residentFolder = $residentName . '_' . $resident->id;
+            $residentFolder = $residentName.'_'.$resident->id;
             $residentImages = 0;
 
             // Debug log for this resident
@@ -60,7 +60,7 @@ class BatchImageDownloadService
                     if (Storage::exists($qrCodePath)) {
                         $qrCodeContent = Storage::get($qrCodePath);
                         $zip->addFromString(
-                            $residentFolder . '/qr_code.png',
+                            $residentFolder.'/qr_code.svg',
                             $qrCodeContent
                         );
                         $residentImages++;
@@ -76,7 +76,7 @@ class BatchImageDownloadService
                         $signatureContent = $this->getBase64ImageContent($resident->signature);
                         if ($signatureContent) {
                             $zip->addFromString(
-                                $residentFolder . '/signature.png',
+                                $residentFolder.'/signature.png',
                                 $signatureContent
                             );
                             $residentImages++;
@@ -85,7 +85,7 @@ class BatchImageDownloadService
                             Log::warning("Failed to process base64 signature for resident {$resident->id}");
                         }
                     } else {
-                        Log::warning("Signature for resident {$resident->id} is not in base64 format: " . substr($resident->signature, 0, 30) . "...");
+                        Log::warning("Signature for resident {$resident->id} is not in base64 format: ".substr($resident->signature, 0, 30).'...');
                     }
                 }
 
@@ -97,7 +97,7 @@ class BatchImageDownloadService
                         $photoContent = Storage::get($resident->photo_path);
                         $extension = pathinfo($resident->photo_path, PATHINFO_EXTENSION) ?: 'jpg';
                         $zip->addFromString(
-                            $residentFolder . '/photo.' . $extension,
+                            $residentFolder.'/photo.'.$extension,
                             $photoContent
                         );
                         $residentImages++;
@@ -108,7 +108,7 @@ class BatchImageDownloadService
                             $photoContent = Storage::disk('public')->get($resident->photo_path);
                             $extension = pathinfo($resident->photo_path, PATHINFO_EXTENSION) ?: 'jpg';
                             $zip->addFromString(
-                                $residentFolder . '/photo.' . $extension,
+                                $residentFolder.'/photo.'.$extension,
                                 $photoContent
                             );
                             $residentImages++;
@@ -126,7 +126,7 @@ class BatchImageDownloadService
                     $errorCount++;
                 }
             } catch (\Exception $e) {
-                Log::error("Error processing resident {$resident->id}: " . $e->getMessage());
+                Log::error("Error processing resident {$resident->id}: ".$e->getMessage());
                 $errorCount++;
             }
         }
@@ -141,9 +141,6 @@ class BatchImageDownloadService
 
     /**
      * Sanitize a string to make it safe for use as a filename.
-     *
-     * @param string $fileName
-     * @return string
      */
     private function sanitizeFileName(string $fileName): string
     {
@@ -161,9 +158,6 @@ class BatchImageDownloadService
 
     /**
      * Extract image content from a base64 encoded string.
-     *
-     * @param string $base64Image
-     * @return string|null
      */
     private function getBase64ImageContent(string $base64Image): ?string
     {
@@ -176,10 +170,12 @@ class BatchImageDownloadService
                 return base64_decode($parts[0]);
             }
 
-            Log::warning("Invalid base64 image format: " . substr($base64Image, 0, 30) . "...");
+            Log::warning('Invalid base64 image format: '.substr($base64Image, 0, 30).'...');
+
             return null;
         } catch (\Exception $e) {
-            Log::error("Error processing base64 image: " . $e->getMessage());
+            Log::error('Error processing base64 image: '.$e->getMessage());
+
             return null;
         }
     }

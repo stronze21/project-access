@@ -1,10 +1,10 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h2 class="font-semibold text-xl text-base-content/90 leading-tight">
                 Submit Complaint
             </h2>
-            <span class="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            <span class="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 badge badge-sm">
                 Verified Citizen
             </span>
         </div>
@@ -13,7 +13,7 @@
     <div class="py-6">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
             @if ($errors->any())
-                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 alert alert-error">
                     <p class="font-semibold">Please review your submission details.</p>
                     <ul class="mt-1 list-disc pl-5">
                         @foreach ($errors->all() as $error)
@@ -24,7 +24,7 @@
             @endif
 
             <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-800 p-5 text-white shadow-lg sm:p-6">
-                <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
+                <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-base-100/10 blur-2xl"></div>
                 <div class="pointer-events-none absolute -bottom-8 left-20 h-24 w-24 rounded-full bg-cyan-300/20 blur-2xl"></div>
 
                 <div class="relative">
@@ -41,7 +41,7 @@
                     <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Daily Limit</p>
                     <p class="mt-1 font-semibold">{{ (int) config('complaints.submission_limits.citizen_daily', 5) }} complaints per day</p>
                 </div>
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 alert alert-success">
                     <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Visibility</p>
                     <p class="mt-1 font-semibold">Choose named, hidden identity, or private case</p>
                 </div>
@@ -52,9 +52,9 @@
             </section>
 
             <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-                    <h3 class="text-base font-semibold text-slate-900">Complaint Form</h3>
-                    <p class="mt-1 text-sm text-slate-600">Fields marked required should be complete and specific.</p>
+                <div class="xl:col-span-2 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6 card">
+                    <h3 class="text-base font-semibold text-base-content">Complaint Form</h3>
+                    <p class="mt-1 text-sm text-base-content/70">Fields marked required should be complete and specific.</p>
 
                     <form method="POST" action="{{ route('complaints.store') }}" enctype="multipart/form-data" class="mt-4 space-y-4">
                         @csrf
@@ -68,11 +68,11 @@
 
                         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                             <a href="{{ route('complaints.my.index') }}"
-                               class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                               class="inline-flex items-center justify-center rounded-lg border border-base-300 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                                 Cancel
                             </a>
                             <button type="submit"
-                                    class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                                    class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 btn btn-primary btn-sm">
                                 Submit Complaint
                             </button>
                         </div>
@@ -86,28 +86,28 @@
                             Use the 3-step quick ticket flow: photo, short details, submit.
                         </p>
                         <a href="{{ route('complaints.quick.create') }}"
-                           class="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700">
+                           class="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700 btn btn-primary btn-sm">
                             Open Quick Ticket
                         </a>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                        <h4 class="text-sm font-semibold text-slate-900">Submission Checklist</h4>
-                        <ul class="mt-3 space-y-2 text-sm text-slate-700">
-                            <li class="rounded-lg bg-slate-50 px-3 py-2">Use a specific title and concise short summary.</li>
-                            <li class="rounded-lg bg-slate-50 px-3 py-2">Describe location details for faster field action.</li>
-                            <li class="rounded-lg bg-slate-50 px-3 py-2">Upload clear files if evidence is available.</li>
-                            <li class="rounded-lg bg-slate-50 px-3 py-2">Pick the correct visibility option before submit.</li>
+                    <div class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5 card">
+                        <h4 class="text-sm font-semibold text-base-content">Submission Checklist</h4>
+                        <ul class="mt-3 space-y-2 text-sm text-base-content/80">
+                            <li class="rounded-lg bg-base-200 px-3 py-2">Use a specific title and concise short summary.</li>
+                            <li class="rounded-lg bg-base-200 px-3 py-2">Describe location details for faster field action.</li>
+                            <li class="rounded-lg bg-base-200 px-3 py-2">Upload clear files if evidence is available.</li>
+                            <li class="rounded-lg bg-base-200 px-3 py-2">Pick the correct visibility option before submit.</li>
                         </ul>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                        <h4 class="text-sm font-semibold text-slate-900">Need Anonymous Mode?</h4>
-                        <p class="mt-2 text-sm text-slate-600">
+                    <div class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5 card">
+                        <h4 class="text-sm font-semibold text-base-content">Need Anonymous Mode?</h4>
+                        <p class="mt-2 text-sm text-base-content/70">
                             If you prefer not to use your account identity, switch to anonymous submission.
                         </p>
                         <a href="{{ route('complaints.anonymous.create') }}"
-                           class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                           class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-base-300 px-3 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                             Open Anonymous Form
                         </a>
                     </div>
@@ -133,7 +133,7 @@
 
                 wrapper.classList.remove('hidden');
                 list.innerHTML = items.map((item) => `
-                    <a href="${item.url}" class="block rounded border border-amber-200 bg-white p-2 text-sm text-amber-900 hover:bg-amber-100">
+                    <a href="${item.url}" class="block rounded border border-amber-200 bg-base-100 p-2 text-sm text-amber-900 hover:bg-amber-100">
                         <div class="font-semibold">${item.title}</div>
                         <div class="text-xs text-amber-700">Ref: ${item.reference_code} | Status: ${item.status.replace('_', ' ')} | Supports: ${item.support_count}</div>
                     </a>

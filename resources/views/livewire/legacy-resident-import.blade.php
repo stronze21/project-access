@@ -4,7 +4,7 @@
 >
     <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-            <h1 class="text-2xl font-bold text-base-content">Legacy Resident Import</h1>
+            <h1 class="text-2xl font-bold text-base-content">Import Manager</h1>
             <p class="mt-1 text-sm text-base-content/60">Validate, stage, review, and safely promote on-prem CSV exports.</p>
         </div>
         <div class="flex flex-wrap gap-2">

@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 class EnforceComplaintSla extends Command
 {
     protected $signature = 'complaints:enforce-sla';
+
     protected $description = 'Checks complaint SLA deadlines and sends escalation alerts.';
 
     public function __construct(private ComplaintAuditLogger $auditLogger)
@@ -91,7 +92,7 @@ class EnforceComplaintSla extends Command
             && $complaint->status !== Complaint::STATUS_CLOSED
             && $complaint->mayor_notified_at === null
         ) {
-            $mayors = User::query()->where('role', User::ROLE_MAYOR)->get();
+            $mayors = User::query()->mayors()->get();
             foreach ($mayors as $mayor) {
                 $mayor->notify(new SlaOverdueNotification($complaint, 'Executive Escalation'));
             }
@@ -119,7 +120,7 @@ class EnforceComplaintSla extends Command
 
         if ($complaint->assigned_department_id) {
             $heads = User::query()
-                ->where('role', User::ROLE_DEPARTMENT_HEAD)
+                ->departmentHeads()
                 ->where('department_id', $complaint->assigned_department_id)
                 ->get();
             $recipients = $recipients->merge($heads);

@@ -10,8 +10,8 @@ use App\Models\SentimentPost;
 use App\Models\SosAlert;
 use App\Models\SystemSetting;
 use App\Services\PushNotificationService;
-use Livewire\Component;
 use Livewire\Attributes\Url;
+use Livewire\Component;
 use Mary\Traits\Toast;
 
 class CitizenServicesManager extends Component
@@ -22,33 +22,53 @@ class CitizenServicesManager extends Component
     public string $activeTab = 'overview';
 
     public bool $showActionModal = false;
+
     public ?string $actionModalType = null;
 
     public ?int $editingLinkId = null;
+
     public string $linkTitle = '';
+
     public string $linkServiceType = 'business-permit';
+
     public string $linkDescription = '';
+
     public string $linkUrl = '';
+
     public string $linkIcon = '';
+
     public bool $linkIsActive = true;
+
     public int $linkSortOrder = 0;
 
     public ?int $editingAlertId = null;
+
     public string $alertTitle = '';
+
     public string $alertMessage = '';
+
     public string $alertSeverity = 'medium';
+
     public string $alertStatus = 'active';
+
     public string $alertType = 'general';
+
     public bool $alertSendPush = false;
+
     public ?string $alertStartsAt = null;
+
     public ?string $alertEndsAt = null;
 
     public ?int $editingSosId = null;
+
     public string $sosStatus = 'open';
 
     public string $commandCenterName = '';
+
     public string $commandCenterHotline = '';
+
     public string $commandCenterAlternateHotline = '';
+
     public string $commandCenterEmail = '';
 
     public array $linkServiceTypes = [
@@ -334,9 +354,7 @@ class CitizenServicesManager extends Component
         $this->commandCenterEmail = (string) SystemSetting::get('command_center_email', '');
     }
 
-    private function primeFormMaps(): void
-    {
-    }
+    private function primeFormMaps(): void {}
 
     private function resetLinkForm(): void
     {
@@ -405,12 +423,40 @@ class CitizenServicesManager extends Component
     {
         $this->normalizeActiveTab();
 
+        $sosMapAlerts = $this->activeTab === 'sos'
+            ? SosAlert::query()
+                ->with([
+                    'resident:id,first_name,last_name,resident_id',
+                    'department:id,name,code,hotline',
+                ])
+                ->whereIn('status', ['open', 'acknowledged'])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->oldest()
+                ->get()
+                ->map(fn (SosAlert $alert): array => [
+                    'id' => $alert->id,
+                    'reference' => $alert->reference_number,
+                    'status' => $alert->status,
+                    'latitude' => (float) $alert->latitude,
+                    'longitude' => (float) $alert->longitude,
+                    'resident' => $alert->resident?->full_name ?? 'Unknown resident',
+                    'contact' => $alert->contact_number,
+                    'location' => $alert->location_label,
+                    'department' => $alert->department?->name,
+                    'reported_at' => $alert->created_at?->format('M d, Y h:i A'),
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return view('livewire.admin.citizen-services-manager', [
             'serviceLinks' => PublicServiceLink::orderBy('sort_order')->orderBy('title')->get(),
             'sosAlerts' => SosAlert::with([
                 'resident:id,first_name,last_name,resident_id',
                 'department:id,name,code,hotline',
             ])->latest()->limit(20)->get(),
+            'sosMapAlerts' => $sosMapAlerts,
             'emergencyAlerts' => EmergencyAlert::latest()->limit(20)->get(),
         ]);
     }

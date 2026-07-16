@@ -63,7 +63,7 @@ class DepartmentController extends Controller
             'departments' => $query->orderBy('name')->paginate(12)->withQueryString(),
             'stats' => $stats,
             'activeFilterLabels' => $activeFilterLabels,
-            'hasActiveFilters' => !empty($activeFilterLabels),
+            'hasActiveFilters' => ! empty($activeFilterLabels),
         ]);
     }
 
@@ -112,6 +112,11 @@ class DepartmentController extends Controller
     public function destroy(Request $request, Department $department): RedirectResponse
     {
         $this->authorize('manageReferenceData', Complaint::class);
+
+        if ($department->users()->exists() || $department->assignedComplaints()->exists()) {
+            return back()->withErrors(['department' => 'This department is linked to users or complaints. Deactivate it instead.']);
+        }
+
         $department->delete();
 
         return back()->with('status', 'Department removed.');

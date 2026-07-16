@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Resident;
 use App\Models\Household;
-use Illuminate\Support\Str;
+use App\Models\Resident;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class QrCodeService
@@ -13,32 +13,24 @@ class QrCodeService
     /**
      * Generate a QR code for a resident.
      *
-     * @param Resident $resident
-     * @param bool $force Whether to force regeneration if QR code already exists
+     * @param  bool  $force  Whether to force regeneration if QR code already exists
      * @return string The QR code value
      */
     public function generateResidentQrCode(Resident $resident, bool $force = false): string
     {
-        if (!$resident->qr_code || $force) {
-            $qrCode = 'R-' . strtoupper(Str::random(4)) . '-' . $resident->id;
-            $resident->qr_code = $qrCode;
-            $resident->save();
-        }
-
-        return $resident->qr_code;
+        return $resident->generateQrCode();
     }
 
     /**
      * Generate a QR code for a household.
      *
-     * @param Household $household
-     * @param bool $force Whether to force regeneration if QR code already exists
+     * @param  bool  $force  Whether to force regeneration if QR code already exists
      * @return string The QR code value
      */
     public function generateHouseholdQrCode(Household $household, bool $force = false): string
     {
-        if (!$household->qr_code || $force) {
-            $qrCode = 'HH-' . strtoupper(Str::random(4)) . '-' . $household->id;
+        if (! $household->qr_code || $force) {
+            $qrCode = 'HH-'.strtoupper(Str::random(4)).'-'.$household->id;
             $household->qr_code = $qrCode;
             $household->save();
         }
@@ -49,8 +41,7 @@ class QrCodeService
     /**
      * Generate a QR code image for a resident and save it.
      *
-     * @param Resident $resident
-     * @param int $size Size of the QR code image in pixels
+     * @param  int  $size  Size of the QR code image in pixels
      * @return string Path to the generated QR code image
      */
     public function generateResidentQrCodeImage(Resident $resident, int $size = 300): string
@@ -60,16 +51,16 @@ class QrCodeService
 
         // Create directory if not exists
         $directory = 'qrcodes/residents';
-        if (!Storage::exists($directory)) {
+        if (! Storage::exists($directory)) {
             Storage::makeDirectory($directory);
         }
 
         // Generate file path
-        $fileName = 'resident_' . $resident->id . '.png';
-        $path = $directory . '/' . $fileName;
+        $fileName = 'resident_'.$resident->id.'.svg';
+        $path = $directory.'/'.$fileName;
 
         // Generate QR code image
-        $image = QrCode::format('png')
+        $image = QrCode::format('svg')
             ->size($size)
             ->errorCorrection('H')
             ->margin(1)
@@ -84,8 +75,7 @@ class QrCodeService
     /**
      * Generate a QR code image for a household and save it.
      *
-     * @param Household $household
-     * @param int $size Size of the QR code image in pixels
+     * @param  int  $size  Size of the QR code image in pixels
      * @return string Path to the generated QR code image
      */
     public function generateHouseholdQrCodeImage(Household $household, int $size = 300): string
@@ -95,16 +85,16 @@ class QrCodeService
 
         // Create directory if not exists
         $directory = 'qrcodes/households';
-        if (!Storage::exists($directory)) {
+        if (! Storage::exists($directory)) {
             Storage::makeDirectory($directory);
         }
 
         // Generate file path
-        $fileName = 'household_' . $household->id . '.png';
-        $path = $directory . '/' . $fileName;
+        $fileName = 'household_'.$household->id.'.svg';
+        $path = $directory.'/'.$fileName;
 
         // Generate QR code image
-        $image = QrCode::format('png')
+        $image = QrCode::format('svg')
             ->size($size)
             ->errorCorrection('H')
             ->margin(1)
@@ -119,7 +109,6 @@ class QrCodeService
     /**
      * Generate a resident ID card with QR code.
      *
-     * @param Resident $resident
      * @return string Path to the generated ID card
      */
     public function generateResidentIdCard(Resident $resident): string
@@ -129,13 +118,13 @@ class QrCodeService
 
         // Create directory if not exists
         $directory = 'id-cards/residents';
-        if (!Storage::exists($directory)) {
+        if (! Storage::exists($directory)) {
             Storage::makeDirectory($directory);
         }
 
         // Generate file path
-        $fileName = 'id_' . $resident->id . '.pdf';
-        $path = $directory . '/' . $fileName;
+        $fileName = 'id_'.$resident->id.'.pdf';
+        $path = $directory.'/'.$fileName;
 
         // In a real implementation, this would involve PDF generation
         // For now, we'll just create a placeholder
@@ -152,30 +141,27 @@ class QrCodeService
 
     /**
      * Find a resident by QR code.
-     *
-     * @param string $qrCode
-     * @return Resident|null
      */
     public function findResidentByQrCode(string $qrCode): ?Resident
     {
-        return Resident::where('qr_code', $qrCode)->orWhere('qr_code', 'QR-' . $qrCode)->first();
+        if (Str::startsWith($qrCode, 'AC-')) {
+            return Resident::where('resident_id', Str::after($qrCode, 'AC-'))->first();
+        }
+
+        return Resident::where('qr_code', $qrCode)->orWhere('qr_code', 'QR-'.$qrCode)->first();
     }
 
     /**
      * Find a household by QR code.
-     *
-     * @param string $qrCode
-     * @return Household|null
      */
     public function findHouseholdByQrCode(string $qrCode): ?Household
     {
-        return Household::where('qr_code', $qrCode)->orWhere('qr_code', 'QR-' . $qrCode)->first();
+        return Household::where('qr_code', $qrCode)->orWhere('qr_code', 'QR-'.$qrCode)->first();
     }
 
     /**
      * Process a scanned QR code.
      *
-     * @param string $qrCode
      * @return array Information about the scanned QR code
      */
     public function processQrCode(string $qrCode): array
@@ -185,11 +171,11 @@ class QrCodeService
             'id' => null,
             'object' => null,
             'found' => false,
-            'message' => 'Invalid QR code format'
+            'message' => 'Invalid QR code format',
         ];
 
         // Check QR code format
-        if (Str::startsWith($qrCode, 'RR-') or Str::startsWith($qrCode, 'R-') or Str::startsWith($qrCode, 'QR-R-')) {
+        if (Str::startsWith($qrCode, 'AC-') or Str::startsWith($qrCode, 'RR-') or Str::startsWith($qrCode, 'R-') or Str::startsWith($qrCode, 'QR-R-')) {
             $result['type'] = 'resident';
             $resident = $this->findResidentByQrCode($qrCode);
 
@@ -197,9 +183,9 @@ class QrCodeService
                 $result['found'] = true;
                 $result['object'] = $resident;
                 $result['id'] = $resident->id;
-                $result['message'] = 'Resident found: ' . $resident->full_name;
+                $result['message'] = 'Resident found: '.$resident->full_name;
             } else {
-                $result['message'] = 'Resident not found with QR code: ' . $qrCode;
+                $result['message'] = 'Resident not found with QR code: '.$qrCode;
             }
         } elseif (Str::startsWith($qrCode, 'HH-') or Str::startsWith($qrCode, 'QR-HH-')) {
             $result['type'] = 'household';
@@ -209,9 +195,9 @@ class QrCodeService
                 $result['found'] = true;
                 $result['object'] = $household;
                 $result['id'] = $household->id;
-                $result['message'] = 'Household found: ' . $household->household_id;
+                $result['message'] = 'Household found: '.$household->household_id;
             } else {
-                $result['message'] = 'Household not found with QR code: ' . $qrCode;
+                $result['message'] = 'Household not found with QR code: '.$qrCode;
             }
         }
 

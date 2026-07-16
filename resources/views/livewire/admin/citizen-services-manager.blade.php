@@ -267,7 +267,37 @@
             @break
 
             @case('sos')
-                <x-mary-card title="SOS Response Management">
+                <div class="space-y-6">
+                    <x-mary-card title="Active SOS Alert Map">
+                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-sm text-gray-600">
+                                All open and acknowledged SOS alerts with coordinates are shown on this map.
+                            </p>
+                            <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700">
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="h-3 w-3 rounded-full bg-red-600 ring-2 ring-red-200"></span>
+                                    Open
+                                </span>
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="h-3 w-3 rounded-full bg-blue-600 ring-2 ring-blue-200"></span>
+                                    Acknowledged
+                                </span>
+                            </div>
+                        </div>
+
+                        <div
+                            wire:key="sos-alert-map-{{ md5(json_encode($sosMapAlerts)) }}"
+                            x-data
+                            x-init="$nextTick(() => window.initializeSosAlertMap($refs.map, {{ Illuminate\Support\Js::from($sosMapAlerts) }}))"
+                        >
+                            <div x-ref="map" wire:ignore class="sos-alert-map h-[32rem] w-full rounded-xl border border-slate-200 bg-slate-100"></div>
+                            @if (empty($sosMapAlerts))
+                                <p class="mt-3 text-center text-sm text-gray-500">No open or acknowledged SOS alerts currently have coordinates.</p>
+                            @endif
+                        </div>
+                    </x-mary-card>
+
+                    <x-mary-card title="SOS Response Management">
                     <div class="space-y-4">
                         @forelse ($sosAlerts as $sos)
                             <div class="p-4 border rounded-lg">
@@ -303,7 +333,8 @@
                             <p class="py-4 text-center text-gray-500">No SOS alerts found.</p>
                         @endforelse
                     </div>
-                </x-mary-card>
+                    </x-mary-card>
+                </div>
             @break
 
             @case('command-center')
@@ -415,4 +446,124 @@
             </form>
         </x-mary-modal>
     @endif
+
+    @once
+        @push('scripts')
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+            .sos-alert-map-marker {
+                background: transparent;
+                border: 0;
+            }
+
+            .sos-alert-map-pin {
+                align-items: center;
+                border: 2px solid #fff;
+                border-radius: 50% 50% 50% 0;
+                box-shadow: 0 2px 8px rgb(15 23 42 / 35%);
+                display: flex;
+                height: 28px;
+                justify-content: center;
+                transform: rotate(-45deg);
+                width: 28px;
+            }
+
+            .sos-alert-map-pin::after {
+                background: #fff;
+                border-radius: 9999px;
+                content: '';
+                height: 8px;
+                width: 8px;
+            }
+
+            .sos-alert-map-pin-open {
+                background: #dc2626;
+            }
+
+            .sos-alert-map-pin-acknowledged {
+                background: #2563eb;
+            }
+        </style>
+        <script>
+            window.initializeSosAlertMap = (element, alerts) => {
+                if (!element || element.dataset.mapInitialized === 'true') {
+                    return;
+                }
+
+                if (typeof window.L === 'undefined') {
+                    element.innerHTML = '<div class="flex h-full items-center justify-center p-6 text-center text-sm text-gray-500">The map service could not load. Refresh the page to try again.</div>';
+                    return;
+                }
+
+                element.dataset.mapInitialized = 'true';
+
+                const defaultCenter = [16.1555, 119.9814];
+                const map = L.map(element).setView(defaultCenter, 13);
+                const bounds = [];
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors',
+                }).addTo(map);
+
+                const escapeHtml = (value) => String(value ?? '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+
+                alerts.forEach((alert) => {
+                    const latitude = Number(alert.latitude);
+                    const longitude = Number(alert.longitude);
+
+                    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+                        || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                        return;
+                    }
+
+                    const status = alert.status === 'acknowledged' ? 'acknowledged' : 'open';
+                    const markerIcon = L.divIcon({
+                        className: 'sos-alert-map-marker',
+                        html: `<span class="sos-alert-map-pin sos-alert-map-pin-${status}"></span>`,
+                        iconAnchor: [14, 28],
+                        iconSize: [28, 28],
+                        popupAnchor: [0, -27],
+                    });
+
+                    const details = [
+                        alert.location ? `<div>${escapeHtml(alert.location)}</div>` : '',
+                        alert.contact ? `<div>Contact: ${escapeHtml(alert.contact)}</div>` : '',
+                        alert.department ? `<div>Inform: ${escapeHtml(alert.department)}</div>` : '',
+                        alert.reported_at ? `<div>Reported: ${escapeHtml(alert.reported_at)}</div>` : '',
+                    ].filter(Boolean).join('');
+
+                    L.marker([latitude, longitude], {
+                        icon: markerIcon,
+                        title: `${alert.reference} - ${alert.resident}`,
+                    })
+                        .addTo(map)
+                        .bindPopup(`
+                            <div class="min-w-52 text-sm">
+                                <div class="font-semibold">${escapeHtml(alert.resident)}</div>
+                                <div class="mb-2 text-xs uppercase">${escapeHtml(alert.status)} &middot; ${escapeHtml(alert.reference)}</div>
+                                ${details}
+                            </div>
+                        `);
+
+                    bounds.push([latitude, longitude]);
+                });
+
+                if (bounds.length === 1) {
+                    map.setView(bounds[0], 16);
+                } else if (bounds.length > 1) {
+                    map.fitBounds(bounds, { padding: [36, 36], maxZoom: 16 });
+                }
+
+                setTimeout(() => map.invalidateSize(), 0);
+            };
+        </script>
+        @endpush
+    @endonce
 </div>

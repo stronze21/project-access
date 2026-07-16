@@ -161,12 +161,15 @@ class Resident extends Authenticatable
     }
 
     /**
-     * Generate a unique QR code for the resident.
+     * Store and return the canonical QR value for the resident.
      */
     public function generateQrCode(): string
     {
-        $this->qr_code = 'QR-R-'.strtoupper(substr(md5($this->id.time()), 0, 10));
-        $this->save();
+        $canonicalQrCode = 'AC-'.$this->resident_id;
+
+        if ($this->qr_code !== $canonicalQrCode) {
+            $this->forceFill(['qr_code' => $canonicalQrCode])->saveQuietly();
+        }
 
         return $this->qr_code;
     }

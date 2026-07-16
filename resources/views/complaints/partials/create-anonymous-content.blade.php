@@ -1,6 +1,6 @@
 <div class="max-w-5xl mx-auto space-y-5">
     @if ($errors->any())
-        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 alert alert-error">
             <p class="font-semibold">Please check your submission details.</p>
             <ul class="mt-1 list-disc pl-5">
                 @foreach ($errors->all() as $error)
@@ -11,7 +11,7 @@
     @endif
 
     <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-amber-900 to-orange-800 p-5 text-white shadow-lg sm:p-6">
-        <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
+        <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-base-100/10 blur-2xl"></div>
         <div class="pointer-events-none absolute -bottom-8 left-20 h-24 w-24 rounded-full bg-amber-300/20 blur-2xl"></div>
 
         <div class="relative">
@@ -32,15 +32,15 @@
             <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Tracking</p>
             <p class="mt-1 font-semibold">No complaint tracking for anonymous users</p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 alert alert-success">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Visibility</p>
             <p class="mt-1 font-semibold">Public summary or private internal case</p>
         </div>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <h2 class="text-base font-semibold text-slate-900">Complaint Form</h2>
-        <p class="mt-1 text-sm text-slate-600">Provide clear details to help departments respond faster.</p>
+    <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6 card">
+        <h2 class="text-base font-semibold text-base-content">Complaint Form</h2>
+        <p class="mt-1 text-sm text-base-content/70">Provide clear details to help departments respond faster.</p>
 
         <form method="POST" action="{{ route('complaints.anonymous.store') }}" enctype="multipart/form-data" class="mt-4 space-y-4">
             @csrf
@@ -55,11 +55,11 @@
 
             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <a href="{{ route('complaints.public.index') }}"
-                   class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                   class="inline-flex items-center justify-center rounded-lg border border-base-300 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                     Cancel
                 </a>
                 <button type="submit"
-                        class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                        class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 btn btn-primary btn-sm">
                     Submit Complaint
                 </button>
             </div>
@@ -106,7 +106,7 @@
 
             wrapper.classList.remove('hidden');
             list.innerHTML = items.map((item) => `
-                <a href="${item.url}" class="block rounded-lg border border-amber-200 bg-white p-2 text-sm text-amber-900 hover:bg-amber-100">
+                <a href="${item.url}" class="block rounded-lg border border-amber-200 bg-base-100 p-2 text-sm text-amber-900 hover:bg-amber-100">
                     <div class="font-semibold">${item.title}</div>
                     <div class="text-xs text-amber-700">Ref: ${item.reference_code} | Status: ${item.status.replace('_', ' ')} | Supports: ${item.support_count}</div>
                 </a>

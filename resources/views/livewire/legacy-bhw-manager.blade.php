@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-bold text-base-content">BHW Master</h1>
             <p class="mt-1 text-sm text-base-content/60">Manage one primary and one secondary resident BHW per zone.</p>
         </div>
-        <a href="{{ route('residents.legacy-import.index') }}" class="btn btn-outline btn-sm">Back to Legacy Import</a>
+        <a href="{{ route('residents.legacy-import.index') }}" class="btn btn-outline btn-sm">Back to Import Manager</a>
     </div>
 
     @include('legacy-data._navigation', ['type' => 'bhw'])

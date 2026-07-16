@@ -138,13 +138,20 @@
                                     <x-mary-select label="Operator"
                                         wire:model.live="criteria.{{ $index }}.operator"
                                         error="{{ $errors->first('criteria.' . $index . '.operator') }}"
-                                        :options="$operators" option-value="key" option-label="name" />
+                                        :options="in_array($criterion['type'], ['voter', 'pwd', 'senior', 'solo_parent', 'pregnant', 'lactating', 'indigenous', 'scholar']) ? $booleanOperators : $operators"
+                                        option-value="key" option-label="name" />
                                 </div>
 
                                 <div class="mb-3">
-                                    <x-mary-input label="Value" wire:model="criteria.{{ $index }}.value"
-                                        placeholder="Enter the value to compare against"
-                                        error="{{ $errors->first('criteria.' . $index . '.value') }}" />
+                                    @if (in_array($criterion['type'], ['voter', 'pwd', 'senior', 'solo_parent', 'pregnant', 'lactating', 'indigenous', 'scholar']))
+                                        <x-mary-select label="Value" wire:model="criteria.{{ $index }}.value"
+                                            error="{{ $errors->first('criteria.' . $index . '.value') }}"
+                                            :options="$booleanValues" option-value="key" option-label="name" />
+                                    @else
+                                        <x-mary-input label="Value" wire:model="criteria.{{ $index }}.value"
+                                            placeholder="Enter the value to compare against"
+                                            error="{{ $errors->first('criteria.' . $index . '.value') }}" />
+                                    @endif
                                 </div>
 
                                 <div class="text-xs text-gray-500">
@@ -165,8 +172,9 @@
                                             'pregnant',
                                             'lactating',
                                             'indigenous',
+                                            'scholar',
                                         ]))
-                                        <p>Use "true" or "false" values</p>
+                                        <p>Select Yes or No.</p>
                                     @endif
                                 </div>
                             </div>

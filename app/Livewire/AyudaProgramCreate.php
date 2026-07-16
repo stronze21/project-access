@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\AyudaProgram;
 use App\Models\EligibilityCriteria;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Mary\Traits\Toast;
@@ -116,6 +117,27 @@ class AyudaProgramCreate extends Component
         ['key' => 'not_contains', 'name' => 'Does Not Contain'],
     ];
 
+    public $booleanOperators = [
+        ['key' => 'equals', 'name' => 'Equals (=)'],
+        ['key' => 'not_equals', 'name' => 'Not Equals (!=)'],
+    ];
+
+    public $booleanValues = [
+        ['key' => 'true', 'name' => 'Yes'],
+        ['key' => 'false', 'name' => 'No'],
+    ];
+
+    private const BOOLEAN_CRITERION_TYPES = [
+        'voter',
+        'pwd',
+        'senior',
+        'solo_parent',
+        'pregnant',
+        'lactating',
+        'indigenous',
+        'scholar',
+    ];
+
     public $rules = [
         // Program details
         'name' => 'required|string|max:100',
@@ -221,18 +243,40 @@ class AyudaProgramCreate extends Component
     }
 
     /**
+     * Reset flag criteria to a valid comparison when their type changes.
+     */
+    public function updatedCriteria($value, $key): void
+    {
+        if (! str_ends_with($key, '.type') || ! in_array($value, self::BOOLEAN_CRITERION_TYPES, true)) {
+            return;
+        }
+
+        $index = (int) str($key)->before('.')->toString();
+        $this->criteria[$index]['operator'] = 'equals';
+        $this->criteria[$index]['value'] = 'true';
+    }
+
+    /**
      * Validate criteria before submission
      */
     protected function validateCriteria()
     {
         $criteriaRules = [];
+        $criterionTypes = array_column($this->criterionTypes, 'key');
+        $operators = array_column($this->operators, 'key');
 
         foreach ($this->criteria as $index => $criterion) {
             if (! empty($criterion['name']) || ! empty($criterion['value'])) {
                 $criteriaRules["criteria.{$index}.name"] = 'required|string|max:100';
-                $criteriaRules["criteria.{$index}.type"] = 'required|string';
-                $criteriaRules["criteria.{$index}.operator"] = 'required|string';
-                $criteriaRules["criteria.{$index}.value"] = 'required|string|max:255';
+                $criteriaRules["criteria.{$index}.type"] = ['required', Rule::in($criterionTypes)];
+
+                if (in_array($criterion['type'] ?? null, self::BOOLEAN_CRITERION_TYPES, true)) {
+                    $criteriaRules["criteria.{$index}.operator"] = ['required', Rule::in(['equals', 'not_equals'])];
+                    $criteriaRules["criteria.{$index}.value"] = ['required', Rule::in(['true', 'false'])];
+                } else {
+                    $criteriaRules["criteria.{$index}.operator"] = ['required', Rule::in($operators)];
+                    $criteriaRules["criteria.{$index}.value"] = 'required|string|max:255';
+                }
             }
         }
 

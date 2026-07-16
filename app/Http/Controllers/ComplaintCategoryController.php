@@ -61,7 +61,7 @@ class ComplaintCategoryController extends Controller
             'categories' => $query->orderBy('name')->paginate(12)->withQueryString(),
             'stats' => $stats,
             'activeFilterLabels' => $activeFilterLabels,
-            'hasActiveFilters' => !empty($activeFilterLabels),
+            'hasActiveFilters' => ! empty($activeFilterLabels),
         ]);
     }
 
@@ -106,6 +106,11 @@ class ComplaintCategoryController extends Controller
     public function destroy(Request $request, ComplaintCategory $category): RedirectResponse
     {
         $this->authorize('manageReferenceData', Complaint::class);
+
+        if ($category->complaints()->exists()) {
+            return back()->withErrors(['category' => 'This category is linked to complaints. Deactivate it instead.']);
+        }
+
         $category->delete();
 
         return back()->with('status', 'Category removed.');

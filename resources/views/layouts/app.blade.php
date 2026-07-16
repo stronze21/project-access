@@ -76,6 +76,15 @@
     $bosesmotoComplaintsEnabled = $moduleSettings->enabled('complaints');
     $bosesmotoSentimentsEnabled = $moduleSettings->enabled('sentiments');
     $bosesmotoPollsEnabled = $moduleSettings->enabled('polls');
+    $bhwisIntegrationActive = request()->routeIs(
+        'legacy-data.*',
+        'residents.legacy-import.index',
+        'residents.scholar-pin-import'
+    );
+    $canAccessBhwisIntegration = auth()->check() && (
+        auth()->user()->can('manage-legacy-reference-data') ||
+        auth()->user()->can('import-residents')
+    );
 @endphp
 
 <head>
@@ -481,8 +490,8 @@
                                                     </a>
                                                 @endif
                                                 @if ($bosesmotoComplaintsEnabled && $canManageBosesmotoAdmin)
-                                                    <a href="{{ route('complaints.categories.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        Complaint References
+                                                    <a href="{{ route('complaints.references.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        Reference Data
                                                     </a>
                                                 @endif
                                             </div>
@@ -514,14 +523,14 @@
                             </div>
 
                             <!-- Admin Dropdown - only show for appropriate permissions -->
-                            @if (auth()->user()->can('manage-users') || auth()->user()->can('manage-legacy-reference-data') || auth()->user()->hasRole('system-administrator'))
+                            @if (auth()->user()->can('manage-users') || $canAccessBhwisIntegration || auth()->user()->hasRole('system-administrator'))
                                 <div class="relative hidden sm:inline-flex sm:items-center" x-data="{ open: false }">
                                     <button @click="open = !open" @click.away="open = false"
                                         class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out border-b-2 focus:outline-none"
                                         :class="{
-                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'true' : 'false' }},
+                                            'border-[var(--brand-secondary)] text-[var(--brand-ink)]': {{ (request()->routeIs('admin.*') || $bhwisIntegrationActive) ? 'true' : 'false' }},
                                             'border-transparent text-gray-500 hover:text-[var(--brand-primary)] hover:border-[var(--brand-accent)]':
-                                                !{{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'true' : 'false' }}
+                                                !{{ (request()->routeIs('admin.*') || $bhwisIntegrationActive) ? 'true' : 'false' }}
                                         }">
                                         <span class="flex items-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1"
@@ -574,24 +583,30 @@
                                                 </a>
                                             @endif
 
-                                            @can('manage-legacy-reference-data')
+                                            @if ($canAccessBhwisIntegration)
                                                 <div data-testid="legacy-data-navbar" class="group relative mt-2 border-t border-slate-200 pt-1">
                                                     <button type="button"
-                                                        class="flex w-full items-center justify-between px-4 py-2 text-left text-sm font-semibold {{ request()->routeIs('legacy-data.*') ? 'bg-slate-100 text-[var(--brand-primary)]' : 'text-gray-700 hover:bg-gray-100' }}">
+                                                        class="flex w-full items-center justify-between px-4 py-2 text-left text-sm font-semibold {{ $bhwisIntegrationActive ? 'bg-slate-100 text-[var(--brand-primary)]' : 'text-gray-700 hover:bg-gray-100' }}">
                                                         <span>BHWIS Integration</span>
                                                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                                                         </svg>
                                                     </button>
                                                     <div class="absolute left-full bottom-0 z-30 ml-2 hidden w-64 rounded-xl border border-slate-200 bg-white py-1 shadow-xl group-hover:block group-focus-within:block">
-                                                        <a href="{{ route('legacy-data.references.index', 'source-income-types') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Source Income Types</a>
-                                                        <a href="{{ route('legacy-data.references.index', 'educational-attainments') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Educational Attainments</a>
-                                                        <a href="{{ route('legacy-data.references.index', 'civil-statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Civil Statuses</a>
-                                                        <a href="{{ route('legacy-data.references.index', 'barangays') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Barangay Mappings</a>
-                                                        <a href="{{ route('legacy-data.bhw.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">BHW Master</a>
+                                                        @can('import-residents')
+                                                            <a href="{{ route('residents.legacy-import.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Import Manager</a>
+                                                            <a href="{{ route('residents.scholar-pin-import') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Scholar PIN Imports</a>
+                                                        @endcan
+                                                        @can('manage-legacy-reference-data')
+                                                            <a href="{{ route('legacy-data.references.index', 'source-income-types') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Source Income Types</a>
+                                                            <a href="{{ route('legacy-data.references.index', 'educational-attainments') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Educational Attainments</a>
+                                                            <a href="{{ route('legacy-data.references.index', 'civil-statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Civil Statuses</a>
+                                                            <a href="{{ route('legacy-data.references.index', 'barangays') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Barangay Mappings</a>
+                                                            <a href="{{ route('legacy-data.bhw.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">BHW Master</a>
+                                                        @endcan
                                                     </div>
                                                 </div>
-                                            @endcan
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -883,8 +898,8 @@
                                             </x-responsive-nav-link>
                                         @endif
                                         @if ($bosesmotoComplaintsEnabled && $canManageBosesmotoAdmin)
-                                            <x-responsive-nav-link href="{{ route('complaints.categories.index') }}" :active="request()->routeIs('complaints.categories.*', 'complaints.departments.*', 'complaints.officials.*')">
-                                                Complaint References
+                                            <x-responsive-nav-link href="{{ route('complaints.references.index') }}" :active="request()->routeIs('complaints.references.*', 'complaints.categories.*', 'complaints.barangays.*', 'complaints.departments.*', 'complaints.action-officers.*', 'complaints.officials.*', 'complaints.sos-departments.*')">
+                                                Reference Data
                                             </x-responsive-nav-link>
                                         @endif
                                     </div>
@@ -925,10 +940,10 @@
                         @endcan
 
                         <!-- Admin section - only visible for admin users -->
-                        @if (auth()->user()->can('manage-users') || auth()->user()->can('manage-legacy-reference-data') || auth()->user()->hasRole('system-administrator'))
-                            <div x-data="{ adminOpen: {{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'true' : 'false' }} }">
+                        @if (auth()->user()->can('manage-users') || $canAccessBhwisIntegration || auth()->user()->hasRole('system-administrator'))
+                            <div x-data="{ adminOpen: {{ (request()->routeIs('admin.*') || $bhwisIntegrationActive) ? 'true' : 'false' }} }">
                                 <button @click="adminOpen = !adminOpen"
-                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ (request()->routeIs('admin.*') || request()->routeIs('legacy-data.*')) ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)] focus:outline-none focus:text-[var(--brand-primary-strong)] focus:bg-[var(--brand-mist)] focus:border-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
+                                    class="flex items-center w-full text-left pl-3 pr-4 py-2 border-l-4 {{ (request()->routeIs('admin.*') || $bhwisIntegrationActive) ? 'border-[var(--brand-secondary)] text-[var(--brand-primary)] bg-[var(--brand-mist)] focus:outline-none focus:text-[var(--brand-primary-strong)] focus:bg-[var(--brand-mist)] focus:border-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:text-[var(--brand-primary)] hover:bg-[var(--brand-mist)] hover:border-[var(--brand-accent)]' }} text-base font-medium focus:outline-none transition duration-150 ease-in-out">
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -1011,12 +1026,12 @@
                                         </x-responsive-nav-link>
                                     @endcan
 
-                                    @can('manage-legacy-reference-data')
+                                    @if ($canAccessBhwisIntegration)
                                         <div data-testid="legacy-data-mobile-navbar"
                                             class="mt-3 border-t border-slate-200 pt-2"
-                                            x-data="{ integrationOpen: {{ request()->routeIs('legacy-data.*') ? 'true' : 'false' }} }">
+                                            x-data="{ integrationOpen: {{ $bhwisIntegrationActive ? 'true' : 'false' }} }">
                                             <button type="button" @click="integrationOpen = !integrationOpen"
-                                                class="flex w-full items-center justify-between border-l-4 px-4 py-3 text-left text-sm font-semibold {{ request()->routeIs('legacy-data.*') ? 'border-[var(--brand-secondary)] bg-[var(--brand-mist)] text-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:bg-slate-50' }}">
+                                                class="flex w-full items-center justify-between border-l-4 px-4 py-3 text-left text-sm font-semibold {{ $bhwisIntegrationActive ? 'border-[var(--brand-secondary)] bg-[var(--brand-mist)] text-[var(--brand-primary)]' : 'border-transparent text-gray-600 hover:bg-slate-50' }}">
                                                 <span>BHWIS Integration</span>
                                                 <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-90': integrationOpen }"
                                                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -1024,14 +1039,20 @@
                                                 </svg>
                                             </button>
                                             <div x-show="integrationOpen" x-transition class="ml-4 border-l border-slate-200 pl-2" style="display: none;">
-                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'source-income-types') }}" :active="request()->is('legacy-data/source-income-types')">Source Income Types</x-responsive-nav-link>
-                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'educational-attainments') }}" :active="request()->is('legacy-data/educational-attainments')">Educational Attainments</x-responsive-nav-link>
-                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'civil-statuses') }}" :active="request()->is('legacy-data/civil-statuses')">Civil Statuses</x-responsive-nav-link>
-                                                <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'barangays') }}" :active="request()->is('legacy-data/barangays')">Barangay Mappings</x-responsive-nav-link>
-                                                <x-responsive-nav-link href="{{ route('legacy-data.bhw.index') }}" :active="request()->routeIs('legacy-data.bhw.*')">BHW Master</x-responsive-nav-link>
+                                                @can('import-residents')
+                                                    <x-responsive-nav-link href="{{ route('residents.legacy-import.index') }}" :active="request()->routeIs('residents.legacy-import.index')">Import Manager</x-responsive-nav-link>
+                                                    <x-responsive-nav-link href="{{ route('residents.scholar-pin-import') }}" :active="request()->routeIs('residents.scholar-pin-import')">Scholar PIN Imports</x-responsive-nav-link>
+                                                @endcan
+                                                @can('manage-legacy-reference-data')
+                                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'source-income-types') }}" :active="request()->is('legacy-data/source-income-types')">Source Income Types</x-responsive-nav-link>
+                                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'educational-attainments') }}" :active="request()->is('legacy-data/educational-attainments')">Educational Attainments</x-responsive-nav-link>
+                                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'civil-statuses') }}" :active="request()->is('legacy-data/civil-statuses')">Civil Statuses</x-responsive-nav-link>
+                                                    <x-responsive-nav-link href="{{ route('legacy-data.references.index', 'barangays') }}" :active="request()->is('legacy-data/barangays')">Barangay Mappings</x-responsive-nav-link>
+                                                    <x-responsive-nav-link href="{{ route('legacy-data.bhw.index') }}" :active="request()->routeIs('legacy-data.bhw.*')">BHW Master</x-responsive-nav-link>
+                                                @endcan
                                             </div>
                                         </div>
-                                    @endcan
+                                    @endif
                                 </div>
                             </div>
                         @endif

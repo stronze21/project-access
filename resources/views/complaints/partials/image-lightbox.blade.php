@@ -6,7 +6,7 @@
     <div class="relative z-10 w-full max-w-5xl">
         <button type="button"
                 data-lightbox-close="1"
-                class="mb-2 inline-flex items-center rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-white">
+                class="mb-2 inline-flex items-center rounded-lg bg-base-100/90 px-3 py-1.5 text-xs font-semibold text-base-content hover:bg-base-100 btn btn-ghost btn-xs">
             Close
         </button>
         <div class="overflow-hidden rounded-xl bg-black shadow-2xl">

@@ -19,10 +19,10 @@
                         Standard Import
                     </x-mary-menu-item>
                     <x-mary-menu-item icon="o-server-stack" href="{{ route('residents.legacy-import.index') }}">
-                        Legacy Staged Import
+                        Import Manager
                     </x-mary-menu-item>
                     <x-mary-menu-item icon="o-academic-cap" href="{{ route('residents.scholar-pin-import') }}">
-                        Scholar PIN Import
+                        Scholar PIN Imports
                     </x-mary-menu-item>
                 @endcan
                 @can('export-residents')

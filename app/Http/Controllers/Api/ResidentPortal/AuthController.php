@@ -41,18 +41,18 @@ class AuthController extends Controller
         $credentialHash = $request->filled('mpin') ? $resident?->mpin : $resident?->password;
         $usesBirthdayFallback = $resident
             && $request->filled('mpin')
-            && !$resident->mpin
+            && ! $resident->mpin
             && $resident->birth_date
             && hash_equals($resident->birth_date->format('ymd'), $credential);
 
-        if (!$resident || (!$usesBirthdayFallback && (!$credentialHash || !Hash::check($credential, $credentialHash)))) {
+        if (! $resident || (! $usesBirthdayFallback && (! $credentialHash || ! Hash::check($credential, $credentialHash)))) {
             return response()->json([
                 'message' => 'The provided credentials are incorrect.',
                 'errors' => ['login' => ['The provided credentials are incorrect.']],
             ], 401);
         }
 
-        if (!$resident->is_active) {
+        if (! $resident->is_active) {
             return response()->json([
                 'message' => 'Your account has been deactivated. Please contact your barangay office.',
                 'errors' => ['login' => ['Account is deactivated.']],
@@ -68,7 +68,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login successful',
             'token' => $token,
-            'resident' => $resident->load('household'),
+            'resident' => $resident->load(['household', 'sourceIncomeType']),
             'requires_mpin_update' => $usesBirthdayFallback,
         ]);
     }
@@ -103,7 +103,7 @@ class AuthController extends Controller
             ->whereDate('birth_date', $request->birth_date)
             ->first();
 
-        if (!$resident) {
+        if (! $resident) {
             return response()->json([
                 'message' => 'No matching resident record found. Please verify your information or contact your barangay office.',
                 'errors' => ['resident_id' => ['No matching resident record found.']],
@@ -129,7 +129,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Account activated successfully',
             'token' => $token,
-            'resident' => $resident->load('household'),
+            'resident' => $resident->load(['household', 'sourceIncomeType']),
             'requires_mpin_update' => false,
         ], 201);
     }
@@ -170,11 +170,11 @@ class AuthController extends Controller
         $currentHash = $request->filled('current_mpin') ? $resident->mpin : $resident->password;
 
         $usesBirthdayFallback = $request->filled('current_mpin')
-            && !$resident->mpin
+            && ! $resident->mpin
             && $resident->birth_date
             && hash_equals($resident->birth_date->format('ymd'), $currentCredential);
 
-        if (!$usesBirthdayFallback && (!$currentHash || !Hash::check($currentCredential, $currentHash))) {
+        if (! $usesBirthdayFallback && (! $currentHash || ! Hash::check($currentCredential, $currentHash))) {
             return response()->json([
                 'message' => 'Current credential is incorrect.',
                 'errors' => ['current_mpin' => ['Current MPIN is incorrect.']],

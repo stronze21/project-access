@@ -27,27 +27,16 @@ class DatabaseSeeder extends Seeder
         $this->call(LocationsSeeder::class);
         $this->call(SystemSettingsSeeder::class);
 
-        // Create ayuda programs and eligibility criteria
-        $this->call(AyudaProgramSeeder::class);
-        $this->call(EligibilityCriteriaSeeder::class);
-
         // Citizen service portal data
         $this->call([
             PublicServiceLinkSeeder::class,
             SosDepartmentSeeder::class,
-            CitizenServiceRequestSeeder::class,
-            GrievanceReportSeeder::class,
-            EmergencyAlertSeeder::class,
-            SosAlertSeeder::class,
         ]);
 
         $this->call([
             RolesAndPermissionsSeeder::class,
             DefaultAdminSeeder::class,
             FeedbackReferenceSeeder::class,
-            PublicComplaintSeeder::class,
-            PollSeeder::class,
-            SentimentSeeder::class,
             // Add other seeders here
         ]);
 

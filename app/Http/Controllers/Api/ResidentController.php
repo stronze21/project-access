@@ -20,7 +20,7 @@ class ResidentController extends Controller
         \Log::info('Resident Index Request', [
             'request' => $request->all(),
         ]);
-        $query = Resident::with('household');
+        $query = Resident::with(['household', 'sourceIncomeType']);
 
         // Apply filters if provided
         if ($request->search) {
@@ -122,7 +122,7 @@ class ResidentController extends Controller
 
         return response()->json([
             'message' => 'Resident created successfully',
-            'data' => $resident,
+            'data' => $resident->load(['household', 'sourceIncomeType']),
         ], 201);
     }
 
@@ -131,10 +131,10 @@ class ResidentController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $resident = Resident::with('household')->findOrFail($id);
+        $resident = Resident::with(['household', 'sourceIncomeType'])->findOrFail($id);
 
         return response()->json([
-            'data' => $resident,
+            'data' => $resident->load(['household', 'sourceIncomeType']),
         ]);
     }
 
@@ -191,7 +191,7 @@ class ResidentController extends Controller
 
         return response()->json([
             'message' => 'Resident updated successfully',
-            'data' => $resident,
+            'data' => $resident->load(['household', 'sourceIncomeType']),
         ]);
     }
 
@@ -233,7 +233,7 @@ class ResidentController extends Controller
 
         return response()->json([
             'message' => 'Resident\'s household updated successfully',
-            'data' => $resident->load('household'),
+            'data' => $resident->load(['household', 'sourceIncomeType']),
         ]);
     }
 

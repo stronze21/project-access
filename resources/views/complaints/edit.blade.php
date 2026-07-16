@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl text-base-content/90 leading-tight">
             Edit Complaint {{ $complaint->reference_code }}
         </h2>
     </x-slot>
@@ -11,7 +11,7 @@
                 You can edit this complaint only until it is assigned.
             </div>
 
-            <div class="bg-white shadow-sm rounded-lg p-4 sm:p-6">
+            <div class="bg-base-100 shadow-sm rounded-lg p-4 sm:p-6">
                 <form method="POST" action="{{ route('complaints.update', $complaint) }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     @method('PUT')
@@ -24,7 +24,7 @@
 
                     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                         <a href="{{ route('complaints.my.index') }}"
-                           class="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                           class="inline-flex items-center justify-center rounded-md border border-base-300 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                             Cancel
                         </a>
                         <x-primary-button class="justify-center">
@@ -53,7 +53,7 @@
 
                 wrapper.classList.remove('hidden');
                 list.innerHTML = items.map((item) => `
-                    <a href="${item.url}" class="block rounded border border-amber-200 bg-white p-2 text-sm text-amber-900 hover:bg-amber-100">
+                    <a href="${item.url}" class="block rounded border border-amber-200 bg-base-100 p-2 text-sm text-amber-900 hover:bg-amber-100">
                         <div class="font-semibold">${item.title}</div>
                         <div class="text-xs text-amber-700">Ref: ${item.reference_code} | Status: ${item.status.replace('_', ' ')} | Supports: ${item.support_count}</div>
                     </a>

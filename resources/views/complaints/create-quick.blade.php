@@ -1,11 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h2 class="font-semibold text-xl text-base-content/90 leading-tight">
                 Quick Ticket (3 Steps)
             </h2>
             <a href="{{ route('complaints.create') }}"
-               class="inline-flex w-fit items-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+               class="inline-flex w-fit items-center rounded-lg border border-base-300 px-3 py-1.5 text-xs font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-xs">
                 Switch to Detailed Form
             </a>
         </div>
@@ -14,7 +14,7 @@
     <div class="py-6">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
             @if ($errors->any())
-                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 alert alert-error">
                     <p class="font-semibold">Please check your quick ticket details.</p>
                     <ul class="mt-1 list-disc pl-5">
                         @foreach ($errors->all() as $error)
@@ -25,7 +25,7 @@
             @endif
 
             <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-800 p-5 text-white shadow-lg sm:p-6">
-                <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
+                <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-base-100/10 blur-2xl"></div>
                 <div class="pointer-events-none absolute -bottom-8 left-20 h-24 w-24 rounded-full bg-cyan-300/20 blur-2xl"></div>
 
                 <div class="relative">
@@ -37,7 +37,7 @@
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6 card">
                 <div class="mb-5 grid grid-cols-3 gap-2 text-center text-xs">
                     <div class="rounded-lg px-2 py-2 font-semibold" data-step-indicator="0">1. Photo</div>
                     <div class="rounded-lg px-2 py-2 font-semibold" data-step-indicator="1">2. Details</div>
@@ -48,31 +48,31 @@
                     @csrf
 
                     <div class="space-y-4" data-step-panel="0">
-                        <h4 class="text-base font-semibold text-slate-900">Step 1: Take or Upload a Photo</h4>
-                        <p class="text-sm text-slate-600">Attach one clear photo of the issue. On mobile, camera capture is supported.</p>
+                        <h4 class="text-base font-semibold text-base-content">Step 1: Take or Upload a Photo</h4>
+                        <p class="text-sm text-base-content/70">Attach one clear photo of the issue. On mobile, camera capture is supported.</p>
 
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p class="text-sm font-semibold text-slate-800">Issue Photo</p>
+                        <div class="rounded-xl border border-base-300 bg-base-200 p-4">
+                            <p class="text-sm font-semibold text-base-content">Issue Photo</p>
                             <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
                                 <button type="button"
                                         id="open-camera-btn"
-                                        class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                                        class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 btn btn-primary btn-sm">
                                     Open Camera
                                 </button>
                                 <button type="button"
                                         id="upload-photo-btn"
-                                        class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                                        class="inline-flex items-center justify-center rounded-lg border border-base-300 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                                     Upload Picture
                                 </button>
-                                <span id="photo-file-name" class="text-xs text-slate-600">No photo selected</span>
+                                <span id="photo-file-name" class="text-xs text-base-content/70">No photo selected</span>
                             </div>
-                            <p id="camera-status" class="mt-2 text-xs text-slate-600"></p>
+                            <p id="camera-status" class="mt-2 text-xs text-base-content/70"></p>
 
-                            <div id="camera-panel" class="mt-3 hidden rounded-lg border border-slate-300 bg-black p-2">
-                                <div id="camera-select-wrapper" class="mb-2 hidden rounded-md bg-white/90 p-2">
-                                    <label for="camera-device-select" class="text-xs font-semibold text-slate-700">Choose Camera</label>
+                            <div id="camera-panel" class="mt-3 hidden rounded-lg border border-base-300 bg-black p-2">
+                                <div id="camera-select-wrapper" class="mb-2 hidden rounded-md bg-base-100/90 p-2">
+                                    <label for="camera-device-select" class="text-xs font-semibold text-base-content/80">Choose Camera</label>
                                     <select id="camera-device-select"
-                                            class="mt-1 block w-full rounded-md border-slate-300 bg-white text-xs text-slate-800">
+                                            class="mt-1 block w-full rounded-md border-base-300 bg-base-100 text-xs text-base-content select select-bordered">
                                     </select>
                                 </div>
                                 <video id="camera-video" autoplay playsinline class="h-56 w-full rounded-md object-cover sm:h-72"></video>
@@ -80,12 +80,12 @@
                                 <div class="mt-2 flex flex-wrap gap-2">
                                     <button type="button"
                                             id="capture-photo-btn"
-                                            class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                                            class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 btn btn-success btn-xs">
                                         Capture Photo
                                     </button>
                                     <button type="button"
                                             id="close-camera-btn"
-                                            class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                            class="inline-flex items-center justify-center rounded-lg border border-base-300 bg-base-100 px-3 py-1.5 text-xs font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-xs">
                                         Close Camera
                                     </button>
                                 </div>
@@ -95,25 +95,25 @@
                                    name="photo"
                                    type="file"
                                    accept="image/jpeg,image/png,image/webp"
-                                   class="sr-only"
+                                   class="sr-only file-input file-input-bordered"
                                    required>
-                            <p class="mt-1 text-xs text-slate-500">Allowed: JPG, PNG, WEBP (max 20MB).</p>
+                            <p class="mt-1 text-xs text-base-content/60">Allowed: JPG, PNG, WEBP (max 20MB).</p>
                             <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                         </div>
 
-                        <div id="photo-preview-wrapper" class="hidden rounded-xl border border-slate-200 p-2">
+                        <div id="photo-preview-wrapper" class="hidden rounded-xl border border-base-300 p-2">
                             <img id="photo-preview" alt="Photo preview" class="h-56 w-full rounded-lg object-cover sm:h-72">
                         </div>
                     </div>
 
                     <div class="space-y-4 hidden" data-step-panel="1">
-                        <h4 class="text-base font-semibold text-slate-900">Step 2: Quick Details</h4>
-                        <p class="text-sm text-slate-600">Just the basics so we can route your ticket quickly.</p>
+                        <h4 class="text-base font-semibold text-base-content">Step 2: Quick Details</h4>
+                        <p class="text-sm text-base-content/70">Just the basics so we can route your ticket quickly.</p>
 
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <label for="category_id" class="text-sm font-semibold text-slate-800">Issue Category</label>
-                                <select id="category_id" name="category_id" class="mt-1 block w-full rounded-lg border-slate-300 text-sm" required>
+                                <label for="category_id" class="text-sm font-semibold text-base-content">Issue Category</label>
+                                <select id="category_id" name="category_id" class="mt-1 block w-full rounded-lg border-base-300 text-sm select select-bordered" required>
                                     <option value="">Select category</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>
@@ -125,8 +125,8 @@
                             </div>
 
                             <div>
-                                <label for="visibility" class="text-sm font-semibold text-slate-800">Public Visibility</label>
-                                <select id="visibility" name="visibility" class="mt-1 block w-full rounded-lg border-slate-300 text-sm" required>
+                                <label for="visibility" class="text-sm font-semibold text-base-content">Public Visibility</label>
+                                <select id="visibility" name="visibility" class="mt-1 block w-full rounded-lg border-base-300 text-sm select select-bordered" required>
                                     @foreach ($visibilityOptions as $value => $label)
                                         <option value="{{ $value }}" @selected(old('visibility', \App\Models\Complaint::VISIBILITY_PUBLIC_ANONYMOUS) === $value)>
                                             {{ $label }}
@@ -138,75 +138,75 @@
                         </div>
 
                         <div>
-                            <label for="issue_summary" class="text-sm font-semibold text-slate-800">What is the issue? (short)</label>
+                            <label for="issue_summary" class="text-sm font-semibold text-base-content">What is the issue? (short)</label>
                             <textarea id="issue_summary"
                                       name="issue_summary"
                                       rows="3"
                                       maxlength="280"
-                                      class="mt-1 block w-full rounded-lg border-slate-300 text-sm"
+                                      class="mt-1 block w-full rounded-lg border-base-300 text-sm textarea textarea-bordered"
                                       placeholder="Example: Flooding near barangay hall every heavy rain."
                                       required>{{ old('issue_summary') }}</textarea>
-                            <p class="mt-1 text-xs text-slate-500">Max 280 characters.</p>
+                            <p class="mt-1 text-xs text-base-content/60">Max 280 characters.</p>
                             <x-input-error :messages="$errors->get('issue_summary')" class="mt-2" />
                         </div>
 
                         <div>
-                            <label for="details" class="text-sm font-semibold text-slate-800">Additional details (optional)</label>
+                            <label for="details" class="text-sm font-semibold text-base-content">Additional details (optional)</label>
                             <textarea id="details"
                                       name="details"
                                       rows="3"
-                                      class="mt-1 block w-full rounded-lg border-slate-300 text-sm"
+                                      class="mt-1 block w-full rounded-lg border-base-300 text-sm textarea textarea-bordered"
                                       placeholder="Add landmarks, schedule, or important context.">{{ old('details') }}</textarea>
                             <x-input-error :messages="$errors->get('details')" class="mt-2" />
                         </div>
                     </div>
 
                     <div class="space-y-4 hidden" data-step-panel="2">
-                        <h4 class="text-base font-semibold text-slate-900">Step 3: Review and Submit</h4>
-                        <p class="text-sm text-slate-600">Check your quick ticket before sending.</p>
+                        <h4 class="text-base font-semibold text-base-content">Step 3: Review and Submit</h4>
+                        <p class="text-sm text-base-content/70">Check your quick ticket before sending.</p>
 
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                        <div class="rounded-xl border border-base-300 bg-base-200 p-4 text-sm">
                             <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Category</dt>
-                                    <dd id="review-category" class="mt-0.5 font-semibold text-slate-900">-</dd>
+                                    <dt class="text-xs font-semibold uppercase tracking-wide text-base-content/60">Category</dt>
+                                    <dd id="review-category" class="mt-0.5 font-semibold text-base-content">-</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Visibility</dt>
-                                    <dd id="review-visibility" class="mt-0.5 font-semibold text-slate-900">-</dd>
+                                    <dt class="text-xs font-semibold uppercase tracking-wide text-base-content/60">Visibility</dt>
+                                    <dd id="review-visibility" class="mt-0.5 font-semibold text-base-content">-</dd>
                                 </div>
                                 <div class="sm:col-span-2">
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Issue Summary</dt>
-                                    <dd id="review-summary" class="mt-0.5 text-slate-800">-</dd>
+                                    <dt class="text-xs font-semibold uppercase tracking-wide text-base-content/60">Issue Summary</dt>
+                                    <dd id="review-summary" class="mt-0.5 text-base-content">-</dd>
                                 </div>
                                 <div class="sm:col-span-2">
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Additional Details</dt>
-                                    <dd id="review-details" class="mt-0.5 text-slate-800">Not provided</dd>
+                                    <dt class="text-xs font-semibold uppercase tracking-wide text-base-content/60">Additional Details</dt>
+                                    <dd id="review-details" class="mt-0.5 text-base-content">Not provided</dd>
                                 </div>
                             </dl>
                         </div>
                     </div>
 
-                    <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex flex-col-reverse gap-2 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <a href="{{ route('complaints.create') }}"
-                           class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                           class="inline-flex items-center justify-center rounded-lg border border-base-300 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                             Use Detailed Form
                         </a>
 
                         <div class="flex flex-col gap-2 sm:flex-row">
                             <button type="button"
                                     id="quick-prev-btn"
-                                    class="hidden inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                                    class="hidden inline-flex items-center justify-center rounded-lg border border-base-300 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200 btn btn-outline btn-sm">
                                 Back
                             </button>
                             <button type="button"
                                     id="quick-next-btn"
-                                    class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                                    class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 btn btn-primary btn-sm">
                                 Next
                             </button>
                             <button type="submit"
                                     id="quick-submit-btn"
-                                    class="hidden inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                                    class="hidden inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 btn btn-success btn-sm">
                                 Submit Quick Ticket
                             </button>
                         </div>
@@ -414,7 +414,7 @@
                     } else if (index < currentStep) {
                         indicator.className = 'rounded-lg px-2 py-2 font-semibold bg-emerald-100 text-emerald-700';
                     } else {
-                        indicator.className = 'rounded-lg px-2 py-2 font-semibold bg-slate-100 text-slate-500';
+                        indicator.className = 'rounded-lg px-2 py-2 font-semibold bg-base-200 text-base-content/60';
                     }
                 });
 

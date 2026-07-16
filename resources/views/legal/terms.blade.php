@@ -20,7 +20,7 @@
 
                         <section>
                             <h3 class="text-base font-semibold text-slate-900">2. Privacy Notice and Consent</h3>
-                            <p class="mt-2">During activation, the app displays the Privacy Notice in English and Filipino. The acknowledgment checkboxes remain disabled until the notice is scrolled to the end. Activation is not submitted until you confirm both that you read and understood the notice and that you accept these Terms and any processing specifically based on consent. Processing required by law, public-authority mandate, emergency protection, or delivery of a requested public service may rely on a lawful basis other than consent.</p>
+                            <p class="mt-2">During activation, the app displays the official Privacy Notice and Consent in English and Filipino. The acknowledgment checkboxes remain disabled until the notice is scrolled to the end. Activation is not submitted until you confirm both that you read and understood the notice and that you accept these Terms and the consent described in the notice. Processing required by law, public-authority mandate, emergency protection, or delivery of a requested public service may rely on a lawful basis other than consent.</p>
                         </section>
 
                         <section>
@@ -69,7 +69,7 @@
 
                         <section>
                             <h3 class="text-base font-semibold text-slate-900">2. Privacy Notice at Pahintulot</h3>
-                            <p class="mt-2">Sa activation, ipinapakita ng app ang Privacy Notice sa English at Filipino. Naka-disable ang acknowledgment checkboxes hanggang ma-scroll ang notice sa pinakadulo. Hindi isusumite ang activation hangga't hindi mo kinukumpirma na nabasa at naunawaan mo ang notice at tinatanggap mo ang mga Tuntuning ito at anumang processing na partikular na nakabatay sa consent. Ang processing na kailangan dahil sa batas, mandato ng pampublikong awtoridad, proteksiyon sa emergency, o pagbibigay ng hiniling na serbisyong pampubliko ay maaaring may legal na batayan bukod sa consent.</p>
+                            <p class="mt-2">Sa activation, ipinapakita ng app ang opisyal na Privacy Notice and Consent sa English at Filipino. Naka-disable ang acknowledgment checkboxes hanggang ma-scroll ang notice sa pinakadulo. Hindi isusumite ang activation hangga't hindi mo kinukumpirma na nabasa at naunawaan mo ang notice at tinatanggap mo ang mga Tuntuning ito at ang pahintulot na inilarawan sa notice. Ang processing na kailangan dahil sa batas, mandato ng pampublikong awtoridad, proteksiyon sa emergency, o pagbibigay ng hiniling na serbisyong pampubliko ay maaaring may legal na batayan bukod sa consent.</p>
                         </section>
 
                         <section>

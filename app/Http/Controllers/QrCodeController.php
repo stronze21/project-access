@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Resident;
 use App\Models\Household;
+use App\Models\Resident;
 use App\Services\QrCodeService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -28,38 +27,19 @@ class QrCodeController extends Controller
     {
         $resident = Resident::findOrFail($id);
 
-        // Generate QR code if not exists
-        if (!$resident->qr_code) {
-            $this->qrCodeService->generateResidentQrCode($resident);
-        }
+        $qrCodeValue = $this->qrCodeService->generateResidentQrCode($resident);
 
-        // Generate QR code image as PNG
-        $qrCodePng = QrCode::format('png')
+        // SVG rendering does not require the Imagick PHP extension and remains
+        // sharp at the physical size used on the printed card.
+        $qrCodeSvg = QrCode::format('svg')
             ->size(300)
             ->errorCorrection('H')
             ->margin(1)
-            ->generate($resident->qr_code);
+            ->generate($qrCodeValue);
 
-        // Convert PNG to JPEG
-        $image = imagecreatefromstring($qrCodePng);
-
-        // Create white background (JPEG doesn't support transparency)
-        $width = imagesx($image);
-        $height = imagesy($image);
-        $jpegImage = imagecreatetruecolor($width, $height);
-        $white = imagecolorallocate($jpegImage, 255, 255, 255);
-        imagefill($jpegImage, 0, 0, $white);
-        imagecopy($jpegImage, $image, 0, 0, 0, 0, $width, $height);
-
-        // Output as JPEG
-        ob_start();
-        imagejpeg($jpegImage, null, 90); // 90 is quality (0-100)
-        $qrCodeJpeg = ob_get_clean();
-
-        imagedestroy($image);
-        imagedestroy($jpegImage);
-
-        return response($qrCodeJpeg)->header('Content-Type', 'image/jpeg');
+        return response($qrCodeSvg)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'private, max-age=3600');
     }
 
     /**
@@ -70,7 +50,7 @@ class QrCodeController extends Controller
         $household = Household::findOrFail($id);
 
         // Generate QR code if not exists
-        if (!$household->qr_code) {
+        if (! $household->qr_code) {
             $this->qrCodeService->generateHouseholdQrCode($household);
         }
 
@@ -80,33 +60,15 @@ class QrCodeController extends Controller
             $qr_code = $household->qr_code;
         }
 
-        // Generate QR code image as PNG
-        $qrCodePng = QrCode::format('png')
+        $qrCodeSvg = QrCode::format('svg')
             ->size(300)
             ->errorCorrection('H')
             ->margin(1)
             ->generate($qr_code);
 
-        // Convert PNG to JPEG
-        $image = imagecreatefromstring($qrCodePng);
-
-        // Create white background (JPEG doesn't support transparency)
-        $width = imagesx($image);
-        $height = imagesy($image);
-        $jpegImage = imagecreatetruecolor($width, $height);
-        $white = imagecolorallocate($jpegImage, 255, 255, 255);
-        imagefill($jpegImage, 0, 0, $white);
-        imagecopy($jpegImage, $image, 0, 0, 0, 0, $width, $height);
-
-        // Output as JPEG
-        ob_start();
-        imagejpeg($jpegImage, null, 90); // 90 is quality (0-100)
-        $qrCodeJpeg = ob_get_clean();
-
-        imagedestroy($image);
-        imagedestroy($jpegImage);
-
-        return response($qrCodeJpeg)->header('Content-Type', 'image/jpeg');
+        return response($qrCodeSvg)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'private, max-age=3600');
     }
 
     /**
@@ -116,17 +78,12 @@ class QrCodeController extends Controller
     {
         $resident = Resident::findOrFail($id);
 
-        // Generate QR code if not exists
-        if (!$resident->qr_code) {
-            $this->qrCodeService->generateResidentQrCode($resident);
-        }
-
         // Generate QR code image path
         $path = $this->qrCodeService->generateResidentQrCodeImage($resident);
 
         // Download the file
         $fullPath = Storage::path($path);
-        $fileName = 'resident_qr_' . $resident->full_name . '.jpg';
+        $fileName = 'resident_qr_'.$resident->full_name.'.svg';
 
         return response()->download($fullPath, $fileName);
     }
@@ -139,7 +96,7 @@ class QrCodeController extends Controller
         $household = Household::findOrFail($id);
 
         // Generate QR code if not exists
-        if (!$household->qr_code) {
+        if (! $household->qr_code) {
             $this->qrCodeService->generateHouseholdQrCode($household);
         }
 
@@ -148,7 +105,7 @@ class QrCodeController extends Controller
 
         // Download the file
         $fullPath = Storage::path($path);
-        $fileName = 'household_qr_' . $household->household_id . '.jpg';
+        $fileName = 'household_qr_'.$household->household_id.'.svg';
 
         return response()->download($fullPath, $fileName);
     }

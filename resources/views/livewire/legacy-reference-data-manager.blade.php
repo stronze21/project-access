@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-bold text-base-content">{{ $config['title'] }}</h1>
             <p class="mt-1 text-sm text-base-content/60">Manage the values used by future legacy CSV promotions.</p>
         </div>
-        <a href="{{ route('residents.legacy-import.index') }}" class="btn btn-outline btn-sm">Back to Legacy Import</a>
+        <a href="{{ route('residents.legacy-import.index') }}" class="btn btn-outline btn-sm">Back to Import Manager</a>
     </div>
 
     @include('legacy-data._navigation')
