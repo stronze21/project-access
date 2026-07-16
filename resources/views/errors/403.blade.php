@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 403, 'label' => 'Access restricted', 'title' => 'You cannot open this page', 'message' => 'This area is limited to supported devices or authorized accounts. Check that you are using the correct device and signed-in account.', 'actionUrl' => url('/mobile-app'), 'actionLabel' => 'View access options'])

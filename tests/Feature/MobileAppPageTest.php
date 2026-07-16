@@ -21,10 +21,11 @@ class MobileAppPageTest extends TestCase
             ->assertSee('ProjectAccess Mobile')
             ->assertSee('Features')
             ->assertSee('mobile-app-theme-toggle')
-            ->assertSee('TestFlight')
+            ->assertSee('Install Resident Portal')
             ->assertSee('fill="#0A84FF"', false)
             ->assertSee('resident-portal-install')
             ->assertSee('resident-portal/manifest.webmanifest', false)
+            ->assertSee('resident-portal/device.js', false)
             ->assertSee('resident-portal/install.js', false)
             ->assertDontSee('Municipal Public Feedback System');
 

@@ -48,7 +48,7 @@
                 @endauth
 
                 @if (($release['has_apk'] ?? false) === true)
-                    <a href="{{ route('mobile-app.download') }}" class="inline-flex items-center justify-center rounded-md bg-[#0f9f84] px-4 py-2.5 font-semibold text-white shadow-sm hover:bg-[#0b826d]">
+                    <a href="{{ route('mobile-app.download') }}" data-device-platforms="android" class="inline-flex items-center justify-center rounded-md bg-[#0f9f84] px-4 py-2.5 font-semibold text-white shadow-sm hover:bg-[#0b826d]">
                         <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
                         </svg>

@@ -4,7 +4,7 @@ use App\Http\Controllers\ResidentPortalAuthController;
 use App\Http\Controllers\ResidentPortalController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('resident-portal')->name('resident-portal.')->group(function (): void {
+Route::prefix('resident-portal')->name('resident-portal.')->middleware('resident.ios')->group(function (): void {
     Route::middleware('guest:resident')->group(function (): void {
         Route::get('/login', [ResidentPortalAuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [ResidentPortalAuthController::class, 'login'])->name('login.store');

@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => $exception->getStatusCode(), 'label' => 'Request could not be completed', 'title' => 'We could not process this request', 'message' => 'The request was blocked, invalid, or no longer available. Check your details and try again from the previous page.'])

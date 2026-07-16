@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 419, 'label' => 'Session expired', 'title' => 'Your session needs a refresh', 'message' => 'For your security, this form can no longer be submitted. Refresh the page, sign in again if requested, and retry your changes.'])

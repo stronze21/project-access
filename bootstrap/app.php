@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureModuleEnabled;
+use App\Http\Middleware\EnsureResidentPortalIosDevice;
 use App\Http\Middleware\EnsureResidentPortalSessionFresh;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'module.enabled' => EnsureModuleEnabled::class,
+            'resident.ios' => EnsureResidentPortalIosDevice::class,
             'resident.session' => EnsureResidentPortalSessionFresh::class,
         ]);
 

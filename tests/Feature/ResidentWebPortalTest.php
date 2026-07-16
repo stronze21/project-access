@@ -12,10 +12,32 @@ class ResidentWebPortalTest extends TestCase
 {
     use DatabaseTransactions;
 
+    private const IOS_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1';
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->artisan('migrate', ['--force' => true]);
+        $this->withHeader('User-Agent', self::IOS_USER_AGENT);
+    }
+
+    public function test_non_ios_devices_cannot_access_the_web_portal(): void
+    {
+        $this->withHeader(
+            'User-Agent',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36'
+        )->get('/resident-portal/login')
+            ->assertForbidden()
+            ->assertSee('You cannot open this page')
+            ->assertSee('Alaminos City ACCESS');
+    }
+
+    public function test_ipados_desktop_user_agent_can_access_the_web_portal(): void
+    {
+        $this->withHeader(
+            'User-Agent',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/18.5 Mobile/15E148 Safari/604.1'
+        )->get('/resident-portal/login')->assertOk();
     }
 
     public function test_resident_login_is_separate_from_staff_authentication(): void

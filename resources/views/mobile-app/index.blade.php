@@ -15,7 +15,7 @@
 
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                         @if ($release['has_apk'])
-                            <a href="{{ route('mobile-app.download') }}" class="inline-flex items-center justify-center rounded-md bg-[#0f9f84] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0b826d]">
+                            <a href="{{ route('mobile-app.download') }}" data-device-platforms="android" class="inline-flex items-center justify-center rounded-md bg-[#0f9f84] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0b826d]">
                                 <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
                                 </svg>
@@ -31,6 +31,7 @@
                             type="button"
                             id="resident-portal-install"
                             data-portal-url="{{ url('/resident-portal') }}"
+                            data-device-platforms="ios"
                             class="inline-flex items-center justify-center rounded-md bg-[#23689b] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1b527a] focus:outline-none focus:ring-2 focus:ring-[#23689b] focus:ring-offset-2 dark:focus:ring-offset-slate-950"
                         >
                             <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -173,7 +174,7 @@
             </dl>
 
             @if ($release['has_apk'])
-                <a href="{{ route('mobile-app.download') }}" class="mt-6 inline-flex w-full items-center justify-center rounded-md bg-[#0f9f84] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0b826d]">
+                <a href="{{ route('mobile-app.download') }}" data-device-platforms="android" class="mt-6 inline-flex w-full items-center justify-center rounded-md bg-[#0f9f84] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0b826d]">
                     Download APK
                 </a>
             @endif

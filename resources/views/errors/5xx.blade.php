@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => $exception->getStatusCode(), 'label' => 'Service interruption', 'title' => 'The service hit an unexpected problem', 'message' => 'The system could not complete your request. Please retry shortly; if the issue continues, contact your ACCESS system administrator.'])

@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 500, 'label' => 'System error', 'title' => 'Something did not work as expected', 'message' => 'Your request could not be completed because of an internal problem. No further action is needed from you right now—please retry in a moment.'])

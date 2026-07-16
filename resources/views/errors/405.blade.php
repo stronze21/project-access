@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 405, 'label' => 'Action not allowed', 'title' => 'That action is not available here', 'message' => 'The page received a request type it does not accept. Go back and submit the form or action again from its original page.'])

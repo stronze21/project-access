@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 404, 'label' => 'Page not found', 'title' => 'This page took a wrong turn', 'message' => 'The address may be outdated, incomplete, or the page may have moved. Check the URL or return to a page you recognize.', 'actionUrl' => url('/'), 'actionLabel' => 'Return home'])
