@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureResidentPortalSessionFresh;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
@@ -18,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )->withProviders(require __DIR__.'/providers.php')
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->redirectGuestsTo(fn (Request $request): string =>
+            $request->is('resident-portal') || $request->is('resident-portal/*')
+                ? route('resident-portal.login')
+                : route('login')
+        );
+
         // Add our custom permission middleware
         $middleware->alias([
             'check.permission' => CheckPermission::class,
