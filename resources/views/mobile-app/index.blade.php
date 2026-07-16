@@ -31,7 +31,7 @@
                             type="button"
                             id="resident-portal-install"
                             data-portal-url="{{ url('/resident-portal') }}"
-                            data-device-platforms="ios"
+                            data-device-platforms="ios,android"
                             class="inline-flex items-center justify-center rounded-md bg-[#23689b] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1b527a] focus:outline-none focus:ring-2 focus:ring-[#23689b] focus:ring-offset-2 dark:focus:ring-offset-slate-950"
                         >
                             <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">

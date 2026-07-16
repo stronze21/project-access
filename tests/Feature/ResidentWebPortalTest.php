@@ -40,6 +40,14 @@ class ResidentWebPortalTest extends TestCase
         )->get('/resident-portal/login')->assertOk();
     }
 
+    public function test_android_devices_can_access_the_web_portal(): void
+    {
+        $this->withHeader(
+            'User-Agent',
+            'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/138.0 Mobile Safari/537.36'
+        )->get('/resident-portal/login')->assertOk();
+    }
+
     public function test_resident_login_is_separate_from_staff_authentication(): void
     {
         $resident = $this->resident();
