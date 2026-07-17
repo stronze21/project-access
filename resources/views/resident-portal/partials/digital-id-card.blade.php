@@ -10,7 +10,7 @@
             <span class="portal-id-gender-mask" aria-hidden="true"></span>
             <span class="portal-id-gender-label">Gender:</span>
             <span class="portal-id-value portal-id-gender">{{ $resident->gender }}</span>
-            <span class="portal-id-value portal-id-resident-id">AC-{{ $resident->resident_id }}</span>
+            <span class="portal-id-value portal-id-resident-id">{{ $resident->resident_id }}</span>
             @if($signatureUrl)<img class="portal-id-signature" src="{{ $signatureUrl }}" alt="Signature or thumbmark of {{ $resident->full_name }}">@endif
         </span>
         <span class="digital-id-face digital-id-back" aria-hidden="true">

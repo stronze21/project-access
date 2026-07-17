@@ -36,7 +36,7 @@
     <span class="gender-label-mask" aria-hidden="true"></span>
     <span class="gender-label">Gender:</span>
     <div class="field-value field-gender editable-element" data-editor-key="gender" data-editor-label="Gender">{{ $resident->gender }}</div>
-    <div class="field-value field-resident-id editable-element" data-editor-key="resident-id" data-editor-label="Resident ID">AC-{{ $resident->resident_id }}</div>
+    <div class="field-value field-resident-id editable-element" data-editor-key="resident-id" data-editor-label="Resident ID">{{ $resident->resident_id }}</div>
 
     @if ($signatureUrl)
         <img class="resident-signature editable-element" data-editor-key="signature" data-editor-label="Signature / Thumbmark"

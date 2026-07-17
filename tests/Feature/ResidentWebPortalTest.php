@@ -32,6 +32,32 @@ class ResidentWebPortalTest extends TestCase
             ->assertSee('Alaminos City ACCESS');
     }
 
+    public function test_desktop_browser_can_access_the_portal_with_the_configured_test_token(): void
+    {
+        config(['resident_portal.desktop_test_token' => 'chicharon']);
+
+        $desktopUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36';
+
+        $this->withHeader('User-Agent', $desktopUserAgent)
+            ->get('/resident-portal/login?auth=chicharon')
+            ->assertOk();
+
+        $this->withHeader('User-Agent', $desktopUserAgent)
+            ->get('/resident-portal/register')
+            ->assertOk();
+    }
+
+    public function test_desktop_browser_rejects_an_invalid_test_token(): void
+    {
+        config(['resident_portal.desktop_test_token' => 'chicharon']);
+
+        $this->withHeader(
+            'User-Agent',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36'
+        )->get('/resident-portal/login?auth=incorrect')
+            ->assertForbidden();
+    }
+
     public function test_ipados_desktop_user_agent_can_access_the_web_portal(): void
     {
         $this->withHeader(
@@ -148,7 +174,8 @@ class ResidentWebPortalTest extends TestCase
             ->assertSee('portal-id-middle-name', false)
             ->assertSee('May 21, 1990')
             ->assertSee('Gender:')
-            ->assertSee('AC-'.$resident->resident_id)
+            ->assertSee($resident->resident_id)
+            ->assertDontSee('AC-'.$resident->resident_id)
             ->assertSee('portal-id-signature', false)
             ->assertSee('Tap the card to view its back')
             ->assertDontSee('qr-detail', false)

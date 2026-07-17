@@ -9,19 +9,73 @@
     <section class="auth-mpin-panel identifier">
         <a class="text-button back-account" href="{{ route('resident-portal.login') }}"><span class="material-symbols-rounded">arrow_back</span> Back to sign in</a>
         <h1>Activate account</h1><p>Verify your registered resident information and create an MPIN.</p>
-        <form method="POST" action="{{ route('resident-portal.register.store') }}" class="form-stack">
+        <form method="POST" action="{{ route('resident-portal.register.store') }}" class="form-stack" data-activation-form>
             @csrf
             <label>Resident ID<input name="resident_id" value="{{ old('resident_id') }}" required autocomplete="username"></label>
             <label>Last name<input name="last_name" value="{{ old('last_name') }}" required></label>
             <label>Birth date<input type="date" name="birth_date" value="{{ old('birth_date') }}" required></label>
             <label>Create 6-digit MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin" required autocomplete="new-password"></label>
             <label>Confirm MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin_confirmation" required autocomplete="new-password"></label>
-            <label class="auth-consent"><input type="checkbox" name="terms_accepted" value="1" @checked(old('terms_accepted')) required> I agree to the <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener">Terms of Use</a>.</label>
-            <label class="auth-consent"><input type="checkbox" name="privacy_notice_acknowledged" value="1" @checked(old('privacy_notice_acknowledged')) required> I have read and acknowledge the <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener">Privacy Notice</a>.</label>
-            <label class="auth-consent"><input type="checkbox" name="bhwis_import_consented" value="1" @checked(old('bhwis_import_consented')) required> I consent to retrieving and importing my registered BHWIS information for account activation.</label>
-            <button class="primary-button" type="submit">Activate account</button>
+            <div class="auth-consent">
+                <input id="terms_accepted" type="checkbox" name="terms_accepted" value="1" data-legal-checkbox="terms" required disabled>
+                <div class="auth-consent-copy"><label for="terms_accepted">I agree to the</label> <button type="button" class="auth-legal-button" data-legal-open="terms">Terms of Use</button><span>.</span><small data-legal-hint="terms">Open and scroll to the end to enable this checkbox.</small></div>
+            </div>
+            <div class="auth-consent">
+                <input id="privacy_notice_acknowledged" type="checkbox" name="privacy_notice_acknowledged" value="1" data-legal-checkbox="privacy" required disabled>
+                <div class="auth-consent-copy"><label for="privacy_notice_acknowledged">I have read and acknowledge the</label> <button type="button" class="auth-legal-button" data-legal-open="privacy">Privacy Notice</button><span>.</span><small data-legal-hint="privacy">Open and scroll to the end to enable this checkbox.</small></div>
+            </div>
+            <div class="auth-consent">
+                <input id="bhwis_import_consented" type="checkbox" name="bhwis_import_consented" value="1" data-legal-checkbox="consent" required disabled>
+                <div class="auth-consent-copy"><label for="bhwis_import_consented">I consent to retrieving and importing my registered BHWIS information for account activation.</label> <button type="button" class="auth-legal-button" data-legal-open="consent">Read the consent details</button><span>.</span><small data-legal-hint="consent">Open and scroll to the end to enable this checkbox.</small></div>
+            </div>
+            <button class="primary-button" type="submit" data-activation-submit disabled>Activate account</button>
+            <noscript><p class="auth-script-warning">JavaScript is required to review and accept the activation agreements.</p></noscript>
         </form>
     </section>
-    <div class="auth-legal-links"><a href="{{ route('legal.privacy') }}">Privacy Notice</a><span>•</span><a href="{{ route('legal.terms') }}">Terms</a><span>•</span><a href="{{ route('legal.support') }}">Support</a></div>
+    <div class="auth-legal-links"><button type="button" data-legal-open="privacy">Privacy Notice</button><span>•</span><button type="button" data-legal-open="terms">Terms</button><span>•</span><a href="{{ route('legal.support') }}">Support</a></div>
 </div>
+
+@foreach([
+    'terms' => ['title' => 'Terms of Use', 'url' => route('legal.terms')],
+    'privacy' => ['title' => 'Privacy Notice', 'url' => route('legal.privacy')],
+] as $legalKey => $legal)
+    <dialog class="legal-modal" data-legal-dialog="{{ $legalKey }}" aria-labelledby="{{ $legalKey }}-modal-title">
+        <div class="legal-modal-card">
+            <header class="legal-modal-header">
+                <div><span>Account activation</span><h2 id="{{ $legalKey }}-modal-title">{{ $legal['title'] }}</h2></div>
+                <button type="button" class="legal-modal-close" data-legal-close aria-label="Close {{ $legal['title'] }}"><span class="material-symbols-rounded">close</span></button>
+            </header>
+            <iframe class="legal-modal-frame" data-legal-frame title="{{ $legal['title'] }}" data-src="{{ $legal['url'] }}"></iframe>
+            <footer class="legal-modal-footer">
+                <p data-legal-status>Scroll to the bottom to confirm you have read this document.</p>
+                <button type="button" class="primary-button" data-legal-done disabled>Finish reading</button>
+            </footer>
+        </div>
+    </dialog>
+@endforeach
+
+<dialog class="legal-modal" data-legal-dialog="consent" aria-labelledby="consent-modal-title">
+    <div class="legal-modal-card">
+        <header class="legal-modal-header">
+            <div><span>Account activation</span><h2 id="consent-modal-title">BHWIS Information Import Consent</h2></div>
+            <button type="button" class="legal-modal-close" data-legal-close aria-label="Close consent details"><span class="material-symbols-rounded">close</span></button>
+        </header>
+        <div class="legal-modal-copy" data-legal-scroll tabindex="0">
+            <p>To activate your Project ACCESS resident account, the City Government of Alaminos needs to retrieve the resident record registered under your Resident ID from the Barangay Health Worker Information System (BHWIS).</p>
+            <h3>Information that may be imported</h3>
+            <p>This may include your identifying and contact details, birth information, address, household information, and other personal or sensitive personal information already recorded in BHWIS and needed to verify your identity and set up your account.</p>
+            <h3>How the information will be used</h3>
+            <p>The information will be used to match your activation details with the official resident record, create and maintain your Project ACCESS profile, and make eligible city services available to you. It will be handled according to the Privacy Notice and applicable data-protection and government recordkeeping requirements.</p>
+            <h3>Your choice</h3>
+            <p>By checking the consent box, you authorize this retrieval and import for account activation. If you do not consent, the online activation cannot continue. You may contact the appropriate barangay or city office for assistance or another available verification process.</p>
+            <h3>Pahintulot</h3>
+            <p>Sa pag-check ng consent box, pinahihintulutan mo ang pagkuha at paglipat sa Project ACCESS ng iyong rehistradong impormasyon mula sa BHWIS para ma-verify ang iyong pagkakakilanlan at ma-activate ang account. Kung hindi ka pahihintulot, hindi maipagpapatuloy ang online activation at maaari kang humingi ng tulong sa kaukulang tanggapan ng barangay o lungsod.</p>
+            <p class="legal-modal-end"><strong>End of consent details / Dulo ng detalye ng pahintulot</strong></p>
+        </div>
+        <footer class="legal-modal-footer">
+            <p data-legal-status>Scroll to the bottom to confirm you have read these details.</p>
+            <button type="button" class="primary-button" data-legal-done disabled>Finish reading</button>
+        </footer>
+    </div>
+</dialog>
 @endsection

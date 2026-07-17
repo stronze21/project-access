@@ -36,6 +36,87 @@
             });
         }
 
+        const activationForm = document.querySelector('[data-activation-form]');
+        if (activationForm) {
+            const submit = activationForm.querySelector('[data-activation-submit]');
+            const checkboxes = [...activationForm.querySelectorAll('[data-legal-checkbox]')];
+            const updateSubmit = () => {
+                submit.disabled = !checkboxes.every((checkbox) => !checkbox.disabled && checkbox.checked);
+            };
+
+            checkboxes.forEach((checkbox) => {
+                checkbox.disabled = true;
+                checkbox.checked = false;
+                checkbox.addEventListener('change', updateSubmit);
+            });
+
+            document.querySelectorAll('[data-legal-dialog]').forEach((dialog) => {
+                const key = dialog.dataset.legalDialog;
+                const checkbox = activationForm.querySelector(`[data-legal-checkbox="${key}"]`);
+                const hint = activationForm.querySelector(`[data-legal-hint="${key}"]`);
+                const done = dialog.querySelector('[data-legal-done]');
+                const footer = dialog.querySelector('.legal-modal-footer');
+                const status = dialog.querySelector('[data-legal-status]');
+                const frame = dialog.querySelector('[data-legal-frame]');
+                const scroller = dialog.querySelector('[data-legal-scroll]');
+                let completed = false;
+
+                const unlock = () => {
+                    if (completed) return;
+                    completed = true;
+                    checkbox.disabled = false;
+                    checkbox.closest('.auth-consent')?.classList.add('is-unlocked');
+                    hint.textContent = 'Reading complete. You may now check this box.';
+                    status.textContent = 'Reading complete. The checkbox is now enabled.';
+                    footer.classList.add('is-complete');
+                    done.disabled = false;
+                    done.textContent = 'Done';
+                    updateSubmit();
+                };
+
+                const atBottom = (scrollTop, viewportHeight, contentHeight) =>
+                    contentHeight - (scrollTop + viewportHeight) <= 6;
+
+                const checkInlineScroll = () => {
+                    if (atBottom(scroller.scrollTop, scroller.clientHeight, scroller.scrollHeight)) unlock();
+                };
+
+                if (scroller) scroller.addEventListener('scroll', checkInlineScroll, { passive: true });
+                if (frame) frame.addEventListener('load', () => {
+                    const frameWindow = frame.contentWindow;
+                    const frameDocument = frame.contentDocument;
+                    if (!frameWindow || !frameDocument) return;
+                    const checkFrameScroll = () => {
+                        const root = frameDocument.documentElement;
+                        const body = frameDocument.body;
+                        const top = frameWindow.scrollY || root.scrollTop || body.scrollTop;
+                        const height = Math.max(root.scrollHeight, body.scrollHeight);
+                        if (atBottom(top, frameWindow.innerHeight, height)) unlock();
+                    };
+                    frameWindow.addEventListener('scroll', checkFrameScroll, { passive: true });
+                    frameDocument.addEventListener('click', (event) => {
+                        if (event.target.closest('a')) event.preventDefault();
+                    });
+                    requestAnimationFrame(checkFrameScroll);
+                });
+
+                document.querySelectorAll(`[data-legal-open="${key}"]`).forEach((trigger) => {
+                    trigger.addEventListener('click', () => {
+                        if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
+                        dialog.showModal();
+                        if (scroller) requestAnimationFrame(checkInlineScroll);
+                    });
+                });
+                dialog.querySelector('[data-legal-close]').addEventListener('click', () => dialog.close());
+                done.addEventListener('click', () => dialog.close());
+                dialog.addEventListener('click', (event) => {
+                    if (event.target === dialog) dialog.close();
+                });
+            });
+
+            updateSubmit();
+        }
+
         document.querySelectorAll('[data-get-location]').forEach((button) => {
             button.addEventListener('click', () => {
                 if (!navigator.geolocation) { button.textContent = 'Location is not supported'; return; }

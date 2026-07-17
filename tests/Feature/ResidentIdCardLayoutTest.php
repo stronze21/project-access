@@ -30,6 +30,7 @@ class ResidentIdCardLayoutTest extends TestCase
             ->assertSee('JUAN')
             ->assertSee('January 31, 1991')
             ->assertSee('R-202607-0001')
+            ->assertDontSee('AC-R-202607-0001')
             ->assertSee(route('qrcode.resident', $resident), false)
             ->assertSee('images/id-cards/access-id-front.png', false)
             ->assertSee('images/id-cards/access-id-back.jpg', false)
