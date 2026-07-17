@@ -67,18 +67,19 @@ require __DIR__.'/bosesmoto.php';
 
 
 Route::get('/test-tunnel', function (LocalPcDatabase $database) {
-    $result = $database
-        ->connection()
-        ->query(
-            'SELECT TOP 10 * FROM dbo.tblPersonalInfo ORDER BY PIN DESC'
-        )
-        ->fetch();
 
-    return response()->json([
-        'success' => true,
-        'server_time' => $result->server_time ?? null,
-        'database_name' => $result->database_name ?? null,
-    ]);
+    $rows = $database->select("
+        SELECT TOP (10)
+            PIN,
+            Lastname,
+            Firstname,
+            Middlename,
+            Birthdate
+        FROM dbo.tblPersonalInfo
+        ORDER BY PIN DESC
+    ");
+
+    return response()->json($rows);
 });
 
 Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
