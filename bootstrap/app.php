@@ -25,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 ? route('resident-portal.login')
                 : route('login')
         );
+        $middleware->redirectUsersTo(fn (Request $request): string =>
+            $request->is('resident-portal') || $request->is('resident-portal/*')
+                ? route('resident-portal.home')
+                : route('dashboard')
+        );
 
         // Add our custom permission middleware
         $middleware->alias([

@@ -86,6 +86,9 @@ class ResidentWebPortalTest extends TestCase
         $this->assertAuthenticatedAs($resident, 'resident');
         $this->assertGuest('web');
         $this->assertNotNull(session('resident_portal_expires_at'));
+
+        $this->get('/resident-portal/login')
+            ->assertRedirect(route('resident-portal.home'));
     }
 
     public function test_birthday_fallback_requires_mpin_update(): void

@@ -18,15 +18,15 @@
             <label>Confirm MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin_confirmation" required autocomplete="new-password"></label>
             <div class="auth-consent">
                 <input id="terms_accepted" type="checkbox" name="terms_accepted" value="1" data-legal-checkbox="terms" required disabled>
-                <div class="auth-consent-copy"><label for="terms_accepted">I agree to the</label> <button type="button" class="auth-legal-button" data-legal-open="terms">Terms of Use</button><span>.</span><small data-legal-hint="terms">Open and scroll to the end to enable this checkbox.</small></div>
+                <div class="auth-consent-copy"><label for="terms_accepted">I agree to the</label> <button type="button" class="auth-legal-button" data-legal-open="terms">Terms of Use</button><span>.</span></div>
             </div>
             <div class="auth-consent">
                 <input id="privacy_notice_acknowledged" type="checkbox" name="privacy_notice_acknowledged" value="1" data-legal-checkbox="privacy" required disabled>
-                <div class="auth-consent-copy"><label for="privacy_notice_acknowledged">I have read and acknowledge the</label> <button type="button" class="auth-legal-button" data-legal-open="privacy">Privacy Notice</button><span>.</span><small data-legal-hint="privacy">Open and scroll to the end to enable this checkbox.</small></div>
+                <div class="auth-consent-copy"><label for="privacy_notice_acknowledged">I have read and acknowledge the</label> <button type="button" class="auth-legal-button" data-legal-open="privacy">Privacy Notice</button><span>.</span></div>
             </div>
             <div class="auth-consent">
                 <input id="bhwis_import_consented" type="checkbox" name="bhwis_import_consented" value="1" data-legal-checkbox="consent" required disabled>
-                <div class="auth-consent-copy"><label for="bhwis_import_consented">I consent to retrieving and importing my registered BHWIS information for account activation.</label> <button type="button" class="auth-legal-button" data-legal-open="consent">Read the consent details</button><span>.</span><small data-legal-hint="consent">Open and scroll to the end to enable this checkbox.</small></div>
+                <div class="auth-consent-copy"><label for="bhwis_import_consented">I consent to retrieving and importing my registered BHWIS information for account activation.</label> <button type="button" class="auth-legal-button" data-legal-open="consent">Read the consent details</button><span>.</span></div>
             </div>
             <button class="primary-button" type="submit" data-activation-submit disabled>Activate account</button>
             <noscript><p class="auth-script-warning">JavaScript is required to review and accept the activation agreements.</p></noscript>

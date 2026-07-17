@@ -66,8 +66,6 @@
                     completed = true;
                     checkbox.disabled = false;
                     checkbox.closest('.auth-consent')?.classList.add('is-unlocked');
-                    hint.textContent = 'Reading complete. You may now check this box.';
-                    status.textContent = 'Reading complete. The checkbox is now enabled.';
                     footer.classList.add('is-complete');
                     done.disabled = false;
                     done.textContent = 'Done';
