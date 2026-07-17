@@ -10,7 +10,7 @@ class CheckBhwisConnection extends Command
 {
     protected $signature = 'bhwis:check';
 
-    protected $description = 'Verify the read-only BHWIS SQL Server connection and required schema';
+    protected $description = 'Verify the read-only PDO ODBC BHWIS connection and required schema';
 
     public function handle(BhwisGateway $gateway): int
     {

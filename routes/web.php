@@ -39,12 +39,10 @@ use App\Livewire\ResidentRegistration;
 use App\Livewire\ResidentShow;
 use App\Livewire\ResidentSignatureUpdate;
 use App\Livewire\ScholarPinImport;
-use App\Services\LocalPcDatabase;
-use Illuminate\Support\Facades\DB;
+use App\Repositories\BhwisRepository;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -61,26 +59,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-require __DIR__ . '/resident_portal.php';
+require __DIR__.'/resident_portal.php';
 
 require __DIR__.'/bosesmoto.php';
-
-
-Route::get('/test-tunnel', function (LocalPcDatabase $database) {
-
-    $rows = $database->select("
-        SELECT TOP (10)
-            PIN,
-            Lastname,
-            Firstname,
-            Middlename,
-            Birthdate
-        FROM dbo.tblPersonalInfo
-        ORDER BY PIN DESC
-    ");
-
-    return response()->json($rows);
-});
 
 Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
 Route::get('/terms', [AccountDeletionRequestController::class, 'terms'])->name('legal.terms');
@@ -96,6 +77,12 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
+
+    Route::get('/test-tunnel', function (BhwisRepository $repository) {
+        return response()->json($repository->testConnection());
+    })
+        ->middleware('role:system-administrator')
+        ->name('admin.bhwis.test-tunnel');
 
     // Dashboard - accessible to all authenticated users
     Route::get('/dashboard', Dashboard::class)->name('dashboard');

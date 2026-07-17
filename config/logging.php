@@ -73,6 +73,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'bhwis' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/bhwis.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

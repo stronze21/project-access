@@ -31,16 +31,18 @@ class ResidentActivationService
         $resident = null;
 
         try {
-            $resident = DB::transaction(function () use ($pin, $data, &$resident) {
+            $personal = $this->gateway->findResident($pin, $data['last_name'], $data['birth_date']);
+            if (! $personal) {
+                throw new ResidentIdentityMismatchException;
+            }
+            $records = $this->gateway->linkedRecords($pin, $personal);
+
+            $resident = DB::transaction(function () use ($pin, $data, $records, &$resident) {
                 $resident = Resident::query()->where('resident_id', $pin)->lockForUpdate()->first();
                 if ($resident) {
                     $this->assertIdentity($resident, $data);
                 } else {
-                    $personal = $this->gateway->findResident($pin, $data['last_name'], $data['birth_date']);
-                    if (! $personal) {
-                        throw new ResidentIdentityMismatchException;
-                    }
-                    $resident = $this->importer->import($this->gateway->linkedRecords($pin, $personal));
+                    $resident = $this->importer->import($records);
                 }
 
                 if ($resident->mpin || $resident->password) {

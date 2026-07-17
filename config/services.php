@@ -44,6 +44,7 @@ return [
         'database' => env('DB_LOCAL_DATABASE', 'BHWIS'),
         'username' => env('DB_LOCAL_USERNAME'),
         'password' => env('DB_LOCAL_PASSWORD'),
+        'timeout' => (int) env('DB_LOCAL_TIMEOUT', 15),
     ],
 
 ];

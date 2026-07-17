@@ -3,8 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\LegacyImportBatch;
+use App\Repositories\BhwisRepository;
 use App\Services\Legacy\LegacyCsvImporter;
 use App\Services\Legacy\LegacyDataPromoter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
@@ -51,11 +53,29 @@ class LegacyResidentImport extends Component
 
     public int $promotionTotal = 0;
 
+    public string $connectionStatus = 'unknown';
+
     public function mount(): void
     {
         $this->authorizeImporter();
         if ($this->batch) {
             LegacyImportBatch::findOrFail($this->batch);
+        }
+    }
+
+    public function testBhwisConnection(BhwisRepository $repository): void
+    {
+        $this->authorizeImporter();
+        try {
+            $result = $repository->testConnection();
+            $this->connectionStatus = 'available';
+            $this->noticeType = 'success';
+            $this->notice = 'BHWIS is available (database: '.($result['database_name'] ?? 'unknown').').';
+        } catch (Throwable $exception) {
+            Log::channel('bhwis')->warning('Administrator BHWIS connection test failed.', ['exception' => $exception::class]);
+            $this->connectionStatus = 'unavailable';
+            $this->noticeType = 'warning';
+            $this->notice = 'Live BHWIS is unavailable. CSV import remains available.';
         }
     }
 
@@ -234,6 +254,7 @@ class LegacyResidentImport extends Component
             'rowSummary' => $rowSummary,
             'previewIsCurrent' => $selectedBatch && $this->previewIsCurrent($selectedBatch),
             'serverUploadLimit' => ini_get('upload_max_filesize'),
+            'lastCsvImport' => LegacyImportBatch::query()->whereNotNull('imported_at')->latest('imported_at')->value('imported_at'),
         ])->layout('layouts.app');
     }
 

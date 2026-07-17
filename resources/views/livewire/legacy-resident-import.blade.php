@@ -26,6 +26,27 @@
         <div role="alert" class="alert alert-error"><ul class="list-inside list-disc">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
     @endif
 
+    <section class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                <div>
+                    <h2 class="card-title">BHWIS integration</h2>
+                    <p class="text-sm text-base-content/60">PDO ODBC is used only to validate a registering resident's PIN, last name, and birth date, then import that resident's BHWIS record. CSV remains the supported manual fallback.</p>
+                </div>
+                <span class="badge {{ $connectionStatus === 'available' ? 'badge-success' : ($connectionStatus === 'unavailable' ? 'badge-error' : 'badge-ghost') }}">
+                    {{ str($connectionStatus)->title() }}
+                </span>
+            </div>
+            <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                <div><dt class="text-base-content/50">Live behavior</dt><dd class="font-medium">Registration validation and one-resident import only</dd></div>
+                <div><dt class="text-base-content/50">Last CSV import</dt><dd class="font-medium">{{ $lastCsvImport ? \Carbon\Carbon::parse($lastCsvImport)->format('M d, Y H:i') : 'Never' }}</dd></div>
+            </dl>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" wire:click="testBhwisConnection" class="btn btn-outline btn-sm" wire:loading.attr="disabled">Test connection</button>
+            </div>
+        </div>
+    </section>
+
     <div class="grid gap-6 xl:grid-cols-3">
         <section class="card border border-base-300 bg-base-100 shadow-sm xl:col-span-2">
             <div class="card-body">

@@ -3,6 +3,7 @@
 namespace App\Services\Legacy;
 
 use App\Models\LegacyImportBatch;
+use App\Services\Bhwis\BhwisResidentNormalizer;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use SplFileObject;
@@ -58,6 +59,8 @@ class LegacyCsvImporter
             'key' => ['Educ_ID'],
         ],
     ];
+
+    public function __construct(private readonly BhwisResidentNormalizer $residentNormalizer) {}
 
     public function import(array $inputPaths, bool $dryRun = true): array
     {
@@ -253,6 +256,12 @@ class LegacyCsvImporter
                 }
 
                 $payload = array_combine($headers, $values);
+                if ($sourceTable === 'personal_info') {
+                    $canonical = $this->residentNormalizer->normalize($payload, 'bhwis_csv');
+                    if (! $this->residentNormalizer->isImportable($canonical)) {
+                        $errors[] = 'missing_required_resident_fields';
+                    }
+                }
                 $naturalKey = $this->naturalKey($payload, $fileConfig['definition']['key']);
                 if ($naturalKey === null) {
                     $errors[] = 'missing_natural_key';

@@ -81,8 +81,8 @@ class AuthController extends Controller
     /**
      * Register/activate a resident's mobile account.
      *
-     * Residents must already exist in the system (registered by an officer).
-     * They activate their mobile account by providing their resident_id and setting an MPIN.
+     * BHWIS validates the PIN, last name, and birth date before Project Access
+     * imports a missing resident and activates the mobile account.
      */
     public function register(Request $request, ResidentActivationService $activation): JsonResponse
     {

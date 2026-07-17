@@ -13,7 +13,6 @@ use App\Models\LegacyResidentLink;
 use App\Models\Resident;
 use App\Models\SourceIncomeType;
 use App\Services\Legacy\LegacyDataPromoter;
-use Carbon\Carbon;
 use Database\Seeders\LocationsSeeder;
 use Illuminate\Support\Facades\DB;
 
@@ -21,32 +20,37 @@ class BhwisResidentImporter
 {
     public const SOURCE_SYSTEM = 'bhwis';
 
+    public function __construct(private readonly BhwisResidentNormalizer $normalizer) {}
+
     public function import(array $records): Resident
     {
         return DB::transaction(function () use ($records) {
             $personal = $records['personal'][0];
-            $pin = trim((string) $personal['PIN']);
+            $normalized = $this->normalizer->normalize($personal, 'bhwis_live');
+            if (! $this->normalizer->isImportable($normalized)) {
+                throw new \InvalidArgumentException('BHWIS resident is missing a PIN, name, or valid birthdate.');
+            }
+            $pin = $normalized['resident_id'];
             $civil = $this->civilStatus($records['civil_status'][0] ?? null, $personal['CivilStatus'] ?? null);
             $income = $this->incomeType($records['source_income_type'][0] ?? null, $personal['SourceIncome_id'] ?? null);
             $education = $this->education($records['educational_attainment'][0] ?? null, $personal['Educational_id'] ?? null);
-            $locked = in_array(strtolower(trim((string) ($personal['LockStatus'] ?? '0'))), ['1', 'true', 'yes', 'locked'], true);
-
-            $resident = Resident::create([
+            $attributes = [
                 'resident_id' => $pin,
-                'first_name' => trim((string) $personal['Firstname']),
-                'last_name' => trim((string) $personal['Lastname']),
-                'middle_name' => $this->nullable($personal['Middlename'] ?? null),
-                'birth_date' => Carbon::parse($personal['Birthdate'])->toDateString(),
-                'gender' => $this->gender($personal['Gender'] ?? null),
+                'first_name' => $normalized['first_name'],
+                'last_name' => $normalized['last_name'],
+                'middle_name' => $normalized['middle_name'],
+                'birth_date' => $normalized['birth_date'],
+                'gender' => $normalized['gender'],
                 'civil_status' => $civil,
                 'source_income_type_id' => $income?->id,
                 'educational_attainment' => $education?->name,
                 'is_pwd' => ! in_array(trim((string) ($personal['Disability_id'] ?? '')), ['', '0'], true),
-                'ethnicity' => $this->nullable($personal['Ethnicity'] ?? null),
-                'is_active' => ! $locked,
-                'locked_at' => $locked && ! empty($personal['Lockdate']) ? Carbon::parse($personal['Lockdate']) : null,
+                'ethnicity' => $normalized['ethnicity'],
+                'is_active' => $normalized['is_active'],
+                'locked_at' => $normalized['locked_at'],
                 'is_legacy_imported' => true,
-            ]);
+            ];
+            $resident = Resident::create($attributes);
 
             LegacyResidentLink::updateOrCreate(
                 ['source_system' => self::SOURCE_SYSTEM, 'legacy_pin' => $pin],
@@ -183,13 +187,6 @@ class BhwisResidentImporter
         return $code !== '' && $name !== '' ? EducationalAttainment::updateOrCreate(
             ['legacy_code' => $code], ['name' => $name, 'is_active' => true]
         ) : null;
-    }
-
-    private function gender(mixed $value): string
-    {
-        return match (strtolower(trim((string) $value))) {
-            'm', 'male' => 'male', 'f', 'female' => 'female', default => 'other',
-        };
     }
 
     private function nullable(mixed $value): ?string

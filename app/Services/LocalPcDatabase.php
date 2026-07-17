@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Exceptions\BhwisConnectionException;
 use PDO;
 use PDOException;
-use RuntimeException;
+use Throwable;
 
 class LocalPcDatabase
 {
@@ -38,10 +39,7 @@ class LocalPcDatabase
         }
 
         if ($missing !== []) {
-            throw new RuntimeException(
-                'Local PC database configuration is incomplete. Missing: '
-                . implode(', ', $missing)
-            );
+            throw new BhwisConnectionException('BHWIS database configuration is incomplete. Missing: '.implode(', ', $missing).'.');
         }
 
         try {
@@ -51,19 +49,19 @@ class LocalPcDatabase
                 $password,
                 [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
-                    PDO::ATTR_TIMEOUT => 10,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_PERSISTENT => false,
                 ]
             );
+            try {
+                $this->pdo->setAttribute(PDO::ATTR_TIMEOUT, max(1, (int) config('services.local_pc.timeout', 15)));
+            } catch (PDOException) {
+                // PDO ODBC drivers differ; keep the connection when this optional attribute is unsupported.
+            }
 
             return $this->pdo;
         } catch (PDOException $exception) {
-            throw new RuntimeException(
-                'Unable to connect to the local SQL Server: '
-                . $exception->getMessage(),
-                previous: $exception
-            );
+            throw new BhwisConnectionException('Unable to connect to BHWIS through the configured ODBC data source.', previous: $exception);
         }
     }
 
@@ -72,10 +70,37 @@ class LocalPcDatabase
      */
     public function select(string $query, array $bindings = []): array
     {
-        $statement = $this->connection()->prepare($query);
-        $statement->execute($bindings);
+        try {
+            $statement = $this->connection()->prepare($query);
+            $statement->execute($bindings);
 
-        return $statement->fetchAll();
+            return $statement->fetchAll();
+        } catch (BhwisConnectionException $exception) {
+            throw $exception;
+        } catch (PDOException $exception) {
+            throw new BhwisConnectionException('The BHWIS query could not be completed.', previous: $exception);
+        }
+    }
+
+    public function first(string $query, array $bindings = []): ?array
+    {
+        $rows = $this->select($query, $bindings);
+
+        return $rows[0] ?? null;
+    }
+
+    public function scalar(string $query, array $bindings = []): mixed
+    {
+        try {
+            $statement = $this->connection()->prepare($query);
+            $statement->execute($bindings);
+
+            return $statement->fetchColumn();
+        } catch (BhwisConnectionException $exception) {
+            throw $exception;
+        } catch (PDOException $exception) {
+            throw new BhwisConnectionException('The BHWIS query could not be completed.', previous: $exception);
+        }
     }
 
     /**
@@ -83,8 +108,56 @@ class LocalPcDatabase
      */
     public function statement(string $query, array $bindings = []): bool
     {
-        $statement = $this->connection()->prepare($query);
+        try {
+            $statement = $this->connection()->prepare($query);
 
-        return $statement->execute($bindings);
+            return $statement->execute($bindings);
+        } catch (BhwisConnectionException $exception) {
+            throw $exception;
+        } catch (PDOException $exception) {
+            throw new BhwisConnectionException('The BHWIS statement could not be completed.', previous: $exception);
+        }
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        $pdo = $this->connection();
+        $pdo->beginTransaction();
+
+        try {
+            $result = $callback($this);
+            $pdo->commit();
+
+            return $result;
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function isAvailable(): bool
+    {
+        try {
+            $this->testConnection();
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /** @return array{server_time: mixed, database_name: mixed} */
+    public function testConnection(): array
+    {
+        $row = $this->first('SELECT GETDATE() AS server_time, DB_NAME() AS database_name');
+
+        if ($row === null) {
+            throw new BhwisConnectionException('BHWIS returned no connection diagnostic data.');
+        }
+
+        return $row;
     }
 }

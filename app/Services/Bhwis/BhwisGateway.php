@@ -3,26 +3,24 @@
 namespace App\Services\Bhwis;
 
 use App\Exceptions\BhwisUnavailableException;
-use Illuminate\Database\ConnectionInterface;
-use Illuminate\Support\Facades\DB;
+use App\Repositories\BhwisRepository;
 use Throwable;
 
 class BhwisGateway
 {
+    public function __construct(private readonly BhwisRepository $repository) {}
+
     /** @return array<string, mixed>|null */
     public function findResident(string $pin, string $lastName, string $birthDate): ?array
     {
         $this->ensureEnabled();
 
         try {
-            $row = $this->connection()->selectOne(
-                'SELECT TOP 1 * FROM [tblPersonalInfo] WHERE LTRIM(RTRIM([PIN])) = ? AND LOWER(LTRIM(RTRIM([Lastname]))) = LOWER(?) AND CAST([Birthdate] AS date) = ?',
-                [$pin, trim($lastName), $birthDate]
-            );
-
-            return $row ? (array) $row : null;
-        } catch (Throwable $e) {
-            throw new BhwisUnavailableException('BHWIS resident lookup failed.', previous: $e);
+            return $this->repository->findPersonalInfo($pin, $lastName, $birthDate);
+        } catch (BhwisUnavailableException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new BhwisUnavailableException('BHWIS resident lookup failed.', previous: $exception);
         }
     }
 
@@ -30,27 +28,16 @@ class BhwisGateway
     public function linkedRecords(string $pin, array $personal): array
     {
         try {
-            $familyMemberships = $this->rows('SELECT * FROM [tblFamilyMembers] WHERE LTRIM(RTRIM([PIN])) = ?', [$pin]);
-            $familyNumbers = collect($familyMemberships)
-                ->pluck('FamilyNumber')->map(fn ($value) => trim((string) $value))->filter()->unique()->values();
-            $family = $familyMemberships;
-            foreach ($familyNumbers as $familyNumber) {
-                $family = array_merge($family, $this->rows(
-                    'SELECT * FROM [tblFamilyMembers] WHERE LTRIM(RTRIM([FamilyNumber])) = ?',
-                    [$familyNumber]
-                ));
+            $memberships = $this->repository->getFamilyMembersByPin($pin);
+            $family = $memberships;
+            foreach (collect($memberships)->pluck('FamilyNumber')->map(fn ($value) => trim((string) $value))->filter()->unique() as $number) {
+                $family = array_merge($family, $this->repository->getFamilyMembersByFamilyNumber($number));
             }
 
-            $bhw = $this->rows(
-                'SELECT * FROM [tblBHWMaster] WHERE LTRIM(RTRIM([PIN])) = ? OR LTRIM(RTRIM([PIN2])) = ?',
-                [$pin, $pin]
-            );
-            $barangayCodes = collect($bhw)->pluck('Barangay_Code')->map(fn ($v) => trim((string) $v))->filter()->unique();
+            $bhw = $this->repository->getBhwAssignments($pin);
             $barangays = [];
-            foreach ($barangayCodes as $code) {
-                $barangays = array_merge($barangays, $this->rows(
-                    'SELECT * FROM [tblBarangay] WHERE LTRIM(RTRIM([Barangay_Code])) = ?', [$code]
-                ));
+            foreach (collect($bhw)->pluck('Barangay_Code')->map(fn ($value) => trim((string) $value))->filter()->unique() as $code) {
+                $barangays = array_merge($barangays, $this->repository->getBarangay($code));
             }
 
             return [
@@ -58,14 +45,14 @@ class BhwisGateway
                 'family_members' => collect($family)->unique(fn ($row) => ($row['FamilyNumber'] ?? '').'|'.($row['PIN'] ?? ''))->values()->all(),
                 'bhw_master' => $bhw,
                 'barangay' => $barangays,
-                'civil_status' => $this->reference('tblCivilStatus', 'CivilStatus_Code', $personal['CivilStatus'] ?? null),
-                'source_income_type' => $this->reference('tblSourceIncomeType', 'IncomeCode', $personal['SourceIncome_id'] ?? null),
-                'educational_attainment' => $this->reference('tblEduc_Attainment', 'Educ_ID', $personal['Educational_id'] ?? null),
+                'civil_status' => $this->repository->getCivilStatus($personal['CivilStatus'] ?? null),
+                'source_income_type' => $this->repository->getSourceIncomeType($personal['SourceIncome_id'] ?? null),
+                'educational_attainment' => $this->repository->getEducationalAttainment($personal['Educational_id'] ?? null),
             ];
-        } catch (BhwisUnavailableException $e) {
-            throw $e;
-        } catch (Throwable $e) {
-            throw new BhwisUnavailableException('BHWIS linked-record lookup failed.', previous: $e);
+        } catch (BhwisUnavailableException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new BhwisUnavailableException('BHWIS linked-record lookup failed.', previous: $exception);
         }
     }
 
@@ -73,41 +60,19 @@ class BhwisGateway
     public function checkSchema(): array
     {
         $this->ensureEnabled();
-        $required = [
-            'tblPersonalInfo' => ['PIN', 'Lastname', 'Firstname', 'Birthdate'],
-            'tblFamilyMembers' => ['FamilyNumber', 'PIN'],
-            'tblBHWMaster' => ['ZoneID', 'PIN', 'Barangay_Code', 'ZoneName', 'PIN2'],
-            'tblBarangay' => ['Barangay_Code', 'Barangay'],
-            'tblCivilStatus' => ['CivilStatus_Code', 'CivilStatus'],
-            'tblSourceIncomeType' => ['IncomeCode', 'Income_description'],
-            'tblEduc_Attainment' => ['Educ_ID', 'Educ_Attainment'],
-        ];
-        $missing = [];
 
         try {
-            foreach ($required as $table => $columns) {
-                $present = collect($this->connection()->select(
-                    'SELECT [COLUMN_NAME] FROM [INFORMATION_SCHEMA].[COLUMNS] WHERE [TABLE_NAME] = ?', [$table]
-                ))->pluck('COLUMN_NAME')->all();
-                if ($present === []) {
-                    $missing[] = $table;
-
-                    continue;
-                }
-                foreach (array_diff($columns, $present) as $column) {
-                    $missing[] = $table.'.'.$column;
-                }
-            }
-        } catch (Throwable $e) {
-            throw new BhwisUnavailableException('BHWIS schema check failed.', previous: $e);
+            return $this->repository->missingRequiredSchema();
+        } catch (BhwisUnavailableException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new BhwisUnavailableException('BHWIS schema check failed.', previous: $exception);
         }
-
-        return $missing;
     }
 
-    protected function connection(): ConnectionInterface
+    public function testConnection(): array
     {
-        return DB::connection(config('bhwis.connection', 'bhwis'));
+        return $this->repository->testConnection();
     }
 
     private function ensureEnabled(): void
@@ -115,20 +80,5 @@ class BhwisGateway
         if (! config('bhwis.enabled')) {
             throw new BhwisUnavailableException('BHWIS integration is disabled.');
         }
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function rows(string $sql, array $bindings): array
-    {
-        return array_map(fn ($row) => (array) $row, $this->connection()->select($sql, $bindings));
-    }
-
-    private function reference(string $table, string $column, mixed $value): array
-    {
-        $value = trim((string) $value);
-
-        return $value === '' ? [] : $this->rows(
-            "SELECT * FROM [{$table}] WHERE LTRIM(RTRIM([{$column}])) = ?", [$value]
-        );
     }
 }

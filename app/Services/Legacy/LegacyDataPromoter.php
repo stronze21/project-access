@@ -11,6 +11,7 @@ use App\Models\LegacyImportBatch;
 use App\Models\LegacyImportRow;
 use App\Models\Resident;
 use App\Models\SourceIncomeType;
+use App\Services\Bhwis\BhwisResidentNormalizer;
 use Carbon\Carbon;
 use Database\Seeders\LocationsSeeder;
 use Illuminate\Support\Arr;
@@ -21,6 +22,8 @@ use Throwable;
 class LegacyDataPromoter
 {
     private ?array $psgcBarangayRecords = null;
+
+    public function __construct(private readonly BhwisResidentNormalizer $residentNormalizer) {}
 
     public const CIVIL_STATUS_MAP = [
         '1' => 'single',
@@ -580,29 +583,27 @@ class LegacyDataPromoter
 
     private function residentCandidate(array $payload, array $context): ?array
     {
-        $pin = trim((string) ($payload['PIN'] ?? ''));
-        $firstName = trim((string) ($payload['Firstname'] ?? ''));
-        $lastName = trim((string) ($payload['Lastname'] ?? ''));
-        $birthDate = $this->parseDate($payload['Birthdate'] ?? null);
-        $gender = $this->normalizeGender($payload['Gender'] ?? null);
+        $canonical = $this->residentNormalizer->normalize($payload, 'bhwis_csv');
+        $pin = $canonical['resident_id'];
+        $firstName = $canonical['first_name'];
+        $lastName = $canonical['last_name'];
+        $birthDate = $canonical['birth_date'];
+        $gender = $canonical['gender'];
 
-        if ($pin === '' || $firstName === '' || $lastName === '' || ! $birthDate || ! $gender) {
+        if (! $this->residentNormalizer->isImportable($canonical) || ! $gender) {
             return null;
         }
 
-        $lockStatus = strtolower(trim((string) ($payload['LockStatus'] ?? '0')));
-        $locked = in_array($lockStatus, ['1', 'true', 'yes', 'locked'], true);
         $sourceUpdatedAt = $this->parseDateTime($payload['Date_Modified'] ?? null) ?? now();
         $incomeCode = trim((string) ($payload['SourceIncome_id'] ?? ''));
         $educationCode = trim((string) ($payload['Educational_id'] ?? ''));
-        $disabilityCode = trim((string) ($payload['Disability_id'] ?? ''));
 
         return [
             'resident_id' => $pin,
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'middle_name' => $this->nullable($payload['Middlename'] ?? null),
-            'birth_date' => $birthDate->toDateString(),
+            'middle_name' => $canonical['middle_name'],
+            'birth_date' => $birthDate,
             'gender' => $gender,
             'civil_status' => $this->normalizeCivilStatus(
                 $payload['CivilStatus'] ?? null,
@@ -610,10 +611,10 @@ class LegacyDataPromoter
             ),
             'source_income_type_id' => $context['income_ids'][$incomeCode] ?? null,
             'educational_attainment' => $context['education'][$educationCode] ?? null,
-            'is_pwd' => $disabilityCode !== '' && $disabilityCode !== '0',
-            'is_active' => ! $locked,
-            'ethnicity' => $this->nullable($payload['Ethnicity'] ?? null),
-            'locked_at' => $locked ? $this->parseDateTime($payload['Lockdate'] ?? null) : null,
+            'is_pwd' => $canonical['is_pwd'],
+            'is_active' => $canonical['is_active'],
+            'ethnicity' => $canonical['ethnicity'],
+            'locked_at' => $canonical['locked_at'],
             'created_at' => $sourceUpdatedAt,
             'updated_at' => $sourceUpdatedAt,
         ];
@@ -1380,27 +1381,6 @@ class LegacyDataPromoter
         ));
     }
 
-    private function parseDate(mixed $value): ?Carbon
-    {
-        $value = trim((string) $value);
-        if ($value === '' || strtoupper($value) === 'NULL') {
-            return null;
-        }
-
-        foreach (['Y-m-d', 'm/d/Y', 'n/j/Y', 'Y-m-d H:i:s'] as $format) {
-            try {
-                $date = Carbon::createFromFormat($format, $value);
-                if ($date !== false && $date->format($format) === $value) {
-                    return $date;
-                }
-            } catch (Throwable) {
-                // Try the next known source format.
-            }
-        }
-
-        return null;
-    }
-
     private function parseDateTime(mixed $value): ?Carbon
     {
         $value = trim((string) $value);
@@ -1420,16 +1400,6 @@ class LegacyDataPromoter
         }
 
         return null;
-    }
-
-    private function normalizeGender(mixed $value): ?string
-    {
-        return match (strtolower(trim((string) $value))) {
-            'm', 'male' => 'male',
-            'f', 'female' => 'female',
-            'o', 'other', 'non-binary', 'nonbinary' => 'other',
-            default => null,
-        };
     }
 
     private function normalizeCivilStatus(mixed $value, array $statusMap = self::CIVIL_STATUS_MAP): ?string
