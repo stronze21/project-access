@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'enabled' => env('BHWIS_ENABLED', false),
     'consent_versions' => [
         'terms' => env('TERMS_VERSION', '2026-07-16'),
         'privacy' => env('PRIVACY_NOTICE_VERSION', '2026-07-16'),

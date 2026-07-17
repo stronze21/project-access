@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\BhwisUnavailableException;
 use App\Models\Resident;
 use App\Services\Bhwis\BhwisGateway;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -61,9 +62,12 @@ class BhwisResidentActivationTest extends TestCase
         ]);
     }
 
-    public function test_nonlocal_resident_gets_retryable_error_while_integration_is_disabled(): void
+    public function test_nonlocal_resident_gets_retryable_error_when_bhwis_is_unavailable(): void
     {
-        config(['bhwis.enabled' => false]);
+        $gateway = Mockery::mock(BhwisGateway::class);
+        $gateway->shouldReceive('findResident')->once()
+            ->andThrow(new BhwisUnavailableException('BHWIS resident lookup failed.'));
+        $this->app->instance(BhwisGateway::class, $gateway);
 
         $this->postJson('/api/resident-portal/register', $this->payload('PIN-MISSING'))
             ->assertStatus(503)->assertJsonPath('retryable', true);

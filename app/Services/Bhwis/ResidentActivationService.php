@@ -74,6 +74,9 @@ class ResidentActivationService
             Log::warning('BHWIS activation unavailable', [
                 'attempt_id' => $audit->attempt_id,
                 'exception' => $e::class,
+                'reason' => $e->getMessage(),
+                'previous_exception' => $e->getPrevious() ? $e->getPrevious()::class : null,
+                'previous_code' => $e->getPrevious()?->getCode(),
             ]);
             throw $e;
         } catch (Throwable $e) {

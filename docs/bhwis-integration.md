@@ -31,7 +31,6 @@ ClientCharset = UTF-8
 Set these application variables without committing credentials:
 
 ```env
-BHWIS_ENABLED=true
 DB_LOCAL_DSN="odbc:local_pc_sqlserver"
 DB_LOCAL_DATABASE="BHWIS"
 DB_LOCAL_USERNAME=
@@ -39,7 +38,7 @@ DB_LOCAL_PASSWORD=
 DB_LOCAL_TIMEOUT=15
 ```
 
-`BHWIS_ENABLED` controls registration lookups. The diagnostic command can test configuration before registration lookups are enabled. The DSN determines the database used by PDO ODBC and the diagnostic verifies it with `DB_NAME()`.
+Registration lookups use the configured PDO ODBC connection directly. The DSN determines the database used by PDO ODBC and the diagnostic verifies it with `DB_NAME()`.
 
 After deployment, rebuild Laravel configuration:
 

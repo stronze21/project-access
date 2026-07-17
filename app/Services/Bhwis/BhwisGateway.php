@@ -13,8 +13,6 @@ class BhwisGateway
     /** @return array<string, mixed>|null */
     public function findResident(string $pin, string $lastName, string $birthDate): ?array
     {
-        $this->ensureEnabled();
-
         try {
             return $this->repository->findPersonalInfo($pin, $lastName, $birthDate);
         } catch (BhwisUnavailableException $exception) {
@@ -59,8 +57,6 @@ class BhwisGateway
     /** @return array<int, string> */
     public function checkSchema(): array
     {
-        $this->ensureEnabled();
-
         try {
             return $this->repository->missingRequiredSchema();
         } catch (BhwisUnavailableException $exception) {
@@ -73,12 +69,5 @@ class BhwisGateway
     public function testConnection(): array
     {
         return $this->repository->testConnection();
-    }
-
-    private function ensureEnabled(): void
-    {
-        if (! config('bhwis.enabled')) {
-            throw new BhwisUnavailableException('BHWIS integration is disabled.');
-        }
     }
 }
