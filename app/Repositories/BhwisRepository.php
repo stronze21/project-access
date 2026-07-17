@@ -34,7 +34,7 @@ class BhwisRepository
     public function getFamilyMembersByPin(string $pin): array
     {
         return $this->database->select(
-            'SELECT FamilyNumber, Building_RegistryNumber, PIN, Date_Update, HouseHoldHead, FamilyHead, Relationship_id FROM dbo.tblFamilyMembers WHERE LTRIM(RTRIM(PIN)) = ?',
+            'SELECT FamilyNumber, Building_RegistryNumber, PIN FROM dbo.tblFamilyMembers WHERE LTRIM(RTRIM(PIN)) = ?',
             [trim($pin)]
         );
     }
@@ -42,7 +42,7 @@ class BhwisRepository
     public function getFamilyMembersByFamilyNumber(string $familyNumber): array
     {
         return $this->database->select(
-            'SELECT FamilyNumber, Building_RegistryNumber, PIN, Date_Update, HouseHoldHead, FamilyHead, Relationship_id FROM dbo.tblFamilyMembers WHERE LTRIM(RTRIM(FamilyNumber)) = ?',
+            'SELECT FamilyNumber, Building_RegistryNumber, PIN FROM dbo.tblFamilyMembers WHERE LTRIM(RTRIM(FamilyNumber)) = ?',
             [trim($familyNumber)]
         );
     }

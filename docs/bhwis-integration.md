@@ -7,9 +7,11 @@ Both the ProjectAccessApp API and the PWA registration portal use this flow:
 1. The resident submits a PIN, last name, and birth date.
 2. Project Access performs one prepared BHWIS query matching all three values.
 3. If no exact match exists, registration is rejected without creating a resident.
-4. If the match is valid, Project Access retrieves the resident's BHWIS record and supported related records.
+4. If the match is valid, Project Access retrieves the resident's BHWIS record and attempts each supported related-record lookup independently.
 5. A missing local resident is imported and linked by BHWIS PIN. An existing local resident is not overwritten.
 6. Project Access sets the resident's MPIN or password and completes registration.
+
+The verified personal record is required. Family, BHW, barangay, and reference lookups are best-effort: an unavailable optional table is logged and skipped rather than blocking activation of a resident whose identity was already verified.
 
 ## Production architecture
 

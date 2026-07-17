@@ -4,6 +4,7 @@ namespace App\Services\Bhwis;
 
 use App\Exceptions\BhwisUnavailableException;
 use App\Repositories\BhwisRepository;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class BhwisGateway
@@ -25,33 +26,36 @@ class BhwisGateway
     /** @return array<string, array<int, array<string, mixed>>> */
     public function linkedRecords(string $pin, array $personal): array
     {
-        try {
-            $memberships = $this->repository->getFamilyMembersByPin($pin);
-            $family = $memberships;
-            foreach (collect($memberships)->pluck('FamilyNumber')->map(fn ($value) => trim((string) $value))->filter()->unique() as $number) {
-                $family = array_merge($family, $this->repository->getFamilyMembersByFamilyNumber($number));
-            }
-
-            $bhw = $this->repository->getBhwAssignments($pin);
-            $barangays = [];
-            foreach (collect($bhw)->pluck('Barangay_Code')->map(fn ($value) => trim((string) $value))->filter()->unique() as $code) {
-                $barangays = array_merge($barangays, $this->repository->getBarangay($code));
-            }
-
-            return [
-                'personal' => [$personal],
-                'family_members' => collect($family)->unique(fn ($row) => ($row['FamilyNumber'] ?? '').'|'.($row['PIN'] ?? ''))->values()->all(),
-                'bhw_master' => $bhw,
-                'barangay' => $barangays,
-                'civil_status' => $this->repository->getCivilStatus($personal['CivilStatus'] ?? null),
-                'source_income_type' => $this->repository->getSourceIncomeType($personal['SourceIncome_id'] ?? null),
-                'educational_attainment' => $this->repository->getEducationalAttainment($personal['Educational_id'] ?? null),
-            ];
-        } catch (BhwisUnavailableException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            throw new BhwisUnavailableException('BHWIS linked-record lookup failed.', previous: $exception);
+        $memberships = $this->optionalRows(
+            'family_members_by_pin',
+            fn () => $this->repository->getFamilyMembersByPin($pin)
+        );
+        $family = $memberships;
+        foreach (collect($memberships)->pluck('FamilyNumber')->map(fn ($value) => trim((string) $value))->filter()->unique() as $number) {
+            $family = array_merge($family, $this->optionalRows(
+                'family_members_by_family',
+                fn () => $this->repository->getFamilyMembersByFamilyNumber($number)
+            ));
         }
+
+        $bhw = $this->optionalRows('bhw_assignments', fn () => $this->repository->getBhwAssignments($pin));
+        $barangays = [];
+        foreach (collect($bhw)->pluck('Barangay_Code')->map(fn ($value) => trim((string) $value))->filter()->unique() as $code) {
+            $barangays = array_merge($barangays, $this->optionalRows(
+                'barangay_reference',
+                fn () => $this->repository->getBarangay($code)
+            ));
+        }
+
+        return [
+            'personal' => [$personal],
+            'family_members' => collect($family)->unique(fn ($row) => ($row['FamilyNumber'] ?? '').'|'.($row['PIN'] ?? ''))->values()->all(),
+            'bhw_master' => $bhw,
+            'barangay' => $barangays,
+            'civil_status' => $this->optionalRows('civil_status_reference', fn () => $this->repository->getCivilStatus($personal['CivilStatus'] ?? null)),
+            'source_income_type' => $this->optionalRows('income_reference', fn () => $this->repository->getSourceIncomeType($personal['SourceIncome_id'] ?? null)),
+            'educational_attainment' => $this->optionalRows('education_reference', fn () => $this->repository->getEducationalAttainment($personal['Educational_id'] ?? null)),
+        ];
     }
 
     /** @return array<int, string> */
@@ -69,5 +73,25 @@ class BhwisGateway
     public function testConnection(): array
     {
         return $this->repository->testConnection();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function optionalRows(string $operation, callable $query): array
+    {
+        try {
+            return $query();
+        } catch (Throwable $exception) {
+            $previous = $exception instanceof BhwisUnavailableException
+                ? $exception->getPrevious()
+                : null;
+            Log::channel('bhwis')->warning('Optional BHWIS related-record lookup failed.', [
+                'operation' => $operation,
+                'exception' => $exception::class,
+                'previous_exception' => $previous ? $previous::class : null,
+                'previous_code' => $previous?->getCode(),
+            ]);
+
+            return [];
+        }
     }
 }
