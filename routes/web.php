@@ -39,10 +39,12 @@ use App\Livewire\ResidentRegistration;
 use App\Livewire\ResidentShow;
 use App\Livewire\ResidentSignatureUpdate;
 use App\Livewire\ScholarPinImport;
+use App\Services\LocalPcDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -63,16 +65,21 @@ require __DIR__ . '/resident_portal.php';
 
 require __DIR__.'/bosesmoto.php';
 
-Route::get('/test-tunnel', function () {
-    try {
-        // Tries to ping your secondary connection 'local_pc'
-        DB::connection('local_pc')->getPdo();
-        return "Success! Hostinger connected directly to your local PC database.";
-    } catch (\Exception $e) {
-        return "Connection failed: " . $e->getMessage();
-    }
-});
 
+Route::get('/test-tunnel', function (LocalPcDatabase $database) {
+    $result = $database
+        ->connection()
+        ->query(
+            'SELECT TOP 10 * FROM dbo.tblPersonalInfo ORDER BY PIN DESC'
+        )
+        ->fetch();
+
+    return response()->json([
+        'success' => true,
+        'server_time' => $result->server_time ?? null,
+        'database_name' => $result->database_name ?? null,
+    ]);
+});
 
 Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
 Route::get('/terms', [AccountDeletionRequestController::class, 'terms'])->name('legal.terms');

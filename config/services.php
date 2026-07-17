@@ -39,4 +39,11 @@ return [
         'server_key' => env('FCM_SERVER_KEY'),
     ],
 
+    'local_pc' => [
+        'dsn' => env('DB_LOCAL_DSN', 'odbc:local_pc_sqlserver'),
+        'database' => env('DB_LOCAL_DATABASE', 'BHWIS'),
+        'username' => env('DB_LOCAL_USERNAME'),
+        'password' => env('DB_LOCAL_PASSWORD'),
+    ],
+
 ];
