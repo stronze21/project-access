@@ -378,6 +378,20 @@ class ResidentPortalController extends Controller
             return [];
         }
 
+        if ($screen === 'household') {
+            abort_unless($resident->household_id, 404);
+
+            return [
+                'household' => $resident->household,
+                'members' => Resident::query()
+                    ->where('household_id', $resident->household_id)
+                    ->where('is_active', true)
+                    ->orderByRaw("CASE relationship_to_head WHEN 'head' THEN 0 WHEN 'spouse' THEN 1 ELSE 2 END")
+                    ->orderBy('first_name')
+                    ->get(),
+            ];
+        }
+
         if ($screen === 'ayuda') {
             return [
                 'items' => Distribution::where('resident_id', $resident->id)->with(['ayudaProgram', 'batch'])->latest('distribution_date')->paginate(10),

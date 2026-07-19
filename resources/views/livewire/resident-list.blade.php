@@ -24,6 +24,9 @@
                     <x-mary-menu-item icon="o-academic-cap" href="{{ route('residents.scholar-pin-import') }}">
                         Scholar PIN Imports
                     </x-mary-menu-item>
+                    <x-mary-menu-item icon="o-photo" href="{{ route('residents.photo-signature-manager') }}">
+                        Photo and Signature Manager
+                    </x-mary-menu-item>
                 @endcan
                 @can('export-residents')
                     <x-mary-menu-item icon="o-arrow-up-tray" href="{{ route('residents.export') }}">

@@ -31,17 +31,27 @@ class ResidentActivationService
         $resident = null;
 
         try {
-            $personal = $this->gateway->findResident($pin, $data['last_name'], $data['birth_date']);
-            if (! $personal) {
-                throw new ResidentIdentityMismatchException;
+            $localResident = Resident::query()->where('resident_id', $pin)->first();
+            $records = null;
+
+            if ($localResident) {
+                $this->assertIdentity($localResident, $data);
+            } else {
+                $personal = $this->gateway->findResident($pin, $data['last_name'], $data['birth_date']);
+                if (! $personal) {
+                    throw new ResidentIdentityMismatchException;
+                }
+                $records = $this->gateway->linkedRecords($pin, $personal);
             }
-            $records = $this->gateway->linkedRecords($pin, $personal);
 
             $resident = DB::transaction(function () use ($pin, $data, $records, &$resident) {
                 $resident = Resident::query()->where('resident_id', $pin)->lockForUpdate()->first();
                 if ($resident) {
                     $this->assertIdentity($resident, $data);
                 } else {
+                    if (! $records) {
+                        throw new ResidentIdentityMismatchException;
+                    }
                     $resident = $this->importer->import($records);
                 }
 

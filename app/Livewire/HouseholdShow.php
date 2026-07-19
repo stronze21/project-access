@@ -152,19 +152,10 @@ class HouseholdShow extends Component
 
             if ($resident->household_id && (int) $resident->household_id !== (int) $this->householdId) {
                 $previousHouseholdId = (int) $resident->household_id;
-                $previousHouseholdMembers = Resident::query()
+                Resident::query()
                     ->where('household_id', $previousHouseholdId)
                     ->lockForUpdate()
                     ->get(['id']);
-
-                if ($previousHouseholdMembers->count() !== 1) {
-                    $this->addError(
-                        'selectedMemberId',
-                        'This resident can only be transferred when they are the sole member of their household.'
-                    );
-
-                    return;
-                }
             }
 
             $resident->update([
@@ -201,20 +192,12 @@ class HouseholdShow extends Component
         if ($this->showAddMemberModal && mb_strlen(trim($this->memberSearch)) >= 2) {
             $term = trim($this->memberSearch);
             $nameParts = preg_split('/\s+/', $term, -1, PREG_SPLIT_NO_EMPTY);
-            $singleResidentHouseholdIds = Resident::query()
-                ->whereNotNull('household_id')
-                ->where('household_id', '!=', $this->householdId)
-                ->select('household_id')
-                ->groupBy('household_id')
-                ->havingRaw('COUNT(*) = 1')
-                ->pluck('household_id');
-
             $availableResidents = Resident::query()
                 ->with('household:id,household_id')
                 ->where('is_active', true)
-                ->where(function ($query) use ($singleResidentHouseholdIds) {
+                ->where(function ($query) {
                     $query->whereNull('household_id')
-                        ->orWhereIn('household_id', $singleResidentHouseholdIds);
+                        ->orWhere('household_id', '!=', $this->householdId);
                 })
                 ->where(function ($searchQuery) use ($term, $nameParts) {
                     $searchQuery->where(function ($query) use ($term) {

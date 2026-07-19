@@ -144,11 +144,20 @@ class QrCodeService
      */
     public function findResidentByQrCode(string $qrCode): ?Resident
     {
+        $qrCode = trim($qrCode);
+
+        if (Str::startsWith($qrCode, 'QR-')) {
+            $qrCode = Str::after($qrCode, 'QR-');
+        }
+
         if (Str::startsWith($qrCode, 'AC-')) {
             return Resident::where('resident_id', Str::after($qrCode, 'AC-'))->first();
         }
 
-        return Resident::where('qr_code', $qrCode)->orWhere('qr_code', 'QR-'.$qrCode)->first();
+        return Resident::where('resident_id', $qrCode)
+            ->orWhere('qr_code', $qrCode)
+            ->orWhere('qr_code', 'QR-'.$qrCode)
+            ->first();
     }
 
     /**
@@ -166,6 +175,8 @@ class QrCodeService
      */
     public function processQrCode(string $qrCode): array
     {
+        $qrCode = trim($qrCode);
+
         $result = [
             'type' => null,
             'id' => null,
@@ -198,6 +209,16 @@ class QrCodeService
                 $result['message'] = 'Household found: '.$household->household_id;
             } else {
                 $result['message'] = 'Household not found with QR code: '.$qrCode;
+            }
+        } else {
+            $resident = $this->findResidentByQrCode($qrCode);
+
+            if ($resident) {
+                $result['type'] = 'resident';
+                $result['found'] = true;
+                $result['object'] = $resident;
+                $result['id'] = $resident->id;
+                $result['message'] = 'Resident found: '.$resident->full_name;
             }
         }
 

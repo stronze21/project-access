@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Complaint;
 use App\Models\ComplaintCategory;
+use App\Models\Household;
+use App\Models\PublicServiceLink;
 use App\Models\Resident;
 use App\Services\ResidentCitizenAccountService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -185,6 +187,62 @@ class ResidentWebPortalTest extends TestCase
             ->assertSee('Tap the card to view its back')
             ->assertDontSee('qr-detail', false)
             ->assertDontSee('Scan to verify resident record');
+    }
+
+    public function test_resident_can_view_members_of_their_household_in_the_pwa(): void
+    {
+        $household = Household::create([
+            'household_id' => 'HH-PWA-001',
+            'address' => 'Test Street',
+            'barangay' => 'Poblacion',
+            'city_municipality' => 'Alaminos City',
+            'province' => 'Pangasinan',
+        ]);
+        $resident = $this->resident([
+            'household_id' => $household->id,
+            'relationship_to_head' => 'head',
+        ]);
+        $member = $this->resident([
+            'household_id' => $household->id,
+            'resident_id' => 'R-PWA-MEMBER-001',
+            'first_name' => 'Ana',
+            'last_name' => 'Santos',
+            'email' => 'ana-household@example.test',
+            'relationship_to_head' => 'child',
+        ]);
+        $session = ['resident_portal_expires_at' => now()->addDays(60)];
+
+        $this->actingAs($resident, 'resident')->withSession($session)
+            ->get('/resident-portal')
+            ->assertOk()
+            ->assertSee('/resident-portal/household', false)
+            ->assertSee('View household members');
+
+        $this->actingAs($resident, 'resident')->withSession($session)
+            ->get('/resident-portal/household')
+            ->assertOk()
+            ->assertSee('My Household')
+            ->assertSee($member->full_name)
+            ->assertSee($member->resident_id);
+    }
+
+    public function test_city_portal_translates_legacy_icon_names_to_material_symbols(): void
+    {
+        $resident = $this->resident();
+        PublicServiceLink::create([
+            'title' => 'Document Portal',
+            'service_type' => 'records',
+            'url' => 'https://example.test/documents',
+            'icon' => 'document-text',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($resident, 'resident')
+            ->withSession(['resident_portal_expires_at' => now()->addDays(60)])
+            ->get('/resident-portal/citizen-services/public-services')
+            ->assertOk()
+            ->assertSee('portal-service-icon material-symbols-rounded filled">description', false)
+            ->assertDontSee('>document-text<', false);
     }
 
     public function test_portal_does_not_authenticate_linked_citizen_into_staff_guard(): void

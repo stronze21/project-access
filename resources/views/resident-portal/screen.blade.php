@@ -56,7 +56,7 @@
 
     @if($resident->household)
         <p class="section-header">Household</p>
-        <div class="native-card">
+        <a class="native-card household-summary-link" href="{{ $portal('household') }}">
             <div class="info-row"><span class="info-row-icon green"><span class="material-symbols-rounded filled">location_on</span></span><div><small>Address</small><strong>{{ $resident->household->full_address }}</strong></div></div>
             <div class="home-household-stats">
                 <div class="home-stat-item"><span class="home-stat-icon blue"><span class="material-symbols-rounded filled">groups</span></span><strong>{{ $resident->household->member_count ?? $resident->household->residents()->count() }}</strong><small>Members</small></div>
@@ -64,7 +64,8 @@
                 <div class="home-stat-item"><span class="home-stat-icon green"><span class="material-symbols-rounded filled">bolt</span></span><strong>{{ $resident->household->has_electricity ? 'Yes' : 'No' }}</strong><small>Electric</small></div>
                 <div class="home-stat-item"><span class="home-stat-icon blue"><span class="material-symbols-rounded filled">water_drop</span></span><strong>{{ $resident->household->has_water_supply ? 'Yes' : 'No' }}</strong><small>Water</small></div>
             </div>
-        </div>
+            <span class="household-view-link">View household members <span class="material-symbols-rounded">chevron_right</span></span>
+        </a>
     @endif
 
     @if($resident->emergency_contact_name)
@@ -81,6 +82,25 @@
     <div class="page-header"><div><span class="eyebrow">Official resident credential</span><h1>Digital ID</h1><p>Present this secure ID when accessing city services.</p></div></div>
     @include('resident-portal.partials.digital-id-card')
     <div class="native-card"><div class="info-row"><span class="info-row-icon blue"><span class="material-symbols-rounded filled">badge</span></span><div><small>Date issued</small><strong>{{ optional($resident->date_issue)->format('F d, Y') ?: 'Not available' }}</strong></div></div><div class="info-row"><span class="info-row-icon green"><span class="material-symbols-rounded filled">verified</span></span><div><small>Status</small><strong>Active resident</strong></div></div></div>
+
+@elseif($screen === 'household')
+    <a class="back-link" href="{{ $portal() }}"><span class="material-symbols-rounded">arrow_back</span> Home</a>
+    <x-resident-portal-page-header icon="groups" title="My Household" subtitle="View the residents registered in your household." />
+    <div class="native-card">
+        <div class="info-row"><span class="info-row-icon green"><span class="material-symbols-rounded filled">location_on</span></span><div><small>Household address</small><strong>{{ $data['household']->full_address }}</strong></div></div>
+        <div class="info-row"><span class="info-row-icon blue"><span class="material-symbols-rounded filled">tag</span></span><div><small>Household ID</small><strong>{{ $data['household']->household_id }}</strong></div></div>
+    </div>
+    <p class="section-header">Members ({{ $data['members']->count() }})</p>
+    @forelse($data['members'] as $member)
+        @php($memberPhoto = $member->photo_path ? '/storage/'.ltrim(preg_replace('#^/?storage/#', '', str_replace('\\', '/', $member->photo_path)), '/') : null)
+        <div class="native-card household-member-card">
+            @if($memberPhoto)<img src="{{ $memberPhoto }}" alt="">@else<span class="household-member-avatar material-symbols-rounded filled">person</span>@endif
+            <div><strong>{{ $member->full_name }}</strong><small>{{ str($member->relationship_to_head ?: 'member')->replace('_', ' ')->headline() }} · Age {{ $member->getAge() }}</small><span>{{ $member->resident_id }}</span></div>
+            @if($member->id === $resident->id)<span class="status-chip blue">You</span>@endif
+        </div>
+    @empty
+        <x-resident-portal-empty icon="group_off" title="No household members" message="No active residents are currently registered in this household." />
+    @endforelse
 
 @elseif($screen === 'ayuda')
     <x-resident-portal-page-header icon="volunteer_activism" title="AyudaHub" subtitle="Your city assistance and distribution history." />
@@ -166,7 +186,7 @@
 
 @elseif($screen === 'citizen-services/public-services')
     <a class="back-link" href="{{ $portal('citizen-services') }}"><span class="material-symbols-rounded">arrow_back</span> Services</a><x-resident-portal-page-header icon="account_balance" title="City Portals" subtitle="Open official public services." />
-    @forelse($data['items'] as $type => $links)<p class="section-header">{{ str($type)->headline() }}</p><div class="native-card action-list">@foreach($links as $link)<a href="{{ $link->url }}" target="_blank" rel="noopener"><span class="material-symbols-rounded filled">{{ $link->icon ?: 'public' }}</span><span><strong>{{ $link->title }}</strong><small>{{ $link->description }}</small></span><span class="material-symbols-rounded">open_in_new</span></a>@endforeach</div>@empty<x-resident-portal-empty icon="public_off" title="No portals available" message="Official service links will appear here." />@endforelse
+    @forelse($data['items'] as $type => $links)<p class="section-header">{{ str($type)->headline() }}</p><div class="native-card action-list">@foreach($links as $link)<a href="{{ $link->url }}" target="_blank" rel="noopener"><span class="portal-service-icon material-symbols-rounded filled">{{ $link->material_icon }}</span><span><strong>{{ $link->title }}</strong><small>{{ $link->description }}</small></span><span class="material-symbols-rounded">open_in_new</span></a>@endforeach</div>@empty<x-resident-portal-empty icon="public_off" title="No portals available" message="Official service links will appear here." />@endforelse
 
 @elseif($screen === 'citizen-services/grievances')
     <a class="back-link" href="{{ $portal('citizen-services') }}"><span class="material-symbols-rounded">arrow_back</span> Services</a><x-resident-portal-page-header icon="report_problem" title="Report an Issue" subtitle="Send a grievance and track the response." />

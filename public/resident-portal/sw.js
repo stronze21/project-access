@@ -1,4 +1,4 @@
-const CACHE_NAME = 'access-portal-static-v1';
+const CACHE_NAME = 'access-portal-static-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 

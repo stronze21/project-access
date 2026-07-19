@@ -33,7 +33,7 @@ class BhwisResidentActivationTest extends TestCase
         $this->assertDatabaseCount('activation_consent_audits', 0);
     }
 
-    public function test_existing_local_resident_is_still_validated_against_bhwis_before_activation(): void
+    public function test_existing_local_resident_is_activated_without_querying_bhwis(): void
     {
         $resident = Resident::create([
             'resident_id' => 'PIN-LOCAL', 'first_name' => 'Maria', 'last_name' => 'Santos',
@@ -41,15 +41,8 @@ class BhwisResidentActivationTest extends TestCase
             'is_active' => true,
         ]);
         $gateway = Mockery::mock(BhwisGateway::class);
-        $personal = [
-            'PIN' => 'PIN-LOCAL', 'Firstname' => 'Maria', 'Lastname' => 'Santos',
-            'Birthdate' => '1990-05-21', 'Gender' => 'F', 'CivilStatus' => 'single',
-        ];
-        $gateway->shouldReceive('findResident')->once()->andReturn($personal);
-        $gateway->shouldReceive('linkedRecords')->once()->andReturn([
-            'personal' => [$personal], 'family_members' => [], 'bhw_master' => [], 'barangay' => [],
-            'civil_status' => [], 'source_income_type' => [], 'educational_attainment' => [],
-        ]);
+        $gateway->shouldNotReceive('findResident');
+        $gateway->shouldNotReceive('linkedRecords');
         $this->app->instance(BhwisGateway::class, $gateway);
 
         $this->postJson('/api/resident-portal/register', $this->payload('PIN-LOCAL'))
@@ -59,6 +52,30 @@ class BhwisResidentActivationTest extends TestCase
         $this->assertDatabaseHas('activation_consent_audits', [
             'resident_id' => $resident->id, 'channel' => 'api', 'outcome' => 'activated',
             'terms_version' => config('bhwis.consent_versions.terms'),
+        ]);
+    }
+
+    public function test_local_identity_mismatch_does_not_fall_back_to_bhwis(): void
+    {
+        Resident::create([
+            'resident_id' => 'PIN-LOCAL', 'first_name' => 'Maria', 'last_name' => 'Santos',
+            'birth_date' => '1990-05-21', 'gender' => 'female', 'civil_status' => 'single',
+            'is_active' => true,
+        ]);
+        $gateway = Mockery::mock(BhwisGateway::class);
+        $gateway->shouldNotReceive('findResident');
+        $gateway->shouldNotReceive('linkedRecords');
+        $this->app->instance(BhwisGateway::class, $gateway);
+
+        $payload = $this->payload('PIN-LOCAL');
+        $payload['last_name'] = 'Incorrect';
+
+        $this->postJson('/api/resident-portal/register', $payload)
+            ->assertNotFound()
+            ->assertJsonValidationErrors('resident_id');
+
+        $this->assertDatabaseHas('activation_consent_audits', [
+            'resident_identifier' => 'PIN-LOCAL', 'outcome' => 'identity_mismatch',
         ]);
     }
 

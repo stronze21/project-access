@@ -61,7 +61,7 @@
             <button type="button" class="legal-modal-close" data-legal-close aria-label="Close consent details"><span class="material-symbols-rounded">close</span></button>
         </header>
         <div class="legal-modal-copy" data-legal-scroll tabindex="0">
-            <p>To activate your Project ACCESS resident account, the City Government of Alaminos needs to retrieve the resident record registered under your Resident ID from the Barangay Health Worker Information System (BHWIS).</p>
+            <p>Project ACCESS first checks for a resident record already stored locally. If no local record exists under your Resident ID, the City Government of Alaminos will retrieve the corresponding record from the Barangay Health Worker Information System (BHWIS).</p>
             <h3>Information that may be imported</h3>
             <p>This may include your identifying and contact details, birth information, address, household information, and other personal or sensitive personal information already recorded in BHWIS and needed to verify your identity and set up your account.</p>
             <h3>How the information will be used</h3>

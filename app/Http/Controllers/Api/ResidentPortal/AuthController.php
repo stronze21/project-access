@@ -81,8 +81,8 @@ class AuthController extends Controller
     /**
      * Register/activate a resident's mobile account.
      *
-     * BHWIS validates the PIN, last name, and birth date before Project Access
-     * imports a missing resident and activates the mobile account.
+     * Project ACCESS validates an existing local resident first. BHWIS is only
+     * queried to validate and import a resident who is missing locally.
      */
     public function register(Request $request, ResidentActivationService $activation): JsonResponse
     {

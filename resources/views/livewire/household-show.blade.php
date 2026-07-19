@@ -376,7 +376,7 @@
                                     <div class="text-sm text-gray-500">
                                         {{ $resident->resident_id }}{{ $resident->contact_number ? ' · '.$resident->contact_number : '' }}
                                         @if ($resident->household)
-                                            · Sole member of {{ $resident->household->household_id }}
+                                            · Currently in {{ $resident->household->household_id }}
                                         @endif
                                     </div>
                                 </div>
@@ -392,6 +392,15 @@
                 @endif
                 @error('selectedMemberId') <p class="text-sm text-error">{{ $message }}</p> @enderror
 
+                @php($selectedMember = $availableResidents->firstWhere('id', (int) $selectedMemberId))
+                @if ($selectedMember?->household)
+                    <div class="p-3 text-sm border border-warning/40 rounded-lg bg-warning/10 text-warning-content">
+                        <strong>Reassignment warning:</strong>
+                        {{ $selectedMember->full_name }} will be removed from
+                        {{ $selectedMember->household->household_id }} and assigned to this household.
+                    </div>
+                @endif
+
                 <x-mary-select label="Relationship to household head" wire:model="memberRelationship"
                     :options="[
                         ['id' => 'spouse', 'name' => 'Spouse'], ['id' => 'child', 'name' => 'Child'],
@@ -406,8 +415,9 @@
             <div class="flex justify-end gap-2 mt-6">
                 <x-mary-button type="button" wire:click="$set('showAddMemberModal', false)" label="Cancel"
                     class="btn-secondary btn-outline" />
-                <x-mary-button type="submit" label="Add Member" icon="o-user-plus" class="btn-primary"
-                    spinner="addMember" />
+                <x-mary-button type="submit" label="Add or Reassign Member" icon="o-user-plus" class="btn-primary"
+                    spinner="addMember"
+                    wire:confirm="Continue? If this resident already belongs to a household, they will be removed from it and reassigned to this household." />
             </div>
         </form>
     </x-mary-modal>

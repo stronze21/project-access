@@ -57,17 +57,26 @@ class HouseholdMemberManagementTest extends TestCase
         $this->assertSame('0.00', $otherHousehold->fresh()->monthly_income);
     }
 
-    public function test_it_does_not_offer_a_resident_from_a_multi_member_household(): void
+    public function test_it_can_transfer_a_resident_from_a_multi_member_household(): void
     {
         $household = $this->createHousehold('HH-TEST-001');
         $otherHousehold = $this->createHousehold('HH-TEST-002');
-        $this->createResident('RES-TEST-002', 'Already', 'Assigned', $otherHousehold->id);
+        $resident = $this->createResident('RES-TEST-002', 'Already', 'Assigned', $otherHousehold->id);
         $this->createResident('RES-TEST-003', 'Other', 'Member', $otherHousehold->id);
 
         Livewire::test(HouseholdShow::class, ['householdId' => $household->id])
             ->call('openAddMemberModal')
             ->set('memberSearch', 'Already Assigned')
-            ->assertDontSee('RES-TEST-002');
+            ->assertSee('RES-TEST-002')
+            ->set('selectedMemberId', $resident->id)
+            ->assertSee('Reassignment warning:')
+            ->set('memberRelationship', 'parent')
+            ->call('addMember')
+            ->assertHasNoErrors();
+
+        $this->assertSame($household->id, $resident->fresh()->household_id);
+        $this->assertSame(1, $otherHousehold->fresh()->member_count);
+        $this->assertSame('1000.00', $otherHousehold->fresh()->monthly_income);
     }
 
     private function createHousehold(string $householdId): Household

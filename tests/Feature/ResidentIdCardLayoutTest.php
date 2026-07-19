@@ -84,6 +84,10 @@ class ResidentIdCardLayoutTest extends TestCase
         $this->assertTrue($scanResult['found']);
         $this->assertSame($resident->id, $scanResult['id']);
 
+        $rawResidentIdResult = app(QrCodeService::class)->processQrCode(' 16-04175 ');
+        $this->assertTrue($rawResidentIdResult['found']);
+        $this->assertSame($resident->id, $rawResidentIdResult['id']);
+
         $this->withoutMiddleware()
             ->get(route('qrcode.download', $resident))
             ->assertDownload('resident_qr_'.$resident->full_name.'.svg');

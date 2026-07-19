@@ -35,16 +35,15 @@ use App\Livewire\Reports;
 use App\Livewire\Reports\DistributionsReport;
 use App\Livewire\Reports\ReportController;
 use App\Livewire\ResidentList;
+use App\Livewire\ResidentPhotoSignatureManager;
 use App\Livewire\ResidentRegistration;
 use App\Livewire\ResidentShow;
 use App\Livewire\ResidentSignatureUpdate;
 use App\Livewire\ScholarPinImport;
-use App\Repositories\BhwisRepository;
 use App\Services\LocalPcDatabase;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -82,7 +81,7 @@ Route::middleware([
 
     Route::get('/test-tunnel', function (LocalPcDatabase $database) {
 
-        $rows = $database->select("
+        $rows = $database->select('
             SELECT TOP (10)
                 PIN,
                 Lastname,
@@ -91,7 +90,7 @@ Route::middleware([
                 Birthdate
             FROM dbo.tblPersonalInfo
             ORDER BY PIN DESC
-        ");
+        ');
 
         return response()->json($rows);
     });
@@ -134,6 +133,10 @@ Route::middleware([
         Route::get('/scholar-pin-import', ScholarPinImport::class)
             ->middleware('permission:import-residents')
             ->name('residents.scholar-pin-import');
+
+        Route::get('/photo-signature-manager', ResidentPhotoSignatureManager::class)
+            ->middleware('permission:import-residents')
+            ->name('residents.photo-signature-manager');
 
         // New route for signature update
         Route::get('/{residentId}/update-signature', ResidentSignatureUpdate::class)
