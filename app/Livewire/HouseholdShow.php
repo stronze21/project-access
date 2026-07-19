@@ -145,13 +145,26 @@ class HouseholdShow extends Component
             'memberRelationship' => ['required', 'in:spouse,child,sibling,parent,grandchild,grandparent,in-law,other_relative,non-relative,domestic_worker,boarder'],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        $previousHouseholdId = null;
+
+        DB::transaction(function () use ($validated, &$previousHouseholdId) {
             $resident = Resident::query()->lockForUpdate()->findOrFail($validated['selectedMemberId']);
 
             if ($resident->household_id && (int) $resident->household_id !== (int) $this->householdId) {
-                $this->addError('selectedMemberId', 'This resident already belongs to another household.');
+                $previousHouseholdId = (int) $resident->household_id;
+                $previousHouseholdMembers = Resident::query()
+                    ->where('household_id', $previousHouseholdId)
+                    ->lockForUpdate()
+                    ->get(['id']);
 
-                return;
+                if ($previousHouseholdMembers->count() !== 1) {
+                    $this->addError(
+                        'selectedMemberId',
+                        'This resident can only be transferred when they are the sole member of their household.'
+                    );
+
+                    return;
+                }
             }
 
             $resident->update([
@@ -166,6 +179,13 @@ class HouseholdShow extends Component
 
         $this->household->updateMemberCount();
         $this->household->calculateTotalIncome();
+
+        if ($previousHouseholdId) {
+            $previousHousehold = Household::find($previousHouseholdId);
+            $previousHousehold?->updateMemberCount();
+            $previousHousehold?->calculateTotalIncome();
+        }
+
         $this->showAddMemberModal = false;
         $this->loadHousehold();
         $this->success('Household member added successfully.');
@@ -181,9 +201,21 @@ class HouseholdShow extends Component
         if ($this->showAddMemberModal && mb_strlen(trim($this->memberSearch)) >= 2) {
             $term = trim($this->memberSearch);
             $nameParts = preg_split('/\s+/', $term, -1, PREG_SPLIT_NO_EMPTY);
+            $singleResidentHouseholdIds = Resident::query()
+                ->whereNotNull('household_id')
+                ->where('household_id', '!=', $this->householdId)
+                ->select('household_id')
+                ->groupBy('household_id')
+                ->havingRaw('COUNT(*) = 1')
+                ->pluck('household_id');
+
             $availableResidents = Resident::query()
+                ->with('household:id,household_id')
                 ->where('is_active', true)
-                ->whereNull('household_id')
+                ->where(function ($query) use ($singleResidentHouseholdIds) {
+                    $query->whereNull('household_id')
+                        ->orWhereIn('household_id', $singleResidentHouseholdIds);
+                })
                 ->where(function ($searchQuery) use ($term, $nameParts) {
                     $searchQuery->where(function ($query) use ($term) {
                         $query->where('resident_id', 'like', "%{$term}%")

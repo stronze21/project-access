@@ -375,12 +375,15 @@
                                     <div class="font-medium text-gray-900">{{ $resident->full_name }}</div>
                                     <div class="text-sm text-gray-500">
                                         {{ $resident->resident_id }}{{ $resident->contact_number ? ' · '.$resident->contact_number : '' }}
+                                        @if ($resident->household)
+                                            · Sole member of {{ $resident->household->household_id }}
+                                        @endif
                                     </div>
                                 </div>
                             </label>
                         @empty
                             <div class="p-4 text-sm text-center text-gray-500">
-                                No unassigned active residents match your search.
+                                No eligible active residents match your search.
                             </div>
                         @endforelse
                     </div>
