@@ -1,6 +1,18 @@
-const CACHE_NAME = 'access-portal-static-v2';
+const CACHE_NAME = 'access-portal-static-v5';
+const OFFLINE_URL = '/resident-portal/offline.html';
+const APP_SHELL = [
+    OFFLINE_URL,
+    '/resident-portal/app.css',
+    '/resident-portal/app.js',
+    '/resident-portal/device.js',
+    '/resident-portal/images/appicon.png',
+    '/resident-portal/images/access-logo.png',
+];
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', (event) => {
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+    self.skipWaiting();
+});
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
@@ -19,10 +31,16 @@ self.addEventListener('fetch', (event) => {
 
     if (request.method !== 'GET'
         || url.origin !== self.location.origin
-        || !url.pathname.startsWith('/resident-portal/')
-        || !cacheableDestinations.includes(request.destination)) {
+        || !url.pathname.startsWith('/resident-portal/')) {
         return;
     }
+
+    if (request.mode === 'navigate') {
+        event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
+        return;
+    }
+
+    if (!cacheableDestinations.includes(request.destination)) return;
 
     event.respondWith(
         caches.match(request).then((cached) => cached || fetch(request).then((response) => {
@@ -33,4 +51,11 @@ self.addEventListener('fetch', (event) => {
             return response;
         }))
     );
+});
+
+self.addEventListener('message', (event) => {
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+    if (event.data?.type === 'CLEAR_RESIDENT_CACHES') {
+        event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))));
+    }
 });

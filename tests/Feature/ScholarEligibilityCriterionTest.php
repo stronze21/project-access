@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
 use Tests\TestCase;
+use Spatie\Permission\Models\Permission;
 
 class ScholarEligibilityCriterionTest extends TestCase
 {
@@ -53,7 +54,10 @@ class ScholarEligibilityCriterionTest extends TestCase
 
     public function test_api_rejects_an_invalid_scholar_criterion(): void
     {
-        Sanctum::actingAs(User::factory()->create());
+        $user = User::factory()->create();
+        Permission::firstOrCreate(['name' => 'create-programs', 'guard_name' => 'web']);
+        $user->givePermissionTo('create-programs');
+        Sanctum::actingAs($user);
 
         $this->postJson('/api/programs', [
             'name' => 'Scholar Assistance',

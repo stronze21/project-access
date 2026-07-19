@@ -40,7 +40,7 @@
             <x-mary-alert icon="o-document-arrow-down" class="tagged-color btn-success" title="Export Ready">
                 Your report has been exported successfully.
                 <x-slot:actions>
-                    <a href="{{ session('export_file') }}" class="underline">
+                    <a href="{{ route('report.export.downloads', ['file' => session('export_file')]) }}" class="underline">
                         Download CSV
                     </a>
                 </x-slot:actions>
@@ -86,24 +86,20 @@
         document.addEventListener('livewire:initialized', () => {
             // Listen for Livewire events and log them for debugging
             Livewire.hook('message.processed', (message, component) => {
-                console.log('Livewire event processed:', message);
             });
 
             // Listen for the reportTypeChanged event specifically
             Livewire.on('reportTypeChanged', (type) => {
-                console.log('Report type changed event received:', type);
             });
 
             // Listen for reportGenerated event
             Livewire.on('reportGenerated', () => {
-                console.log('Report generated with type:', @js($reportType));
                 // Dispatch event to child components
                 Livewire.dispatch('chartDataUpdated', @json($chartData));
             });
 
             // Listen for filter changes
             Livewire.on('filtersChanged', (event) => {
-                console.log('Filters changed:', event);
                 @this.dateFrom = event.dateFrom;
                 @this.dateTo = event.dateTo;
                 @this.program = event.program;
@@ -112,7 +108,6 @@
 
             // Listen for export request
             Livewire.on('exportRequested', (event) => {
-                console.log('Export requested for type:', @js($reportType));
                 @this.exportCsv(event);
             });
         });

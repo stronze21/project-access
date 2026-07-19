@@ -149,23 +149,19 @@ class XpPenService
             return file_exists($macDriverPath);
         }
 
-        // Default assumption for other OS
-        return true;
+        return false;
     }
 
     /**
      * Check if the XP-Pen tablet is connected and working.
      *
-     * This is a simple placeholder. In reality, tablet detection would
-     * be handled on the client side with JavaScript.
-     *
      * @return bool Whether the tablet is detected
      */
     public function isTabletConnected(): bool
     {
-        // In a real implementation, you might check for API responses
-        // or other server-side indicators that the tablet is functioning
-        return true;
+        // USB attachment is a client-side fact. The server must not claim a
+        // device is connected merely because a driver exists on the host.
+        return false;
     }
 
     /**

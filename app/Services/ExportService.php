@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class ExportService
@@ -17,7 +16,7 @@ class ExportService
      * @return string The path to the generated file
      */
 
-    public function generateCsv(iterable $rows, array $headers, string $filename = null): string
+    public function generateCsv(iterable $rows, array $headers, ?string $filename = null): string
     {
         // Generate a filename if not provided
         if (!$filename) {
@@ -29,17 +28,10 @@ class ExportService
             $filename .= '.csv';
         }
 
-        // Define the directory in the actual public path
-        $directory = 'exports/';
-        $publicPath = public_path($directory);
-
-        // Ensure the directory exists
-        if (!File::exists($publicPath)) {
-            File::makeDirectory($publicPath, 0755, true);
-        }
-
-        // Full path to the file
-        $fullPath = $publicPath . $filename;
+        $directory = 'exports';
+        $this->ensureDirectoryExists($directory);
+        $path = $directory.'/'.$filename;
+        $fullPath = Storage::path($path);
 
         // Open file for writing
         $file = fopen($fullPath, 'w');
@@ -57,7 +49,7 @@ class ExportService
 
         fclose($file);
 
-        return asset($directory . $filename);
+        return $path;
     }
 
     // Helper method to ensure the directory exists

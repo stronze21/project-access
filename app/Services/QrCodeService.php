@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Household;
 use App\Models\Resident;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -126,15 +128,32 @@ class QrCodeService
         $fileName = 'id_'.$resident->id.'.pdf';
         $path = $directory.'/'.$fileName;
 
-        // In a real implementation, this would involve PDF generation
-        // For now, we'll just create a placeholder
-        $idCardContent = "RESIDENT ID CARD\n";
-        $idCardContent .= "Name: {$resident->full_name}\n";
-        $idCardContent .= "ID: {$resident->resident_id}\n";
-        $idCardContent .= "QR Code: {$resident->qr_code}\n";
+        $qrSvg = QrCode::format('svg')->size(180)->margin(1)->generate($resident->qr_code);
+        $safe = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        $html = '<!doctype html><html><head><meta charset="utf-8"><style>'
+            .'@page{margin:0}body{font-family:DejaVu Sans,sans-serif;margin:0;padding:24px;color:#17324d}'
+            .'.card{width:520px;height:300px;border:3px solid #23689b;border-radius:18px;padding:24px;box-sizing:border-box}'
+            .'h1{font-size:22px;margin:0 0 6px;color:#23689b}.subtitle{font-size:11px;margin-bottom:28px}'
+            .'.content{display:table;width:100%}.details,.qr{display:table-cell;vertical-align:middle}.details{width:68%}'
+            .'.name{font-size:24px;font-weight:bold;margin-bottom:14px}.label{font-size:10px;text-transform:uppercase;color:#64748b}'
+            .'.value{font-size:15px;font-weight:bold;margin-bottom:9px}.qr{text-align:center}.qr svg{width:125px;height:125px}'
+            .'.footer{font-size:9px;color:#64748b;margin-top:15px}</style></head><body><div class="card">'
+            .'<h1>SmartCity ACCESS Resident ID</h1><div class="subtitle">City of Alaminos resident identification</div>'
+            .'<div class="content"><div class="details"><div class="name">'.$safe($resident->full_name).'</div>'
+            .'<div class="label">Resident ID</div><div class="value">'.$safe($resident->resident_id).'</div>'
+            .'<div class="label">Date of birth</div><div class="value">'.$safe($resident->birthDateIso()).'</div></div>'
+            .'<div class="qr">'.$qrSvg.'<div class="label">Scan to verify</div></div></div>'
+            .'<div class="footer">Generated '.now()->toDateTimeString().' · Verification code: '.$safe($resident->qr_code).'</div>'
+            .'</div></body></html>';
 
-        // Save the placeholder
-        Storage::put($path, $idCardContent);
+        $options = new Options;
+        $options->set('isRemoteEnabled', false);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper([0, 0, 576, 360]);
+        $dompdf->render();
+
+        Storage::put($path, $dompdf->output());
 
         return $path;
     }

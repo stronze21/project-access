@@ -64,7 +64,6 @@ class ReportTypeSelector extends Component
         $this->reportType = $type;
 
         // For debugging - log to browser console
-        $this->js("console.log('Report type selected: $type')");
 
         // Dispatch event using Livewire 3 syntax
         $this->dispatch('reportTypeChanged', $type);

@@ -11,5 +11,9 @@
   "theme_color": "#2b67a2",
   "icons": [
     { "src": "/resident-portal/images/appicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Digital ID", "url": "/resident-portal/digital-id", "icons": [{ "src": "/resident-portal/images/appicon.png", "sizes": "512x512" }] },
+    { "name": "Citizen Services", "url": "/resident-portal/citizen-services", "icons": [{ "src": "/resident-portal/images/appicon.png", "sizes": "512x512" }] }
   ]
 }

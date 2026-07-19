@@ -141,6 +141,42 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function resetMpin(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'resident_id' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'birth_date' => ['required', 'date', 'before:today'],
+            'mpin' => ['required', 'digits:6', 'confirmed'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Please check the information you entered.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+        $resident = Resident::query()
+            ->where('resident_id', trim($validated['resident_id']))
+            ->whereDate('birth_date', $validated['birth_date'])
+            ->whereRaw('LOWER(last_name) = ?', [mb_strtolower(trim($validated['last_name']))])
+            ->where('is_active', true)
+            ->first();
+
+        if (! $resident) {
+            return response()->json([
+                'message' => 'We could not verify those resident details. Please check them or contact your barangay office.',
+            ], 422);
+        }
+
+        $resident->forceFill(['mpin' => Hash::make($validated['mpin'])])->save();
+        $resident->tokens()->delete();
+
+        return response()->json(['message' => 'Your MPIN has been reset. You can now sign in.']);
+    }
+
     /**
      * Logout (revoke token).
      */
@@ -153,6 +189,31 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function sessions(Request $request): JsonResponse
+    {
+        $currentId = $request->user()->currentAccessToken()?->id;
+
+        return response()->json(['data' => $request->user()->tokens()
+            ->latest('last_used_at')
+            ->get()
+            ->map(fn ($token) => [
+                'id' => $token->id,
+                'device_name' => $token->name,
+                'last_used_at' => optional($token->last_used_at)->toIso8601String(),
+                'created_at' => optional($token->created_at)->toIso8601String(),
+                'is_current' => $token->id === $currentId,
+            ])->values()]);
+    }
+
+    public function revokeSession(Request $request, int $tokenId): JsonResponse
+    {
+        $token = $request->user()->tokens()->findOrFail($tokenId);
+        $wasCurrent = $token->id === $request->user()->currentAccessToken()?->id;
+        $token->delete();
+
+        return response()->json(['message' => 'Device session revoked.', 'revoked_current' => $wasCurrent]);
     }
 
     /**

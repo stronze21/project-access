@@ -39,7 +39,7 @@ Route::prefix('mobile')->middleware('module.enabled:bosesmoto')->group(function 
         Route::get('/officials', [MobileLookupController::class, 'officials'])->name('api.mobile.lookups.officials');
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'idempotent'])->group(function () {
         Route::get('/me', [MobileProfileController::class, 'me'])->name('api.mobile.me.show');
         Route::patch('/me', [MobileProfileController::class, 'update'])->name('api.mobile.me.update');
         Route::post('/me/photo', [MobileProfileController::class, 'updatePhoto'])->name('api.mobile.me.photo.update');

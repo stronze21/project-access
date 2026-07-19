@@ -16,10 +16,11 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 mb-6 xl:grid-cols-6">
+    <div class="grid grid-cols-2 gap-4 mb-6 xl:grid-cols-7">
         <x-mary-stat title="Open Cases" value="{{ number_format($this->overviewStats['open_complaints']) }}" icon="o-clipboard-document-list" class="tagged-color text-primary" />
         <x-mary-stat title="Alerts" value="{{ number_format($this->overviewStats['active_alerts']) }}" icon="o-bell-alert" class="tagged-color text-error" />
         <x-mary-stat title="Open SOS" value="{{ number_format($this->overviewStats['open_sos']) }}" icon="o-shield-exclamation" class="tagged-color text-secondary" />
+        <x-mary-stat title="Grievances" value="{{ number_format($this->overviewStats['open_grievances']) }}" icon="o-exclamation-triangle" class="tagged-color text-warning" />
         <x-mary-stat title="Portal Links" value="{{ number_format($this->overviewStats['portal_links']) }}" icon="o-globe-alt" class="tagged-color text-success" />
         <x-mary-stat title="Polls" value="{{ number_format($this->overviewStats['polls']) }}" icon="o-chart-bar" class="tagged-color text-info" />
         <x-mary-stat title="Posts" value="{{ number_format($this->overviewStats['sentiment_posts']) }}" icon="o-chat-bubble-left-right" class="tagged-color text-warning" />

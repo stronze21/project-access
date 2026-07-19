@@ -6,6 +6,7 @@ use App\Models\CitizenServiceRequest;
 use App\Models\CitizenServiceType;
 use App\Models\Complaint;
 use App\Models\EmergencyAlert;
+use App\Models\GrievanceReport;
 use App\Models\Poll;
 use App\Models\PublicServiceLink;
 use App\Models\SentimentPost;
@@ -140,6 +141,7 @@ class CitizenServicesManager extends Component
     public array $tabs = [
         'overview' => 'Overview',
         'requests' => 'Service Requests',
+        'grievances' => 'Grievances',
         'service-types' => 'Service Types',
         'links' => 'Portal Links',
         'alerts' => 'Emergency Alerts',
@@ -582,6 +584,7 @@ class CitizenServicesManager extends Component
             ])->count(),
             'active_alerts' => EmergencyAlert::active()->count(),
             'open_sos' => SosAlert::where('status', 'open')->count(),
+            'open_grievances' => GrievanceReport::whereNotIn('status', ['resolved', 'rejected', 'closed'])->count(),
             'portal_links' => PublicServiceLink::where('is_active', true)->count(),
             'polls' => Poll::count(),
             'sentiment_posts' => SentimentPost::count(),
@@ -624,6 +627,7 @@ class CitizenServicesManager extends Component
                 ->latest('status_updated_at')
                 ->limit(50)
                 ->get(),
+            'grievances' => GrievanceReport::with('resident')->latest()->limit(50)->get(),
             'serviceTypes' => CitizenServiceType::orderBy('sort_order')->orderBy('name')->get(),
             'linkServiceTypes' => CitizenServiceType::where('is_active', true)
                 ->orderBy('sort_order')

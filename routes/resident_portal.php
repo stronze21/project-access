@@ -8,6 +8,8 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('resident
     Route::middleware('guest:resident')->group(function (): void {
         Route::get('/login', [ResidentPortalAuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [ResidentPortalAuthController::class, 'login'])->name('login.store');
+        Route::get('/forgot-mpin', [ResidentPortalAuthController::class, 'showForgotMpin'])->name('mpin.forgot');
+        Route::post('/forgot-mpin', [ResidentPortalAuthController::class, 'resetMpin'])->middleware('throttle:5,1')->name('mpin.reset');
         Route::get('/register', [ResidentPortalAuthController::class, 'showRegister'])->name('register');
         Route::post('/register', [ResidentPortalAuthController::class, 'register'])->name('register.store');
     });

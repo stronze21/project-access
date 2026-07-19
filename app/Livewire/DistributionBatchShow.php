@@ -9,6 +9,8 @@ use Livewire\WithPagination;
 use Mary\Traits\Toast;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\ExportService;
+use Illuminate\Support\Facades\Storage;
 
 class DistributionBatchShow extends Component
 {
@@ -259,10 +261,37 @@ class DistributionBatchShow extends Component
     /**
      * Export batch data to CSV
      */
-    public function exportBatchData()
+    public function exportBatchData(ExportService $exportService)
     {
-        // This would typically use your ExportService to create a CSV
-       $this->info('Export functionality coming soon');
+        abort_unless(Auth::user()?->can('export-reports'), 403);
+
+        $rows = Distribution::query()
+            ->where('batch_id', $this->batchId)
+            ->with(['resident', 'household', 'ayudaProgram', 'distributor', 'verifier'])
+            ->orderBy('reference_number')
+            ->get()
+            ->map(fn (Distribution $distribution): array => [
+                $distribution->reference_number,
+                $distribution->resident?->full_name ?? 'Unknown resident',
+                $distribution->resident?->resident_id ?? '',
+                $distribution->household?->household_id ?? '',
+                $distribution->ayudaProgram?->name ?? '',
+                $distribution->amount,
+                $distribution->status,
+                optional($distribution->distribution_date)->format('Y-m-d H:i'),
+                $distribution->distributor?->name ?? '',
+                $distribution->verifier?->name ?? '',
+                $distribution->notes,
+            ]);
+
+        $filename = 'batch-'.$this->batch->batch_number.'-'.now()->format('Ymd-His').'.csv';
+        $path = $exportService->generateCsv($rows, [
+            'Reference Number', 'Resident', 'Resident ID', 'Household ID', 'Program',
+            'Amount', 'Status', 'Distribution Date', 'Distributed By', 'Verified By', 'Notes',
+        ], $filename);
+
+        return Storage::download($path, $filename, ['Content-Type' => 'text/csv; charset=UTF-8'])
+            ->deleteFileAfterSend(true);
     }
 
     /**

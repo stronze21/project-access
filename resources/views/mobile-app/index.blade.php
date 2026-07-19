@@ -58,12 +58,12 @@
                         <p class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">Core modules</p>
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-                        <p class="text-2xl font-bold text-[#23689b] dark:text-sky-300">APK</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">Android install</p>
+                        <p class="text-2xl font-bold text-[#23689b] dark:text-sky-300">{{ $release['has_apk'] ? 'APK' : 'PWA' }}</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">{{ $release['has_apk'] ? 'Android install' : 'Web install available' }}</p>
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-                        <p class="text-2xl font-bold text-[#0c7464]">24/7</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">Access ready</p>
+                        <p class="text-2xl font-bold text-[#0c7464]">{{ $release['has_apk'] ? 'Ready' : 'Pending' }}</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">{{ $release['has_apk'] ? 'Mobile release' : 'Android release' }}</p>
                     </div>
                 </div>
             </div>

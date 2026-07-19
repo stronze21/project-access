@@ -5,6 +5,7 @@ use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureResidentPortalMobileDevice;
 use App\Http\Middleware\EnsureResidentPortalSessionFresh;
+use App\Http\Middleware\EnsureIdempotentRequest;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'module.enabled' => EnsureModuleEnabled::class,
             'resident.mobile' => EnsureResidentPortalMobileDevice::class,
             'resident.session' => EnsureResidentPortalSessionFresh::class,
+            'idempotent' => EnsureIdempotentRequest::class,
         ]);
 
         // Define the admin middleware group

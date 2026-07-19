@@ -40,7 +40,6 @@ use App\Livewire\ResidentRegistration;
 use App\Livewire\ResidentShow;
 use App\Livewire\ResidentSignatureUpdate;
 use App\Livewire\ScholarPinImport;
-use App\Services\LocalPcDatabase;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -78,22 +77,6 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-
-    Route::get('/test-tunnel', function (LocalPcDatabase $database) {
-
-        $rows = $database->select('
-            SELECT TOP (10)
-                PIN,
-                Lastname,
-                Firstname,
-                Middlename,
-                Birthdate
-            FROM dbo.tblPersonalInfo
-            ORDER BY PIN DESC
-        ');
-
-        return response()->json($rows);
-    });
 
     // Dashboard - accessible to all authenticated users
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
@@ -271,14 +254,15 @@ Route::middleware([
             abort(404);
         }
 
-        $filePath = public_path('exports/'.$filename);
+        $filePath = 'exports/'.$filename;
 
-        if (! file_exists($filePath)) {
+        if (! Storage::exists($filePath)) {
             abort(404);
         }
 
-        return response()->download($filePath);
+        return Storage::download($filePath, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     })
+        ->middleware('permission:export-reports')
         ->name('download.report');
 
     // QR Code Generation - requires specific permission

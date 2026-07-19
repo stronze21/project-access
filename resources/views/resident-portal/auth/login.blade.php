@@ -2,6 +2,18 @@
 @section('title', 'Resident Sign In - SmartCity ACCESS')
 @section('content')
 <div class="auth-mpin-page" data-mpin-login>
+    <div class="pwa-login-loader" data-login-loader hidden role="status" aria-live="polite" aria-label="Authenticating your account">
+        <div class="pwa-login-loader-card">
+            <div class="pwa-login-loader-logos" aria-hidden="true">
+                <img src="{{ asset('resident-portal/images/alaminos-seal.jpg') }}" alt="">
+                <img src="{{ asset('resident-portal/images/access-logo.png') }}" alt="">
+            </div>
+            <h2>Signing you in</h2>
+            <p>Authenticating your account...</p>
+            <div class="pwa-login-progress" aria-hidden="true"><span></span></div>
+            <div class="pwa-login-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        </div>
+    </div>
     <div class="auth-mpin-brand">
         <div class="auth-mpin-logo-row">
             <img class="auth-mpin-seal" src="{{ asset('resident-portal/images/alaminos-seal.jpg') }}" alt="City of Alaminos seal">
@@ -31,9 +43,9 @@
                     @else<button type="button" class="auth-number-key" data-mpin-digit="{{ $key }}">{{ $key }}</button>@endif
                 @endforeach
             </div>
-            <button class="primary-button" type="submit">Sign in</button>
+            <button class="primary-button" type="submit" data-login-submit>Sign in</button>
         </form>
-        <button type="button" class="text-button">Forgot MPIN?</button>
+        <a class="text-button" href="{{ route('resident-portal.mpin.forgot') }}">Forgot MPIN?</a>
     </section>
     <div class="auth-legal-links"><a href="{{ route('legal.privacy') }}">Privacy Notice</a><span>•</span><a href="{{ route('legal.terms') }}">Terms</a><span>•</span><a href="{{ route('legal.support') }}">Support</a></div>
 </div>

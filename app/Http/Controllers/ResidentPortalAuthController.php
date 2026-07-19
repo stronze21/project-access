@@ -26,6 +26,37 @@ class ResidentPortalAuthController extends Controller
         return view('resident-portal.auth.register');
     }
 
+    public function showForgotMpin(): View
+    {
+        return view('resident-portal.auth.forgot-mpin');
+    }
+
+    public function resetMpin(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'resident_id' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'birth_date' => ['required', 'date', 'before:today'],
+            'mpin' => ['required', 'digits:6', 'confirmed'],
+        ]);
+
+        $resident = Resident::query()
+            ->where('resident_id', trim($validated['resident_id']))
+            ->whereDate('birth_date', $validated['birth_date'])
+            ->whereRaw('LOWER(last_name) = ?', [mb_strtolower(trim($validated['last_name']))])
+            ->where('is_active', true)
+            ->first();
+
+        if (! $resident) {
+            return back()->withInput($request->except(['mpin', 'mpin_confirmation']))
+                ->withErrors(['resident_id' => 'We could not verify those resident details. Please check them or contact your barangay office.']);
+        }
+
+        $resident->forceFill(['mpin' => Hash::make($validated['mpin'])])->save();
+
+        return redirect()->route('resident-portal.login')->with('status', 'Your MPIN has been reset. You can now sign in.');
+    }
+
     public function login(Request $request): RedirectResponse
     {
         $validated = $request->validate([

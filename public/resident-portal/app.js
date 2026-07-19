@@ -9,6 +9,8 @@
             const loginInput = login.querySelector('#login');
             const valueInput = login.querySelector('[data-mpin-value]');
             const boxes = [...login.querySelectorAll('[data-mpin-box]')];
+            const loader = login.querySelector('[data-login-loader]');
+            const submit = login.querySelector('[data-login-submit]');
             let value = '';
 
             const paint = () => {
@@ -31,8 +33,40 @@
             }));
             login.querySelector('[data-mpin-delete]')?.addEventListener('click', () => { value = value.slice(0, -1); paint(); });
             login.querySelector('[data-mpin-clear]')?.addEventListener('click', () => { value = ''; paint(); });
-            login.querySelector('form')?.addEventListener('submit', (event) => {
-                if (value.length !== 6) { event.preventDefault(); boxes[0]?.focus(); }
+            login.querySelector('form')?.addEventListener('submit', async (event) => {
+                if (value.length !== 6) { event.preventDefault(); boxes[0]?.focus(); return; }
+                event.preventDefault();
+                const form = event.currentTarget;
+                const formData = new FormData(form);
+                loader.hidden = false;
+                submit.disabled = true;
+                login.querySelectorAll('button,input').forEach((control) => { control.disabled = true; });
+                const controller = new AbortController();
+                const timeout = window.setTimeout(() => controller.abort(), 25000);
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST', body: formData, signal: controller.signal,
+                        credentials: 'same-origin',
+                    });
+                    window.location.assign(response.url || form.action);
+                } catch (error) {
+                    loader.hidden = true;
+                    login.querySelectorAll('button,input').forEach((control) => { control.disabled = false; });
+                    submit.disabled = false;
+                    let alert = login.querySelector('[data-login-timeout-error]');
+                    if (!alert) {
+                        alert = document.createElement('div');
+                        alert.dataset.loginTimeoutError = '';
+                        alert.className = 'portal-alert danger';
+                        alert.setAttribute('role', 'alert');
+                        unlock.prepend(alert);
+                    }
+                    alert.textContent = error.name === 'AbortError'
+                        ? 'The server is taking too long to respond. Please try again.'
+                        : 'Sign in could not be completed. Check your connection and try again.';
+                } finally {
+                    window.clearTimeout(timeout);
+                }
             });
         }
 
@@ -178,3 +212,41 @@
         });
     });
 })();
+function showConnectivityStatus() {
+    let banner = document.querySelector('[data-connectivity-status]');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.dataset.connectivityStatus = '';
+        banner.className = 'connectivity-banner';
+        banner.setAttribute('role', 'status');
+        document.body.prepend(banner);
+    }
+    banner.textContent = navigator.onLine ? 'Back online' : 'You are offline. Online actions will be unavailable.';
+    banner.classList.toggle('is-offline', !navigator.onLine);
+    banner.classList.toggle('is-online', navigator.onLine);
+    if (navigator.onLine) window.setTimeout(() => banner.classList.remove('is-online'), 2500);
+}
+
+window.addEventListener('online', showConnectivityStatus);
+window.addEventListener('offline', showConnectivityStatus);
+document.addEventListener('DOMContentLoaded', () => {
+    if (!navigator.onLine) showConnectivityStatus();
+    document.querySelectorAll('form[action$="/logout"]').forEach((form) => form.addEventListener('submit', () => {
+        navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_RESIDENT_CACHES' });
+    }));
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/resident-portal/sw.js').then((registration) => {
+        registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            worker?.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller
+                    && window.confirm('A new ACCESS version is available. Reload now?')) {
+                    worker.postMessage({ type: 'SKIP_WAITING' });
+                }
+            });
+        });
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+}

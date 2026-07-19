@@ -52,7 +52,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
 
 
-Route::prefix('residents/id-card')->group(function () {
+Route::prefix('residents/id-card')->middleware(['auth:sanctum', 'permission:view-residents'])->group(function () {
     Route::get('/{residentId}', [ResidentController::class, 'getForIdCard']);
     Route::post('/batch', [ResidentController::class, 'batchForIdCard']);
     Route::get('/search', [ResidentController::class, 'searchForIdCard']);
@@ -68,7 +68,7 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Dashboard routes
-    Route::prefix('dashboard')->group(function () {
+    Route::prefix('dashboard')->middleware('permission:view-reports')->group(function () {
         Route::get('/', [DashboardController::class, 'index']);
         Route::get('/stats', [DashboardController::class, 'stats']);
         Route::get('/monthly-distributions', [DashboardController::class, 'monthlyDistributions']);
@@ -93,50 +93,66 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
     });
 
     // Resident routes
-    Route::apiResource('residents', ResidentController::class);
-    Route::patch('/residents/{id}/household', [ResidentController::class, 'updateHousehold']);
-    Route::post('/residents/{id}/photo', [ResidentController::class, 'uploadPhoto']);
-    Route::post('/residents/{id}/qr-code', [ResidentController::class, 'generateQrCode']);
-    Route::get('/households/{id}/residents', [ResidentController::class, 'byHousehold']);
-    Route::get('/residents/pending-signatures', [ResidentController::class, 'pendingSignatures']);
-    Route::patch('/residents/{id}/signature', [ResidentController::class, 'updateSignature']);
+    Route::get('/residents/pending-signatures', [ResidentController::class, 'pendingSignatures'])->middleware('permission:view-residents');
+    Route::apiResource('residents', ResidentController::class)
+        ->middlewareFor(['index', 'show'], 'permission:view-residents')
+        ->middlewareFor('store', 'permission:create-residents')
+        ->middlewareFor('update', 'permission:edit-residents')
+        ->middlewareFor('destroy', 'permission:delete-residents');
+    Route::patch('/residents/{id}/household', [ResidentController::class, 'updateHousehold'])->middleware('permission:edit-residents');
+    Route::post('/residents/{id}/photo', [ResidentController::class, 'uploadPhoto'])->middleware('permission:edit-residents');
+    Route::post('/residents/{id}/qr-code', [ResidentController::class, 'generateQrCode'])->middleware('permission:generate-qr-codes');
+    Route::get('/households/{id}/residents', [ResidentController::class, 'byHousehold'])->middleware('permission:view-households');
+    Route::patch('/residents/{id}/signature', [ResidentController::class, 'updateSignature'])->middleware('permission:edit-residents');
 
 
     // Household routes
-    Route::apiResource('households', HouseholdController::class);
-    Route::get('/households/{id}/residents', [HouseholdController::class, 'residents']);
-    Route::post('/households/{id}/qr-code', [HouseholdController::class, 'generateQrCode']);
-    Route::post('/households/{id}/update-stats', [HouseholdController::class, 'updateStats']);
+    Route::apiResource('households', HouseholdController::class)
+        ->middlewareFor(['index', 'show'], 'permission:view-households')
+        ->middlewareFor('store', 'permission:create-households')
+        ->middlewareFor('update', 'permission:edit-households')
+        ->middlewareFor('destroy', 'permission:delete-households');
+    Route::get('/households/{id}/residents', [HouseholdController::class, 'residents'])->middleware('permission:view-households');
+    Route::post('/households/{id}/qr-code', [HouseholdController::class, 'generateQrCode'])->middleware('permission:generate-qr-codes');
+    Route::post('/households/{id}/update-stats', [HouseholdController::class, 'updateStats'])->middleware('permission:edit-households');
 
     // Ayuda Program routes
-    Route::apiResource('programs', AyudaProgramController::class);
-    Route::put('/programs/{id}/criteria', [AyudaProgramController::class, 'updateCriteria']);
-    Route::post('/programs/{id}/check-eligibility', [AyudaProgramController::class, 'checkEligibility']);
-    Route::get('/programs/active', [AyudaProgramController::class, 'active']);
+    Route::get('/programs/active', [AyudaProgramController::class, 'active'])->middleware('permission:view-programs');
+    Route::apiResource('programs', AyudaProgramController::class)
+        ->middlewareFor(['index', 'show'], 'permission:view-programs')
+        ->middlewareFor('store', 'permission:create-programs')
+        ->middlewareFor('update', 'permission:edit-programs')
+        ->middlewareFor('destroy', 'permission:delete-programs');
+    Route::put('/programs/{id}/criteria', [AyudaProgramController::class, 'updateCriteria'])->middleware('permission:manage-eligibility-criteria');
+    Route::post('/programs/{id}/check-eligibility', [AyudaProgramController::class, 'checkEligibility'])->middleware('permission:view-programs');
 
     // Eligibility Criteria routes
-    Route::get('/programs/{programId}/criteria', [EligibilityCriteriaController::class, 'index']);
-    Route::post('/programs/{programId}/criteria', [EligibilityCriteriaController::class, 'store']);
-    Route::apiResource('criteria', EligibilityCriteriaController::class)->except(['index', 'store']);
-    Route::get('/criteria-options', [EligibilityCriteriaController::class, 'options']);
+    Route::get('/programs/{programId}/criteria', [EligibilityCriteriaController::class, 'index'])->middleware('permission:view-programs');
+    Route::post('/programs/{programId}/criteria', [EligibilityCriteriaController::class, 'store'])->middleware('permission:manage-eligibility-criteria');
+    Route::apiResource('criteria', EligibilityCriteriaController::class)->except(['index', 'store'])->middleware('permission:manage-eligibility-criteria');
+    Route::get('/criteria-options', [EligibilityCriteriaController::class, 'options'])->middleware('permission:view-programs');
 
     // Distribution routes
-    Route::apiResource('distributions', DistributionController::class);
-    Route::post('/distributions/{id}/receipt', [DistributionController::class, 'uploadReceipt']);
-    Route::post('/distributions/{id}/verify', [DistributionController::class, 'verify']);
-    Route::get('/residents/{id}/distributions', [DistributionController::class, 'byResident']);
-    Route::get('/households/{id}/distributions', [DistributionController::class, 'byHousehold']);
-    Route::get('/programs/{id}/distributions', [DistributionController::class, 'byProgram']);
-    Route::get('/batches/{id}/distributions', [DistributionController::class, 'byBatch']);
+    Route::apiResource('distributions', DistributionController::class)
+        ->middlewareFor(['index', 'show'], 'permission:view-distributions')
+        ->middlewareFor('store', 'permission:create-distributions')
+        ->middlewareFor(['update', 'destroy'], 'permission:approve-distributions');
+    Route::post('/distributions/{id}/receipt', [DistributionController::class, 'uploadReceipt'])->middleware('permission:create-distributions');
+    Route::post('/distributions/{id}/verify', [DistributionController::class, 'verify'])->middleware('permission:verify-beneficiaries');
+    Route::get('/residents/{id}/distributions', [DistributionController::class, 'byResident'])->middleware('permission:view-distributions');
+    Route::get('/households/{id}/distributions', [DistributionController::class, 'byHousehold'])->middleware('permission:view-distributions');
+    Route::get('/programs/{id}/distributions', [DistributionController::class, 'byProgram'])->middleware('permission:view-distributions');
+    Route::get('/batches/{id}/distributions', [DistributionController::class, 'byBatch'])->middleware('permission:view-distributions');
 
     // Distribution Batch routes
-    Route::apiResource('batches', DistributionBatchController::class);
-    Route::get('/batches/{id}/distributions', [DistributionBatchController::class, 'distributions']);
-    Route::post('/batches/{id}/update-stats', [DistributionBatchController::class, 'updateStats']);
-    Route::get('/batches/today', [DistributionBatchController::class, 'today']);
-    Route::get('/batches/active', [DistributionBatchController::class, 'active']);
+    Route::get('/batches/today', [DistributionBatchController::class, 'today'])->middleware('permission:view-distributions');
+    Route::get('/batches/active', [DistributionBatchController::class, 'active'])->middleware('permission:view-distributions');
+    Route::apiResource('batches', DistributionBatchController::class)->middleware('permission:manage-distribution-batches');
+    Route::get('/batches/{id}/distributions', [DistributionBatchController::class, 'distributions'])->middleware('permission:view-distributions');
+    Route::post('/batches/{id}/update-stats', [DistributionBatchController::class, 'updateStats'])->middleware('permission:manage-distribution-batches');
 
     // System Settings routes (admin only)
+    Route::middleware('permission:configure-system')->group(function () {
     Route::get('/settings', [SystemSettingController::class, 'index']);
     Route::get('/settings/{key}', [SystemSettingController::class, 'show']);
     Route::post('/settings', [SystemSettingController::class, 'store']);
@@ -144,6 +160,7 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
     Route::delete('/settings/{key}', [SystemSettingController::class, 'destroy']);
     Route::get('/settings/group/{group}', [SystemSettingController::class, 'byGroup']);
     Route::post('/settings/clear-cache', [SystemSettingController::class, 'clearCache']);
+    });
 
     Route::middleware('permission:manage-citizen-services')->prefix('citizen-services')->group(function () {
         Route::get('/service-requests', [CitizenServicesAdminController::class, 'serviceRequests']);
@@ -181,14 +198,17 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
 Route::prefix('resident-portal')->name('api.resident-portal.')->group(function () {
     Route::post('/login', [ResidentAuthController::class, 'login'])->name('login');
     Route::post('/register', [ResidentAuthController::class, 'register'])->name('register');
+    Route::post('/reset-mpin', [ResidentAuthController::class, 'resetMpin'])->middleware('throttle:5,1')->name('reset-mpin');
 });
 
 // Resident Portal - Protected routes (require Sanctum token)
-Route::prefix('resident-portal')->name('api.resident-portal.')->middleware('auth:sanctum')->group(function () {
+Route::prefix('resident-portal')->name('api.resident-portal.')->middleware(['auth:sanctum', 'idempotent'])->group(function () {
     // Auth
     Route::post('/logout', [ResidentAuthController::class, 'logout'])->name('logout');
     Route::post('/change-password', [ResidentAuthController::class, 'changePassword'])->name('change-password');
     Route::post('/refresh-token', [ResidentAuthController::class, 'refreshToken'])->name('refresh-token');
+    Route::get('/sessions', [ResidentAuthController::class, 'sessions'])->name('sessions.index');
+    Route::delete('/sessions/{tokenId}', [ResidentAuthController::class, 'revokeSession'])->whereNumber('tokenId')->name('sessions.destroy');
 
     // Profile
     Route::get('/profile', [ResidentProfileController::class, 'show'])->name('profile.show');
