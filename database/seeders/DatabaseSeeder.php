@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
             DefaultAdminSeeder::class,
             FeedbackReferenceSeeder::class,
             ResidentThreeCitizenServicesSeeder::class,
+            ResidentThreeAyudaSeeder::class,
             // Add other seeders here
         ]);
 
