@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\MobileAuthController;
 use App\Http\Controllers\Api\MobileCitizenComplaintController;
 use App\Http\Controllers\Api\MobileComplaintController;
-use App\Http\Controllers\Api\MobileComplaintEngagementController;
 use App\Http\Controllers\Api\MobileLookupController;
 use App\Http\Controllers\Api\MobilePollController;
 use App\Http\Controllers\Api\MobileProfileController;
@@ -40,13 +39,6 @@ Route::prefix('mobile')->middleware('module.enabled:bosesmoto')->group(function 
         Route::get('/officials', [MobileLookupController::class, 'officials'])->name('api.mobile.lookups.officials');
     });
 
-    Route::middleware('module.enabled:complaints')->group(function () {
-        Route::get('/complaints', [MobileComplaintController::class, 'index'])->name('api.mobile.complaints.index');
-        Route::get('/complaints/{complaint}', [MobileComplaintController::class, 'show'])->whereNumber('complaint')->name('api.mobile.complaints.show');
-        Route::get('/complaints/{complaint}/preview-image', [MobileComplaintController::class, 'previewImage'])->whereNumber('complaint')->name('api.mobile.complaints.preview-image');
-        Route::post('/complaints', [MobileComplaintController::class, 'store'])->name('api.mobile.complaints.store');
-    });
-
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [MobileProfileController::class, 'me'])->name('api.mobile.me.show');
         Route::patch('/me', [MobileProfileController::class, 'update'])->name('api.mobile.me.update');
@@ -69,12 +61,10 @@ Route::prefix('mobile')->middleware('module.enabled:bosesmoto')->group(function 
         });
 
         Route::middleware('module.enabled:complaints')->group(function () {
-            Route::post('/complaints/{complaint}/support', [MobileComplaintEngagementController::class, 'support'])->whereNumber('complaint')->name('api.mobile.complaints.support');
-            Route::post('/complaints/{complaint}/comments', [MobileComplaintEngagementController::class, 'storeComment'])->whereNumber('complaint')->name('api.mobile.complaints.comments.store');
-            Route::post('/complaints/{complaint}/comments/{comment}/react', [MobileComplaintEngagementController::class, 'reactComment'])
-                ->whereNumber('complaint')
-                ->whereNumber('comment')
-                ->name('api.mobile.complaints.comments.react');
+            Route::get('/complaints', [MobileCitizenComplaintController::class, 'index'])->name('api.mobile.complaints.index');
+            Route::get('/complaints/{complaint}', [MobileCitizenComplaintController::class, 'show'])->whereNumber('complaint')->name('api.mobile.complaints.show');
+            Route::post('/complaints', [MobileComplaintController::class, 'store'])->name('api.mobile.complaints.store');
+            Route::get('/complaints/{complaint}/preview-image', [MobileComplaintController::class, 'previewImage'])->whereNumber('complaint')->name('api.mobile.complaints.preview-image');
 
             Route::prefix('my')->group(function () {
                 Route::get('/complaints', [MobileCitizenComplaintController::class, 'index'])->name('api.mobile.my.complaints.index');

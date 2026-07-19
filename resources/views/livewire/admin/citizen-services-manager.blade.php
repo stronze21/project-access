@@ -158,6 +158,30 @@
                 </x-mary-card>
             @break
 
+            @case('service-types')
+                <x-mary-card>
+                    <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-800">Service Types</h2>
+                            <p class="text-sm text-gray-500">Options used by resident service requests and public-service links.</p>
+                        </div>
+                        <x-mary-button wire:click="createServiceType" class="btn-primary">Add Service Type</x-mary-button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs uppercase bg-base-200 text-slate-600"><tr><th class="px-4 py-3">Name</th><th class="px-4 py-3">Code</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Order</th><th class="px-4 py-3 text-right">Actions</th></tr></thead>
+                            <tbody>
+                                @forelse ($serviceTypes as $type)
+                                    <tr class="border-b"><td class="px-4 py-3"><div class="font-medium">{{ $type->name }}</div>@if($type->description)<div class="text-xs text-gray-500">{{ $type->description }}</div>@endif</td><td class="px-4 py-3 font-mono text-xs">{{ $type->code }}</td><td class="px-4 py-3"><x-mary-badge value="{{ $type->is_active ? 'ACTIVE' : 'INACTIVE' }}" class="badge-sm {{ $type->is_active ? 'badge-success' : 'badge-ghost' }}" /></td><td class="px-4 py-3">{{ $type->sort_order }}</td><td class="px-4 py-3"><div class="flex justify-end gap-2"><x-mary-button wire:click="editServiceType({{ $type->id }})" icon="o-pencil" class="btn-ghost btn-sm" /><x-mary-button wire:click="deleteServiceType({{ $type->id }})" icon="o-trash" class="btn-ghost btn-sm text-error" /></div></td></tr>
+                                @empty
+                                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No service types configured.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </x-mary-card>
+            @break
+
             @case('requests')
                 <x-mary-card title="Service Tracking Management">
                     <div class="space-y-4">
@@ -377,6 +401,21 @@
         </x-mary-modal>
     @endif
 
+    @if ($showActionModal && $actionModalType === 'service-type')
+        <x-mary-modal wire:model="showActionModal" title="{{ $editingServiceTypeId ? 'Edit Service Type' : 'New Service Type' }}" box-class="max-w-2xl">
+            <form wire:submit.prevent="saveServiceType">
+                <div class="space-y-4">
+                    <x-mary-input label="Name" wire:model="serviceTypeName" />
+                    <x-mary-input label="Code" wire:model="serviceTypeCode" hint="Stable value used by the app and API, e.g. business-permit" />
+                    <x-mary-textarea label="Description" wire:model="serviceTypeDescription" rows="3" />
+                    <x-mary-input label="Sort Order" wire:model="serviceTypeSortOrder" type="number" />
+                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="serviceTypeIsActive" class="checkbox checkbox-primary"><span class="label-text">Active</span></label>
+                </div>
+                <div class="flex justify-end mt-6 gap-2"><x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button><x-mary-button type="submit" class="btn-primary">Save Service Type</x-mary-button></div>
+            </form>
+        </x-mary-modal>
+    @endif
+
     @if ($showActionModal && $actionModalType === 'alert')
         <x-mary-modal wire:model="showActionModal" title="{{ $editingAlertId ? 'Edit Emergency Alert' : 'New Emergency Alert' }}" box-class="max-w-3xl">
             <form wire:submit.prevent="saveAlert">
@@ -408,7 +447,8 @@
                 <div class="space-y-4">
                     <x-mary-select label="Status" wire:model="requestStatus" :options="$serviceStatusOptions" />
                     <x-mary-input label="Current Step" wire:model="requestStep" />
-                    <x-mary-textarea label="Internal Notes" rows="4" wire:model="requestNote" />
+                    <x-mary-input label="Expected Completion" wire:model="requestExpectedCompletionAt" type="datetime-local" />
+                    <x-mary-textarea label="Request Notes" rows="4" wire:model="requestNote" />
                 </div>
                 <div class="flex justify-end mt-6 gap-2">
                     <x-mary-button type="button" wire:click="$set('showActionModal', false); $set('actionModalType', null)" class="btn-outline">Cancel</x-mary-button>

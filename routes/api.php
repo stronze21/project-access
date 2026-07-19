@@ -239,6 +239,7 @@ Route::prefix('resident-portal')->name('api.resident-portal.')->middleware('auth
 
     // Service Tracking
     Route::get('/services', [ResidentServiceTrackingController::class, 'index'])->name('services.index');
+    Route::get('/service-types', [ResidentServiceTrackingController::class, 'types'])->name('service-types.index');
     Route::post('/services', [ResidentServiceTrackingController::class, 'store'])->name('services.store');
     Route::get('/services/{id}', [ResidentServiceTrackingController::class, 'show'])->name('services.show');
 

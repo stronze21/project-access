@@ -4,12 +4,24 @@ namespace App\Http\Controllers\Api\ResidentPortal;
 
 use App\Http\Controllers\Controller;
 use App\Models\CitizenServiceRequest;
+use App\Models\CitizenServiceType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ServiceTrackingController extends Controller
 {
+    public function types(): JsonResponse
+    {
+        return response()->json([
+            'data' => CitizenServiceType::where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['code', 'name', 'description']),
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $resident = $request->user();
@@ -61,7 +73,10 @@ class ServiceTrackingController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'service_type' => 'required|string|max:100',
+            'service_type' => [
+                'required',
+                Rule::exists('citizen_service_types', 'code')->where('is_active', true),
+            ],
             'service_name' => 'required|string|max:255',
             'current_step' => 'nullable|string|max:150',
             'expected_completion_at' => 'nullable|date',

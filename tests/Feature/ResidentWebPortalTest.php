@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Complaint;
+use App\Models\ComplaintCategory;
 use App\Models\Resident;
-use App\Models\User;
+use App\Services\ResidentCitizenAccountService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -197,6 +199,80 @@ class ResidentWebPortalTest extends TestCase
 
         $this->assertGuest('web');
         $this->assertDatabaseHas('users', ['resident_id' => $resident->id]);
+    }
+
+    public function test_bosesmoto_only_links_to_the_residents_private_complaint_list(): void
+    {
+        $resident = $this->resident();
+        $otherResident = $this->resident(['resident_id' => 'RES-OTHER-001', 'email' => 'other-resident@example.test']);
+        $accounts = app(ResidentCitizenAccountService::class);
+        $citizen = $accounts->resolve($resident);
+        $otherCitizen = $accounts->resolve($otherResident);
+        $category = ComplaintCategory::query()->create(['name' => 'Public Safety', 'is_active' => true]);
+
+        $ownComplaint = Complaint::query()->create([
+            'reference_code' => 'BMT-OWN-001',
+            'title' => 'My private concern',
+            'short_summary' => 'Visible only in my complaint list.',
+            'description' => 'Private resident complaint.',
+            'category_id' => $category->id,
+            'submitted_by_user_id' => $citizen->id,
+            'visibility' => Complaint::VISIBILITY_PRIVATE,
+            'status' => Complaint::STATUS_RECEIVED,
+        ]);
+        Complaint::query()->create([
+            'reference_code' => 'BMT-OTHER-001',
+            'title' => 'Another resident concern',
+            'short_summary' => 'Must not appear in this account.',
+            'description' => 'Another private complaint.',
+            'category_id' => $category->id,
+            'submitted_by_user_id' => $otherCitizen->id,
+            'visibility' => Complaint::VISIBILITY_PRIVATE,
+            'status' => Complaint::STATUS_RECEIVED,
+        ]);
+
+        $session = ['resident_portal_expires_at' => now()->addDays(60)];
+
+        $this->actingAs($resident, 'resident')->withSession($session)
+            ->get('/resident-portal/bosesmoto')
+            ->assertOk()
+            ->assertSee('My Complaints')
+            ->assertDontSee('Public Complaints')
+            ->assertDontSee('Report a city concern');
+
+        $this->actingAs($resident, 'resident')->withSession($session)
+            ->get('/resident-portal/bosesmoto/my-complaints')
+            ->assertOk()
+            ->assertSee('Submit Complaint')
+            ->assertSee($ownComplaint->title)
+            ->assertDontSee('Another resident concern');
+
+        $this->actingAs($resident, 'resident')->withSession($session)
+            ->get('/resident-portal/bosesmoto/complaints')
+            ->assertNotFound();
+    }
+
+    public function test_resident_portal_complaints_are_always_private(): void
+    {
+        $resident = $this->resident();
+        $category = ComplaintCategory::query()->create(['name' => 'Road Concern', 'is_active' => true]);
+
+        $this->actingAs($resident, 'resident')
+            ->withSession(['resident_portal_expires_at' => now()->addDays(60)])
+            ->post('/resident-portal/actions/complaints', [
+                'title' => 'Damaged road',
+                'short_summary' => 'A road section needs repair.',
+                'description' => 'The road surface has a large damaged section.',
+                'category_id' => $category->id,
+                'visibility' => Complaint::VISIBILITY_PUBLIC_NAMED,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('complaints', [
+            'title' => 'Damaged road',
+            'visibility' => Complaint::VISIBILITY_PRIVATE,
+            'is_anonymous_submission' => false,
+        ]);
     }
 
     public function test_resident_can_update_signature_and_submit_portal_support_and_data_requests(): void

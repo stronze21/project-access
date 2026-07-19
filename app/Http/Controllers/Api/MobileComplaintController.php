@@ -10,12 +10,12 @@ use App\Models\ComplaintCommentReaction;
 use App\Services\AttachmentVirusScanner;
 use App\Services\ComplaintAuditLogger;
 use App\Services\ComplaintWorkflowService;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -25,8 +25,7 @@ class MobileComplaintController extends Controller
         private ComplaintWorkflowService $workflowService,
         private ComplaintAuditLogger $auditLogger,
         private AttachmentVirusScanner $virusScanner
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -113,7 +112,7 @@ class MobileComplaintController extends Controller
             || ($user && ((int) $complaint->submitted_by_user_id === (int) $user->id || $user->isInternalUser()));
         abort_unless($canView, 403);
 
-        if (!Storage::disk($attachment->storage_disk)->exists($attachment->storage_path)) {
+        if (! Storage::disk($attachment->storage_disk)->exists($attachment->storage_path)) {
             abort(404);
         }
 
@@ -133,9 +132,9 @@ class MobileComplaintController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user('sanctum') ?? $request->user();
-        abort_if($user?->isInternalUser(), 403, 'Internal government users cannot submit anonymous complaints.');
+        abort_unless($user?->isCitizen(), 403, 'Only authenticated residents can submit complaints.');
 
-        $isCitizenSubmission = $user?->isCitizen() ?? false;
+        $isCitizenSubmission = true;
 
         if ($isCitizenSubmission) {
             $limit = (int) config('complaints.submission_limits.citizen_daily', 5);
@@ -148,28 +147,6 @@ class MobileComplaintController extends Controller
                 $todayCount >= $limit,
                 422,
                 "Daily complaint limit reached ({$limit}/day)."
-            );
-        } else {
-            $limit = (int) config(
-                'complaints.submission_limits.anonymous_device_daily',
-                (int) config('complaints.submission_limits.anonymous_ip_daily', 2)
-            );
-
-            $rawDeviceFingerprint = trim($request->string('device_fingerprint')->toString());
-            $deviceHash = $this->hashAnonymousDeviceId(
-                $rawDeviceFingerprint !== '' ? $rawDeviceFingerprint : 'ip:'.$request->ip()
-            );
-
-            $todayCount = Complaint::query()
-                ->whereNull('submitted_by_user_id')
-                ->where('submitted_device_hash', $deviceHash)
-                ->whereDate('created_at', Carbon::today())
-                ->count();
-
-            abort_if(
-                $todayCount >= $limit,
-                422,
-                "Anonymous submission limit reached ({$limit} per device/day)."
             );
         }
 
@@ -195,28 +172,24 @@ class MobileComplaintController extends Controller
             ],
         ]);
 
-        $visibility = $isCitizenSubmission
-            ? Complaint::VISIBILITY_PUBLIC_NAMED
-            : Complaint::VISIBILITY_PUBLIC_ANONYMOUS;
-
         $complaint = new Complaint([
             'reference_code' => $this->generateReferenceCode(),
             'submitted_by_user_id' => $isCitizenSubmission ? $user?->id : null,
-            'is_anonymous_submission' => !$isCitizenSubmission,
+            'is_anonymous_submission' => ! $isCitizenSubmission,
             'reporter_name' => $isCitizenSubmission ? null : ($validated['reporter_name'] ?? null),
             'reporter_email' => $isCitizenSubmission ? null : ($validated['reporter_email'] ?? null),
             'title' => $validated['title'],
             'short_summary' => $this->summaryFromInput($validated),
             'description' => $validated['description'],
             'category_id' => $validated['category_id'],
-            'visibility' => $visibility,
+            'visibility' => Complaint::VISIBILITY_PRIVATE,
             'barangay_id' => null,
             'latitude' => $validated['latitude'],
             'longitude' => $validated['longitude'],
             'status' => Complaint::STATUS_RECEIVED,
             'moderation_status' => Complaint::MODERATION_NORMAL,
             'submitted_ip' => $request->ip(),
-            'submitted_device_hash' => !$isCitizenSubmission
+            'submitted_device_hash' => ! $isCitizenSubmission
                 ? $this->hashAnonymousDeviceId(
                     trim($request->string('device_fingerprint')->toString()) !== ''
                         ? trim($request->string('device_fingerprint')->toString())
@@ -386,7 +359,7 @@ class MobileComplaintController extends Controller
 
     private function previewImageUrl(Complaint $complaint): ?string
     {
-        if (!$complaint->relationLoaded('previewImageAttachment')) {
+        if (! $complaint->relationLoaded('previewImageAttachment')) {
             return null;
         }
 

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Announcement;
 use App\Models\AccountDeletionRequest;
-use App\Models\AyudaProgram;
+use App\Models\Announcement;
 use App\Models\CitizenServiceRequest;
+use App\Models\CitizenServiceType;
 use App\Models\Complaint;
 use App\Models\ComplaintBarangay;
 use App\Models\ComplaintCategory;
@@ -44,8 +44,7 @@ class ResidentPortalController extends Controller
         private ResidentCitizenAccountService $citizenAccounts,
         private ModuleSettings $modules,
         private SentimentService $sentiments,
-    ) {
-    }
+    ) {}
 
     public function home(Request $request): View
     {
@@ -151,7 +150,10 @@ class ResidentPortalController extends Controller
     public function storeService(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'service_type' => ['required', 'string', 'max:100'],
+            'service_type' => [
+                'required',
+                Rule::exists('citizen_service_types', 'code')->where('is_active', true),
+            ],
             'service_name' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:3000'],
         ]);
@@ -211,7 +213,6 @@ class ResidentPortalController extends Controller
             'description' => ['required', 'string', 'max:10000'],
             'category_id' => ['required', 'exists:complaint_categories,id'],
             'barangay_id' => ['nullable', 'exists:bosesmoto_barangays,id'],
-            'visibility' => ['required', Rule::in([Complaint::VISIBILITY_PUBLIC_NAMED, Complaint::VISIBILITY_PUBLIC_ANONYMOUS, Complaint::VISIBILITY_PRIVATE])],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
@@ -221,7 +222,8 @@ class ResidentPortalController extends Controller
             'submitted_by_user_id' => $user->id,
             'reporter_name' => $user->name,
             'reporter_email' => $user->email,
-            'is_anonymous_submission' => $validated['visibility'] === Complaint::VISIBILITY_PUBLIC_ANONYMOUS,
+            'visibility' => Complaint::VISIBILITY_PRIVATE,
+            'is_anonymous_submission' => false,
             'status' => Complaint::STATUS_RECEIVED,
             'moderation_status' => Complaint::MODERATION_NORMAL,
             'submitted_ip' => $request->ip(),
@@ -252,9 +254,11 @@ class ResidentPortalController extends Controller
             'title' => ['required', 'string', 'max:255'], 'short_summary' => ['required', 'string', 'max:280'],
             'description' => ['required', 'string', 'max:10000'], 'category_id' => ['required', 'exists:complaint_categories,id'],
             'barangay_id' => ['nullable', 'exists:bosesmoto_barangays,id'],
-            'visibility' => ['required', Rule::in([Complaint::VISIBILITY_PUBLIC_NAMED, Complaint::VISIBILITY_PUBLIC_ANONYMOUS, Complaint::VISIBILITY_PRIVATE])],
         ]);
-        $complaint->update($validated + ['is_anonymous_submission' => $validated['visibility'] === Complaint::VISIBILITY_PUBLIC_ANONYMOUS]);
+        $complaint->update($validated + [
+            'visibility' => Complaint::VISIBILITY_PRIVATE,
+            'is_anonymous_submission' => false,
+        ]);
 
         return redirect('/resident-portal/bosesmoto/my-complaints/'.$complaint->id)->with('status', 'Complaint updated.');
     }
@@ -370,6 +374,7 @@ class ResidentPortalController extends Controller
 
         if ($screen === 'digital-id') {
             $resident->generateQrCode();
+
             return [];
         }
 
@@ -385,6 +390,7 @@ class ResidentPortalController extends Controller
             if (preg_match('#announcements/(\d+)#', $screen, $matches)) {
                 return ['item' => Announcement::published()->findOrFail((int) $matches[1])];
             }
+
             return [
                 'items' => Announcement::published()->latest('is_pinned')->latest('published_at')->paginate(10),
                 'notifications' => ResidentNotification::where('resident_id', $resident->id)->latest()->take(20)->get(),
@@ -402,6 +408,15 @@ class ResidentPortalController extends Controller
 
         if ($screen === 'citizen-services/tracking') {
             return ['items' => CitizenServiceRequest::where('resident_id', $resident->id)->latest('status_updated_at')->paginate(10)];
+        }
+
+        if ($screen === 'citizen-services/tracking/new') {
+            return [
+                'serviceTypes' => CitizenServiceType::where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
+                    ->get(),
+            ];
         }
 
         if (preg_match('#citizen-services/tracking/(\d+)#', $screen, $matches)) {
@@ -437,7 +452,7 @@ class ResidentPortalController extends Controller
         }
 
         if ($screen === 'bosesmoto/complaints') {
-            return ['items' => Complaint::publicListing()->with(['category', 'barangay', 'submitter'])->latest()->paginate(10)];
+            abort(404);
         }
 
         if ($screen === 'bosesmoto/my-complaints') {
@@ -447,12 +462,15 @@ class ResidentPortalController extends Controller
         if (preg_match('#^bosesmoto/my-complaints/(\d+)/edit$#', $screen, $matches)) {
             $complaint = Complaint::where('submitted_by_user_id', $citizenUser->id)->findOrFail((int) $matches[1]);
             abort_unless($complaint->canBeEditedByCitizen($citizenUser), 403);
+
             return ['item' => $complaint, 'categories' => ComplaintCategory::where('is_active', true)->orderBy('name')->get(), 'barangays' => ComplaintBarangay::where('is_active', true)->orderBy('name')->get()];
         }
 
-        if (preg_match('#bosesmoto/(?:my-)?complaints/(\d+)#', $screen, $matches)) {
-            $complaint = Complaint::with(['category', 'barangay', 'submitter', 'visibleComments.author'])->findOrFail((int) $matches[1]);
-            abort_unless($complaint->isPubliclyVisible() || $complaint->submitted_by_user_id === $citizenUser->id, 404);
+        if (preg_match('#bosesmoto/my-complaints/(\d+)#', $screen, $matches)) {
+            $complaint = Complaint::with(['category', 'barangay', 'submitter'])
+                ->where('submitted_by_user_id', $citizenUser->id)
+                ->findOrFail((int) $matches[1]);
+
             return ['item' => $complaint];
         }
 
@@ -474,6 +492,7 @@ class ResidentPortalController extends Controller
 
         if (preg_match('#bosesmoto/community/(\d+)/comments#', $screen, $matches)) {
             $post = SentimentPost::visibleTo($citizenUser)->with('author')->findOrFail((int) $matches[1]);
+
             return ['item' => $post, 'comments' => SentimentComment::visibleTo($citizenUser)->where('post_id', $post->id)->with('author')->latest()->paginate(20)];
         }
 

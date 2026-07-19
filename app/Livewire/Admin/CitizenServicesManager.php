@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\CitizenServiceRequest;
+use App\Models\CitizenServiceType;
 use App\Models\Complaint;
 use App\Models\EmergencyAlert;
 use App\Models\Poll;
@@ -10,6 +12,7 @@ use App\Models\SentimentPost;
 use App\Models\SosAlert;
 use App\Models\SystemSetting;
 use App\Services\PushNotificationService;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Mary\Traits\Toast;
@@ -61,6 +64,28 @@ class CitizenServicesManager extends Component
 
     public ?int $editingSosId = null;
 
+    public ?int $editingRequestId = null;
+
+    public ?int $editingServiceTypeId = null;
+
+    public string $serviceTypeCode = '';
+
+    public string $serviceTypeName = '';
+
+    public string $serviceTypeDescription = '';
+
+    public bool $serviceTypeIsActive = true;
+
+    public int $serviceTypeSortOrder = 0;
+
+    public string $requestStatus = 'submitted';
+
+    public string $requestStep = 'Application received';
+
+    public string $requestNote = '';
+
+    public ?string $requestExpectedCompletionAt = null;
+
     public string $sosStatus = 'open';
 
     public string $commandCenterName = '';
@@ -70,14 +95,6 @@ class CitizenServicesManager extends Component
     public string $commandCenterAlternateHotline = '';
 
     public string $commandCenterEmail = '';
-
-    public array $linkServiceTypes = [
-        ['id' => 'business-permit', 'name' => 'Business Permit'],
-        ['id' => 'civil-registry', 'name' => 'Civil Registry'],
-        ['id' => 'tax-payment', 'name' => 'Tax Payment'],
-        ['id' => 'financial-aid', 'name' => 'Financial Aid'],
-        ['id' => 'general', 'name' => 'General Service'],
-    ];
 
     public array $alertSeverityOptions = [
         ['id' => 'low', 'name' => 'Low'],
@@ -109,8 +126,21 @@ class CitizenServicesManager extends Component
         ['id' => 'cancelled', 'name' => 'Cancelled'],
     ];
 
+    public array $serviceStatusOptions = [
+        ['id' => 'submitted', 'name' => 'Submitted'],
+        ['id' => 'reviewing', 'name' => 'Reviewing'],
+        ['id' => 'processing', 'name' => 'Processing'],
+        ['id' => 'for-release', 'name' => 'For Release'],
+        ['id' => 'completed', 'name' => 'Completed'],
+        ['id' => 'released', 'name' => 'Released'],
+        ['id' => 'cancelled', 'name' => 'Cancelled'],
+        ['id' => 'rejected', 'name' => 'Rejected'],
+    ];
+
     public array $tabs = [
         'overview' => 'Overview',
+        'requests' => 'Service Requests',
+        'service-types' => 'Service Types',
         'links' => 'Portal Links',
         'alerts' => 'Emergency Alerts',
         'sos' => 'SOS Alerts',
@@ -128,7 +158,7 @@ class CitizenServicesManager extends Component
     {
         return [
             'linkTitle' => 'required|string|max:255',
-            'linkServiceType' => 'required|string|max:100',
+            'linkServiceType' => 'required|exists:citizen_service_types,code',
             'linkDescription' => 'nullable|string',
             'linkUrl' => 'required|url|max:255',
             'linkIcon' => 'nullable|string|max:100',
@@ -143,6 +173,14 @@ class CitizenServicesManager extends Component
             'alertStartsAt' => 'nullable|date',
             'alertEndsAt' => 'nullable|date|after_or_equal:alertStartsAt',
             'sosStatus' => 'required|string|max:50',
+            'requestStatus' => 'required|in:submitted,reviewing,processing,for-release,completed,released,cancelled,rejected',
+            'requestStep' => 'required|string|max:150',
+            'requestNote' => 'nullable|string|max:5000',
+            'requestExpectedCompletionAt' => 'nullable|date',
+            'serviceTypeName' => 'required|string|max:255',
+            'serviceTypeDescription' => 'nullable|string|max:2000',
+            'serviceTypeIsActive' => 'boolean',
+            'serviceTypeSortOrder' => 'required|integer|min:0',
             'commandCenterName' => 'required|string|max:255',
             'commandCenterHotline' => 'required|string|max:50',
             'commandCenterAlternateHotline' => 'nullable|string|max:50',
@@ -323,6 +361,116 @@ class CitizenServicesManager extends Component
         $this->closeModals();
     }
 
+    public function editServiceRequest(int $id): void
+    {
+        $this->closeModals();
+        $serviceRequest = CitizenServiceRequest::findOrFail($id);
+
+        $this->editingRequestId = $serviceRequest->id;
+        $this->requestStatus = $serviceRequest->status;
+        $this->requestStep = $serviceRequest->current_step ?? '';
+        $this->requestNote = $serviceRequest->notes ?? '';
+        $this->requestExpectedCompletionAt = $serviceRequest->expected_completion_at?->format('Y-m-d\TH:i');
+        $this->actionModalType = 'request';
+        $this->showActionModal = true;
+    }
+
+    public function saveServiceRequest(): void
+    {
+        $this->validateOnly('requestStatus');
+        $this->validateOnly('requestStep');
+        $this->validateOnly('requestNote');
+        $this->validateOnly('requestExpectedCompletionAt');
+
+        $serviceRequest = CitizenServiceRequest::findOrFail($this->editingRequestId);
+        $isComplete = in_array($this->requestStatus, ['completed', 'released'], true);
+
+        $serviceRequest->update([
+            'status' => $this->requestStatus,
+            'current_step' => $this->requestStep,
+            'notes' => $this->requestNote ?: null,
+            'expected_completion_at' => $this->requestExpectedCompletionAt ?: null,
+            'completed_at' => $isComplete ? ($serviceRequest->completed_at ?? now()) : null,
+            'status_updated_at' => now(),
+        ]);
+
+        $this->success('Service request updated.');
+        $this->resetServiceRequestForm();
+        $this->closeModals();
+    }
+
+    public function createServiceType(): void
+    {
+        $this->closeModals();
+        $this->resetServiceTypeForm();
+        $this->actionModalType = 'service-type';
+        $this->showActionModal = true;
+    }
+
+    public function editServiceType(int $id): void
+    {
+        $this->closeModals();
+        $serviceType = CitizenServiceType::findOrFail($id);
+
+        $this->editingServiceTypeId = $serviceType->id;
+        $this->serviceTypeCode = $serviceType->code;
+        $this->serviceTypeName = $serviceType->name;
+        $this->serviceTypeDescription = $serviceType->description ?? '';
+        $this->serviceTypeIsActive = $serviceType->is_active;
+        $this->serviceTypeSortOrder = $serviceType->sort_order;
+        $this->actionModalType = 'service-type';
+        $this->showActionModal = true;
+    }
+
+    public function saveServiceType(): void
+    {
+        $this->serviceTypeCode = str($this->serviceTypeCode)->slug()->toString();
+
+        $this->validate([
+            'serviceTypeCode' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('citizen_service_types', 'code')->ignore($this->editingServiceTypeId),
+            ],
+            'serviceTypeName' => 'required|string|max:255',
+            'serviceTypeDescription' => 'nullable|string|max:2000',
+            'serviceTypeIsActive' => 'boolean',
+            'serviceTypeSortOrder' => 'required|integer|min:0',
+        ]);
+
+        CitizenServiceType::updateOrCreate(
+            ['id' => $this->editingServiceTypeId],
+            [
+                'code' => $this->serviceTypeCode,
+                'name' => $this->serviceTypeName,
+                'description' => $this->serviceTypeDescription ?: null,
+                'is_active' => $this->serviceTypeIsActive,
+                'sort_order' => $this->serviceTypeSortOrder,
+            ]
+        );
+
+        $this->success($this->editingServiceTypeId ? 'Service type updated.' : 'Service type created.');
+        $this->resetServiceTypeForm();
+        $this->closeModals();
+    }
+
+    public function deleteServiceType(int $id): void
+    {
+        $serviceType = CitizenServiceType::findOrFail($id);
+        $isUsed = CitizenServiceRequest::where('service_type', $serviceType->code)->exists()
+            || PublicServiceLink::where('service_type', $serviceType->code)->exists();
+
+        if ($isUsed) {
+            $this->error('This service type is in use and cannot be deleted. Deactivate it instead.');
+
+            return;
+        }
+
+        $serviceType->delete();
+        $this->success('Service type deleted.');
+    }
+
     public function saveCommandCenterSettings(): void
     {
         $this->validateOnly('commandCenterName');
@@ -390,6 +538,27 @@ class CitizenServicesManager extends Component
         $this->resetValidation();
     }
 
+    private function resetServiceRequestForm(): void
+    {
+        $this->editingRequestId = null;
+        $this->requestStatus = 'submitted';
+        $this->requestStep = 'Application received';
+        $this->requestNote = '';
+        $this->requestExpectedCompletionAt = null;
+        $this->resetValidation();
+    }
+
+    private function resetServiceTypeForm(): void
+    {
+        $this->editingServiceTypeId = null;
+        $this->serviceTypeCode = '';
+        $this->serviceTypeName = '';
+        $this->serviceTypeDescription = '';
+        $this->serviceTypeIsActive = true;
+        $this->serviceTypeSortOrder = 0;
+        $this->resetValidation();
+    }
+
     private function closeModals(): void
     {
         $this->showActionModal = false;
@@ -451,6 +620,16 @@ class CitizenServicesManager extends Component
             : [];
 
         return view('livewire.admin.citizen-services-manager', [
+            'serviceRequests' => CitizenServiceRequest::with('resident')
+                ->latest('status_updated_at')
+                ->limit(50)
+                ->get(),
+            'serviceTypes' => CitizenServiceType::orderBy('sort_order')->orderBy('name')->get(),
+            'linkServiceTypes' => CitizenServiceType::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (CitizenServiceType $type): array => ['id' => $type->code, 'name' => $type->name])
+                ->all(),
             'serviceLinks' => PublicServiceLink::orderBy('sort_order')->orderBy('title')->get(),
             'sosAlerts' => SosAlert::with([
                 'resident:id,first_name,last_name,resident_id',
