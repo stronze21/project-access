@@ -23,6 +23,9 @@
         .eyebrow { margin: 0 0 10px; color: var(--teal); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
         h1 { margin: 0; max-width: 38rem; font-size: clamp(2.25rem,5vw,4.2rem); line-height: 1.03; letter-spacing: -.045em; }
         .message { max-width: 39rem; margin: 22px 0 0; color: var(--muted); font-size: clamp(1rem,2vw,1.12rem); line-height: 1.75; }
+        .guidance { display: grid; gap: 10px; max-width: 39rem; margin: 24px 0 0; padding: 0; list-style: none; }
+        .guidance li { position: relative; padding-left: 25px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+        .guidance li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--teal); font-weight: 900; }
         .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
         .button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 0 18px; color: var(--blue-dark); background: white; font-size: 14px; font-weight: 750; text-decoration: none; cursor: pointer; }
         .button:hover { border-color: #a9bdcc; background: #f7fafc; }
@@ -47,6 +50,13 @@
                 <p class="eyebrow">{{ $label ?? 'Request interrupted' }}</p>
                 <h1>{{ $title }}</h1>
                 <p class="message">{{ $message }}</p>
+                @if (!empty($guidance))
+                    <ul class="guidance">
+                        @foreach ($guidance as $item)
+                            <li>{{ $item }}</li>
+                        @endforeach
+                    </ul>
+                @endif
                 <div class="actions">
                     @if (!empty($actionUrl))
                         <a class="button primary" href="{{ $actionUrl }}">{{ $actionLabel ?? 'Try again' }}</a>
@@ -59,10 +69,10 @@
             </section>
             <div class="visual" aria-hidden="true">
                 <div class="code">{{ $code }}</div>
-                <div class="status"><span class="dot"></span> HTTP {{ $code }}</div>
+                <div class="status"><span class="dot"></span> {{ $statusText ?? 'HTTP '.$code }}</div>
             </div>
         </div>
-        <footer class="footer">If the problem continues, contact your ACCESS system administrator and mention error {{ $code }}.</footer>
+        <footer class="footer">{{ $footer ?? 'If the problem continues, contact your ACCESS system administrator and mention error '.$code.'.' }}</footer>
     </main>
 </body>
 </html>
