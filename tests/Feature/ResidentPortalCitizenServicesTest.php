@@ -53,6 +53,48 @@ class ResidentPortalCitizenServicesTest extends TestCase
             ->assertJsonPath('data.0.title', 'Business Permit Portal');
     }
 
+    public function test_authenticated_resident_can_only_view_members_of_their_household(): void
+    {
+        $resident = $this->createResident();
+        $member = Resident::create([
+            'household_id' => $resident->household_id,
+            'resident_id' => 'R-202604-HOUSEHOLD-MEMBER',
+            'first_name' => 'Maria',
+            'last_name' => 'Dela Cruz',
+            'birth_date' => '2010-06-15',
+            'gender' => 'female',
+            'civil_status' => 'single',
+            'relationship_to_head' => 'child',
+            'is_active' => true,
+        ]);
+
+        $otherHousehold = Household::create([
+            'household_id' => 'HH-202604-OTHER',
+            'address' => 'Other Address',
+            'barangay' => 'Poblacion',
+            'city_municipality' => 'Alaminos',
+            'province' => 'Pangasinan',
+        ]);
+        Resident::create([
+            'household_id' => $otherHousehold->id,
+            'resident_id' => 'R-202604-OTHER-MEMBER',
+            'first_name' => 'Other',
+            'last_name' => 'Resident',
+            'birth_date' => '1995-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($resident);
+
+        $this->getJson('/api/resident-portal/household/members')
+            ->assertOk()
+            ->assertJsonPath('member_count', 2)
+            ->assertJsonFragment(['resident_id' => $member->resident_id])
+            ->assertJsonMissing(['resident_id' => 'R-202604-OTHER-MEMBER']);
+    }
+
     private function createResident(): Resident
     {
         $household = Household::create([

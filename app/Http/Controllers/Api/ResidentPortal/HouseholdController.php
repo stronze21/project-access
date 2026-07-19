@@ -16,7 +16,7 @@ class HouseholdController extends Controller
     {
         $resident = $request->user();
 
-        if (!$resident->household_id) {
+        if (! $resident->household_id) {
             return response()->json([
                 'message' => 'You are not assigned to any household.',
             ], 404);
@@ -36,7 +36,7 @@ class HouseholdController extends Controller
     {
         $resident = $request->user();
 
-        if (!$resident->household_id) {
+        if (! $resident->household_id) {
             return response()->json([
                 'message' => 'You are not assigned to any household.',
             ], 404);
@@ -49,11 +49,13 @@ class HouseholdController extends Controller
                 'suffix', 'birth_date', 'gender', 'relationship_to_head',
                 'contact_number', 'photo_path',
             ])
-            ->orderByRaw("FIELD(relationship_to_head, 'head', 'spouse') DESC, first_name ASC")
+            ->orderByRaw("CASE relationship_to_head WHEN 'head' THEN 0 WHEN 'spouse' THEN 1 ELSE 2 END")
+            ->orderBy('first_name')
             ->get()
             ->map(function ($member) {
                 $member->age = $member->getAge();
                 $member->full_name = $member->full_name;
+
                 return $member;
             });
 
