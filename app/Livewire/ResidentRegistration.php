@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -163,6 +164,7 @@ class ResidentRegistration extends Component
 
     public $residentId = null;
 
+    #[Url(as: 'household')]
     public $householdId = null;
 
     // QR scanning
@@ -300,6 +302,20 @@ class ResidentRegistration extends Component
         if ($cityInfo) {
             $this->cityMunicipalityCode = $cityInfo->citymunCode;
             $this->cityMunicipality = $cityInfo->citymunDesc;
+        }
+
+        if (! $residentId && $this->householdId) {
+            $household = Household::findOrFail($this->householdId);
+            $this->relationshipToHead = 'other_relative';
+            $this->address = $household->address;
+            $this->barangay = $household->barangay;
+            $this->cityMunicipality = $household->city_municipality;
+            $this->province = $household->province;
+            $this->region = $household->region;
+            $this->regionCode = $household->region_code;
+            $this->provinceCode = $household->province_code;
+            $this->cityMunicipalityCode = $household->city_municipality_code;
+            $this->barangayCode = $household->barangay_code;
         }
     }
 
@@ -638,20 +654,22 @@ class ResidentRegistration extends Component
             DB::beginTransaction();
 
             // Always create a new household for the resident
-            if ($this->isEdit && $this->householdId) {
+            if ($this->householdId) {
                 // Scenario 1: Update existing household
                 $household = Household::findOrFail($this->householdId);
-                $household->update([
-                    'address' => $this->address,
-                    'barangay' => $this->barangay,
-                    'barangay_code' => $this->barangayCode,
-                    'city_municipality' => $this->cityMunicipality,
-                    'city_municipality_code' => $this->cityMunicipalityCode,
-                    'province' => $this->province,
-                    'province_code' => $this->provinceCode,
-                    'region' => $this->region,
-                    'region_code' => $this->regionCode,
-                ]);
+                if ($this->isEdit) {
+                    $household->update([
+                        'address' => $this->address,
+                        'barangay' => $this->barangay,
+                        'barangay_code' => $this->barangayCode,
+                        'city_municipality' => $this->cityMunicipality,
+                        'city_municipality_code' => $this->cityMunicipalityCode,
+                        'province' => $this->province,
+                        'province_code' => $this->provinceCode,
+                        'region' => $this->region,
+                        'region_code' => $this->regionCode,
+                    ]);
+                }
 
             } else {
                 // Scenario 2 & 3: Create new household

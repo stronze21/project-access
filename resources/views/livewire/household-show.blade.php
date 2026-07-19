@@ -260,10 +260,14 @@
                     @endif
                 </div>
 
-                <div class="flex justify-between pt-4 mt-4 border-t">
-                    <x-mary-button link="{{ route('residents.create') }}?household={{ $household->id }}"
-                        class="tagged-color btn-primary" size="sm" icon="o-plus">
-                        Add Member
+                <div class="flex flex-wrap justify-between gap-2 pt-4 mt-4 border-t">
+                    <x-mary-button wire:click="openAddMemberModal" class="tagged-color btn-primary" size="sm"
+                        icon="o-user-plus">
+                        Add Existing Member
+                    </x-mary-button>
+                    <x-mary-button link="{{ route('residents.create', ['household' => $household->id]) }}"
+                        class="tagged-color btn-secondary btn-outline btn-secline" size="sm" icon="o-plus">
+                        Create New Resident
                     </x-mary-button>
                 </div>
             </x-mary-card>
@@ -353,4 +357,55 @@
             </x-mary-button>
         </div>
     </x-mary-card>
+
+    <x-mary-modal wire:model="showAddMemberModal" title="Add Existing Household Member" box-class="max-w-2xl">
+        <form wire:submit.prevent="addMember">
+            <div class="space-y-4">
+                <x-mary-input label="Search resident" wire:model.live.debounce.300ms="memberSearch"
+                    placeholder="Enter at least 2 characters of a name, resident ID, or phone number"
+                    icon="o-magnifying-glass" />
+
+                @if (mb_strlen(trim($memberSearch)) >= 2)
+                    <div class="overflow-y-auto border rounded-lg max-h-72 divide-y">
+                        @forelse ($availableResidents as $resident)
+                            <label class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200">
+                                <input type="radio" wire:model="selectedMemberId" value="{{ $resident->id }}"
+                                    class="radio radio-primary radio-sm">
+                                <div class="min-w-0">
+                                    <div class="font-medium text-gray-900">{{ $resident->full_name }}</div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ $resident->resident_id }}{{ $resident->contact_number ? ' · '.$resident->contact_number : '' }}
+                                    </div>
+                                </div>
+                            </label>
+                        @empty
+                            <div class="p-4 text-sm text-center text-gray-500">
+                                No unassigned active residents match your search.
+                            </div>
+                        @endforelse
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500">Type at least 2 characters to search.</p>
+                @endif
+                @error('selectedMemberId') <p class="text-sm text-error">{{ $message }}</p> @enderror
+
+                <x-mary-select label="Relationship to household head" wire:model="memberRelationship"
+                    :options="[
+                        ['id' => 'spouse', 'name' => 'Spouse'], ['id' => 'child', 'name' => 'Child'],
+                        ['id' => 'sibling', 'name' => 'Sibling'], ['id' => 'parent', 'name' => 'Parent'],
+                        ['id' => 'grandchild', 'name' => 'Grandchild'], ['id' => 'grandparent', 'name' => 'Grandparent'],
+                        ['id' => 'in-law', 'name' => 'In-law'], ['id' => 'other_relative', 'name' => 'Other relative'],
+                        ['id' => 'non-relative', 'name' => 'Non-relative'], ['id' => 'domestic_worker', 'name' => 'Domestic worker'],
+                        ['id' => 'boarder', 'name' => 'Boarder'],
+                    ]" />
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <x-mary-button type="button" wire:click="$set('showAddMemberModal', false)" label="Cancel"
+                    class="btn-secondary btn-outline" />
+                <x-mary-button type="submit" label="Add Member" icon="o-user-plus" class="btn-primary"
+                    spinner="addMember" />
+            </div>
+        </form>
+    </x-mary-modal>
 </div>

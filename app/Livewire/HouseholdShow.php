@@ -2,24 +2,38 @@
 
 namespace App\Livewire;
 
-use App\Models\Household;
 use App\Models\Distribution;
+use App\Models\Household;
+use App\Models\Resident;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
 
 class HouseholdShow extends Component
 {
-    use WithPagination;
     use Toast;
+    use WithPagination;
 
     public $household;
+
     public $householdId;
+
     public $showQrCode = false;
+
     public $perPage = 10;
+
+    public $showAddMemberModal = false;
+
+    public $memberSearch = '';
+
+    public $selectedMemberId = null;
+
+    public $memberRelationship = 'other_relative';
 
     // Stats
     public $totalDistributions = 0;
+
     public $totalAidReceived = 0;
 
     /**
@@ -66,7 +80,7 @@ class HouseholdShow extends Component
      */
     public function toggleQrCode()
     {
-        $this->showQrCode = !$this->showQrCode;
+        $this->showQrCode = ! $this->showQrCode;
     }
 
     /**
@@ -77,8 +91,7 @@ class HouseholdShow extends Component
         $this->household->is_active = $status === 'active';
         $this->household->save();
 
-        $this->success("Household marked as " . ($this->household->is_active ? 'active' : 'inactive'))
-            ;
+        $this->success('Household marked as '.($this->household->is_active ? 'active' : 'inactive'));
 
         $this->loadHousehold();
     }
@@ -102,8 +115,7 @@ class HouseholdShow extends Component
         $this->household->updateMemberCount();
         $this->loadHousehold();
 
-        $this->success("Household member count updated")
-            ;
+        $this->success('Household member count updated');
     }
 
     /**
@@ -114,8 +126,49 @@ class HouseholdShow extends Component
         $this->household->calculateTotalIncome();
         $this->loadHousehold();
 
-        $this->success("Household income updated")
-            ;
+        $this->success('Household income updated');
+    }
+
+    public function openAddMemberModal(): void
+    {
+        $this->resetValidation();
+        $this->memberSearch = '';
+        $this->selectedMemberId = null;
+        $this->memberRelationship = 'other_relative';
+        $this->showAddMemberModal = true;
+    }
+
+    public function addMember(): void
+    {
+        $validated = $this->validate([
+            'selectedMemberId' => ['required', 'integer', 'exists:residents,id'],
+            'memberRelationship' => ['required', 'in:spouse,child,sibling,parent,grandchild,grandparent,in-law,other_relative,non-relative,domestic_worker,boarder'],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            $resident = Resident::query()->lockForUpdate()->findOrFail($validated['selectedMemberId']);
+
+            if ($resident->household_id && (int) $resident->household_id !== (int) $this->householdId) {
+                $this->addError('selectedMemberId', 'This resident already belongs to another household.');
+
+                return;
+            }
+
+            $resident->update([
+                'household_id' => $this->householdId,
+                'relationship_to_head' => $validated['memberRelationship'],
+            ]);
+        });
+
+        if ($this->getErrorBag()->has('selectedMemberId')) {
+            return;
+        }
+
+        $this->household->updateMemberCount();
+        $this->household->calculateTotalIncome();
+        $this->showAddMemberModal = false;
+        $this->loadHousehold();
+        $this->success('Household member added successfully.');
     }
 
     /**
@@ -123,8 +176,40 @@ class HouseholdShow extends Component
      */
     public function render()
     {
+        $availableResidents = collect();
+
+        if ($this->showAddMemberModal && mb_strlen(trim($this->memberSearch)) >= 2) {
+            $term = trim($this->memberSearch);
+            $nameParts = preg_split('/\s+/', $term, -1, PREG_SPLIT_NO_EMPTY);
+            $availableResidents = Resident::query()
+                ->where('is_active', true)
+                ->whereNull('household_id')
+                ->where(function ($searchQuery) use ($term, $nameParts) {
+                    $searchQuery->where(function ($query) use ($term) {
+                        $query->where('resident_id', 'like', "%{$term}%")
+                            ->orWhere('first_name', 'like', "%{$term}%")
+                            ->orWhere('middle_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%")
+                            ->orWhere('contact_number', 'like', "%{$term}%");
+                    })->orWhere(function ($query) use ($nameParts) {
+                        foreach ($nameParts as $part) {
+                            $query->where(function ($nameQuery) use ($part) {
+                                $nameQuery->where('first_name', 'like', "%{$part}%")
+                                    ->orWhere('middle_name', 'like', "%{$part}%")
+                                    ->orWhere('last_name', 'like', "%{$part}%");
+                            });
+                        }
+                    });
+                })
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->limit(10)
+                ->get();
+        }
+
         return view('livewire.household-show', [
-            'distributions' => $this->getDistributions()
+            'distributions' => $this->getDistributions(),
+            'availableResidents' => $availableResidents,
         ]);
     }
 }
