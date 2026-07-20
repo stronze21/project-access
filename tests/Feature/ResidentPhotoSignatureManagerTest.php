@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\ResidentPhotoSignatureManager;
 use App\Models\Resident;
 use App\Models\User;
+use App\Observers\ResidentObserver;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -55,7 +56,7 @@ class ResidentPhotoSignatureManagerTest extends TestCase
                 UploadedFile::fake()->image('UNKNOWN.jpg'),
             ])
             ->assertSee($resident->full_name)
-            ->assertSee('No resident matches this filename.')
+            ->assertSee('ready to stage for automatic mapping')
             ->call('importPhotos')
             ->assertHasNoErrors();
 
@@ -76,6 +77,44 @@ class ResidentPhotoSignatureManagerTest extends TestCase
         $this->assertStringStartsWith('data:image/png;base64,', $resident->signature);
         $this->assertSame('verified', $resident->signature_status);
         Storage::disk('public')->assertExists('resident-signatures/R-PHOTO-001_signature.png');
+    }
+
+    public function test_it_stages_unknown_media_and_maps_it_when_the_resident_is_created(): void
+    {
+        $user = $this->authorizedUser();
+
+        Livewire::actingAs($user)
+            ->test(ResidentPhotoSignatureManager::class)
+            ->set('photoFiles', [
+                UploadedFile::fake()->image('R-FUTURE-001.jpg'),
+            ])
+            ->assertSee('ready to stage for automatic mapping')
+            ->call('importPhotos')
+            ->assertSee('Staged until this resident is registered')
+            ->set('signatureFiles', [
+                UploadedFile::fake()->image('R-FUTURE-001_signature.png'),
+            ])
+            ->call('importSignatures')
+            ->assertSee('Staged until this resident is registered')
+            ->assertHasNoErrors();
+
+        Storage::disk('public')->assertExists('resident-media-staging/photos/R-FUTURE-001.jpg');
+        Storage::disk('public')->assertExists('resident-media-staging/signatures/R-FUTURE-001_signature.png');
+
+        $resident = $this->resident('R-FUTURE-001', 'Future', 'Resident');
+
+        // DatabaseTransactions keeps the test transaction open, so invoke the
+        // after-commit observer directly to exercise the production mapping.
+        app(ResidentObserver::class)->created($resident);
+        $resident->refresh();
+
+        $this->assertSame('resident-photos/R-FUTURE-001.jpg', $resident->photo_path);
+        $this->assertStringStartsWith('data:image/png;base64,', $resident->signature);
+        $this->assertSame('verified', $resident->signature_status);
+        Storage::disk('public')->assertExists('resident-photos/R-FUTURE-001.jpg');
+        Storage::disk('public')->assertExists('resident-signatures/R-FUTURE-001_signature.png');
+        Storage::disk('public')->assertMissing('resident-media-staging/photos/R-FUTURE-001.jpg');
+        Storage::disk('public')->assertMissing('resident-media-staging/signatures/R-FUTURE-001_signature.png');
     }
 
     public function test_user_without_import_permission_cannot_open_manager(): void

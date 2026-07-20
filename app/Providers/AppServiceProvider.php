@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Models\Complaint;
 use App\Models\Poll;
+use App\Models\Resident;
 use App\Models\SentimentPost;
 use App\Observers\ComplaintObserver;
 use App\Observers\PollObserver;
+use App\Observers\ResidentObserver;
 use App\Observers\SentimentPostObserver;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Complaint::observe(ComplaintObserver::class);
         Poll::observe(PollObserver::class);
+        Resident::observe(ResidentObserver::class);
         SentimentPost::observe(SentimentPostObserver::class);
 
         Validator::extend('philippine_phone', function ($attribute, $value, $parameters, $validator) {

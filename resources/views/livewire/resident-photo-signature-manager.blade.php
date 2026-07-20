@@ -2,7 +2,7 @@
     <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
             <h1 class="text-2xl font-semibold text-gray-900">Photo and Signature Manager</h1>
-            <p class="mt-1 text-sm text-gray-600">Validate resident filenames, preview images, and import them in batches.</p>
+            <p class="mt-1 text-sm text-gray-600">Import media for existing residents or stage it for automatic mapping when a resident is registered.</p>
         </div>
         <x-mary-button link="{{ route('residents.index') }}" icon="o-arrow-left" label="Back to Residents"
             class="btn-secondary btn-outline" />
@@ -90,8 +90,8 @@
                 </div>
                 <div class="flex flex-wrap justify-between gap-2 mt-4">
                     <x-mary-button wire:click="clearPhotos" label="Clear" class="btn-secondary btn-outline" />
-                    <x-mary-button wire:click="importPhotos" wire:confirm="Import all valid resident photos? Existing photos for matched residents will be replaced."
-                        spinner="importPhotos" label="Import Valid Photos" icon="o-arrow-up-tray" class="btn-primary" />
+                    <x-mary-button wire:click="importPhotos" wire:confirm="Process all valid resident photos? Existing photos for matched residents will be replaced; unmatched IDs will be staged until registration."
+                        spinner="importPhotos" label="Import or Stage Photos" icon="o-arrow-up-tray" class="btn-primary" />
                 </div>
             @endif
         </x-mary-card>
@@ -177,8 +177,8 @@
                 </div>
                 <div class="flex flex-wrap justify-between gap-2 mt-4">
                     <x-mary-button wire:click="clearSignatures" label="Clear" class="btn-secondary btn-outline" />
-                    <x-mary-button wire:click="importSignatures" wire:confirm="Import all valid signatures? Existing signatures for matched residents will be replaced."
-                        spinner="importSignatures" label="Import Valid Signatures" icon="o-arrow-up-tray" class="btn-success" />
+                    <x-mary-button wire:click="importSignatures" wire:confirm="Process all valid signatures? Existing signatures for matched residents will be replaced; unmatched IDs will be staged until registration."
+                        spinner="importSignatures" label="Import or Stage Signatures" icon="o-arrow-up-tray" class="btn-success" />
                 </div>
             @endif
         </x-mary-card>
@@ -186,9 +186,9 @@
 
     <x-mary-card title="Filename Rules and Validation">
         <div class="grid gap-4 text-sm md:grid-cols-3">
-            <div><strong class="block text-gray-800">Exact resident ID</strong><span class="text-gray-600">The filename portion must exactly match an existing resident ID.</span></div>
-            <div><strong class="block text-gray-800">Invalid files are skipped</strong><span class="text-gray-600">Unknown IDs, wrong formats, and duplicates are flagged and never imported.</span></div>
-            <div><strong class="block text-gray-800">Existing media</strong><span class="text-gray-600">Importing a valid file replaces that resident's existing photo or signature.</span></div>
+            <div><strong class="block text-gray-800">Exact resident ID</strong><span class="text-gray-600">The filename portion must exactly match the resident ID that exists now or will be assigned during registration.</span></div>
+            <div><strong class="block text-gray-800">Invalid files are skipped</strong><span class="text-gray-600">Wrong formats and duplicates are flagged and never processed.</span></div>
+            <div><strong class="block text-gray-800">Automatic mapping</strong><span class="text-gray-600">Unknown resident IDs are staged and attached automatically when a matching resident is created.</span></div>
         </div>
     </x-mary-card>
 </div>

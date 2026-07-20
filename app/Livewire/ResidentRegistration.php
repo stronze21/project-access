@@ -756,6 +756,11 @@ class ResidentRegistration extends Component
             if ($this->photo) {
                 // File upload
                 $photoPath = $this->photo->store('resident-photos', 'public');
+
+                if ($resident->photo_path && $resident->photo_path !== $photoPath) {
+                    Storage::disk('public')->delete($resident->photo_path);
+                }
+
                 $resident->photo_path = $photoPath;
                 $resident->save();
             } elseif ($this->capturedPhoto) {

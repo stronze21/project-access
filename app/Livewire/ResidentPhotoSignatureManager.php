@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Resident;
+use App\Services\ResidentMediaStagingService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
@@ -56,7 +57,7 @@ class ResidentPhotoSignatureManager extends Component
         $this->signatureResults = $this->analyzeFiles($this->signatureFiles, 'signature');
     }
 
-    public function importPhotos(): void
+    public function importPhotos(ResidentMediaStagingService $mediaStagingService): void
     {
         $this->authorizeImport();
         if (! $this->validateBatchLimits($this->photoFiles, 'photoFiles', 'photo')) {
@@ -71,19 +72,28 @@ class ResidentPhotoSignatureManager extends Component
             }
 
             try {
-                $resident = Resident::findOrFail($result['resident_db_id']);
-                $path = $this->photoFiles[$index]->storeAs(
-                    'resident-photos',
-                    $result['file_name'],
-                    'public'
-                );
+                if ($result['resident_db_id']) {
+                    $resident = Resident::findOrFail($result['resident_db_id']);
+                    $path = $this->photoFiles[$index]->storeAs(
+                        'resident-photos',
+                        $result['file_name'],
+                        'public'
+                    );
 
-                if ($resident->photo_path && $resident->photo_path !== $path) {
-                    Storage::disk('public')->delete($resident->photo_path);
+                    if ($resident->photo_path && $resident->photo_path !== $path) {
+                        Storage::disk('public')->delete($resident->photo_path);
+                    }
+
+                    $resident->update(['photo_path' => $path]);
+                    $this->markImported($this->photoResults, $index);
+                } else {
+                    $mediaStagingService->stagePhoto(
+                        $this->photoFiles[$index],
+                        $result['resident_id'],
+                        pathinfo($result['file_name'], PATHINFO_EXTENSION)
+                    );
+                    $this->markImported($this->photoResults, $index, 'Staged until this resident is registered');
                 }
-
-                $resident->update(['photo_path' => $path]);
-                $this->markImported($this->photoResults, $index);
                 $imported++;
             } catch (Throwable $exception) {
                 report($exception);
@@ -94,7 +104,7 @@ class ResidentPhotoSignatureManager extends Component
         $this->notifyImportResult($imported, 'photo');
     }
 
-    public function importSignatures(): void
+    public function importSignatures(ResidentMediaStagingService $mediaStagingService): void
     {
         $this->authorizeImport();
         if (! $this->validateBatchLimits($this->signatureFiles, 'signatureFiles', 'signature')) {
@@ -109,18 +119,26 @@ class ResidentPhotoSignatureManager extends Component
             }
 
             try {
-                $resident = Resident::findOrFail($result['resident_db_id']);
-                $contents = file_get_contents($this->signatureFiles[$index]->getRealPath());
-                $this->signatureFiles[$index]->storeAs(
-                    'resident-signatures',
-                    $result['file_name'],
-                    'public'
-                );
-                $resident->update([
-                    'signature' => 'data:image/png;base64,'.base64_encode($contents),
-                    'signature_status' => 'verified',
-                ]);
-                $this->markImported($this->signatureResults, $index);
+                if ($result['resident_db_id']) {
+                    $resident = Resident::findOrFail($result['resident_db_id']);
+                    $contents = file_get_contents($this->signatureFiles[$index]->getRealPath());
+                    $this->signatureFiles[$index]->storeAs(
+                        'resident-signatures',
+                        $result['file_name'],
+                        'public'
+                    );
+                    $resident->update([
+                        'signature' => 'data:image/png;base64,'.base64_encode($contents),
+                        'signature_status' => 'verified',
+                    ]);
+                    $this->markImported($this->signatureResults, $index);
+                } else {
+                    $mediaStagingService->stageSignature(
+                        $this->signatureFiles[$index],
+                        $result['resident_id']
+                    );
+                    $this->markImported($this->signatureResults, $index, 'Staged until this resident is registered');
+                }
                 $imported++;
             } catch (Throwable $exception) {
                 report($exception);
@@ -186,9 +204,9 @@ class ResidentPhotoSignatureManager extends Component
                 $resident = null;
             }
             if ($valid && ! $resident) {
-                $valid = false;
-                $message = 'No resident matches this filename.';
-            } elseif ($valid && in_array($residentId, $residentIdsSeen, true)) {
+                $message = 'No resident exists yet; ready to stage for automatic mapping.';
+            }
+            if ($valid && in_array($residentId, $residentIdsSeen, true)) {
                 $valid = false;
                 $message = 'Duplicate file for this resident in the current batch.';
             }
@@ -212,10 +230,10 @@ class ResidentPhotoSignatureManager extends Component
         return $results;
     }
 
-    private function markImported(array &$results, int $index): void
+    private function markImported(array &$results, int $index, string $message = 'Imported successfully'): void
     {
         $results[$index]['imported'] = true;
-        $results[$index]['message'] = 'Imported successfully';
+        $results[$index]['message'] = $message;
     }
 
     private function markFailed(array &$results, int $index, string $message): void
@@ -227,7 +245,7 @@ class ResidentPhotoSignatureManager extends Component
     private function notifyImportResult(int $imported, string $type): void
     {
         if ($imported > 0) {
-            $this->success("{$imported} resident {$type}".($imported === 1 ? ' was' : 's were').' imported successfully.');
+            $this->success("{$imported} resident {$type}".($imported === 1 ? ' was' : 's were').' imported or staged successfully.');
 
             return;
         }
