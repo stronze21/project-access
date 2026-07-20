@@ -52,6 +52,20 @@ class ScholarEligibilityCriterionTest extends TestCase
             ->assertSet('criteria.0.value', 'true');
     }
 
+    public function test_program_can_be_created_with_the_initial_blank_criterion(): void
+    {
+        Livewire::test(AyudaProgramCreate::class)
+            ->set('name', 'General Assistance')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('ayuda_programs', [
+            'name' => 'General Assistance',
+        ]);
+
+        $this->assertDatabaseCount('eligibility_criteria', 0);
+    }
+
     public function test_api_rejects_an_invalid_scholar_criterion(): void
     {
         $user = User::factory()->create();

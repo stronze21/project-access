@@ -259,7 +259,7 @@ class AyudaProgramCreate extends Component
     /**
      * Validate criteria before submission
      */
-    protected function validateCriteria()
+    protected function validateCriteria(): array
     {
         $criteriaRules = [];
         $criterionTypes = array_column($this->criterionTypes, 'key');
@@ -278,6 +278,13 @@ class AyudaProgramCreate extends Component
                     $criteriaRules["criteria.{$index}.value"] = 'required|string|max:255';
                 }
             }
+        }
+
+        // The form starts with one blank criterion row. Passing an empty rules
+        // array to Livewire's validate() is interpreted as "use global rules"
+        // and throws MissingRulesException when no dynamic criteria apply.
+        if (empty($criteriaRules)) {
+            return [];
         }
 
         return $this->validate($criteriaRules);
