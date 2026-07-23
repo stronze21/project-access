@@ -75,6 +75,15 @@
             </section>
 
             <section class="grid grid-cols-2 gap-3 lg:grid-cols-6">
+                <div class="col-span-2 rounded-xl bg-blue-50 p-3 shadow-sm ring-1 ring-blue-200 sm:p-4 lg:col-span-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Complainant</p>
+                    <p class="mt-1 text-sm font-bold text-blue-950">{{ $complaint->complainantNameForAdmin() }}</p>
+                    @if($complaint->complainantIdentifierForAdmin())
+                        <p class="mt-1 font-mono text-xs text-blue-700">Resident ID/PIN: {{ $complaint->complainantIdentifierForAdmin() }}</p>
+                    @elseif($complaint->is_anonymous_submission)
+                        <p class="mt-1 text-xs text-blue-700">No resident account is linked to this anonymous submission.</p>
+                    @endif
+                </div>
                 <div class="rounded-xl bg-base-100 p-3 shadow-sm ring-1 ring-base-300 sm:p-4">
                     <p class="text-[11px] font-semibold uppercase tracking-wide text-base-content/60">Submitted Date</p>
                     <p class="mt-1 text-sm font-bold text-base-content">{{ $complaint->submittedAtManila()?->format('M d, Y') ?? 'N/A' }}</p>

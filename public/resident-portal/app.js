@@ -75,7 +75,8 @@
             const submit = activationForm.querySelector('[data-activation-submit]');
             const checkboxes = [...activationForm.querySelectorAll('[data-legal-checkbox]')];
             const updateSubmit = () => {
-                submit.disabled = !checkboxes.every((checkbox) => !checkbox.disabled && checkbox.checked);
+                submit.disabled = submit.dataset.emailReady !== '1'
+                    || !checkboxes.every((checkbox) => !checkbox.disabled && checkbox.checked);
             };
 
             checkboxes.forEach((checkbox) => {

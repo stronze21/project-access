@@ -1,35 +1,35 @@
 <?php
 
+use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Api\AddressController as ApiAddressController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AyudaProgramController;
+use App\Http\Controllers\Api\CitizenServicesAdminController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DistributionBatchController;
+use App\Http\Controllers\Api\DistributionController;
+use App\Http\Controllers\Api\EligibilityCriteriaController;
+use App\Http\Controllers\Api\EmergencyAlertController;
+use App\Http\Controllers\Api\HouseholdController;
+use App\Http\Controllers\Api\PublicServiceLinkController;
+use App\Http\Controllers\Api\ResidentApiController;
+use App\Http\Controllers\Api\ResidentController;
+use App\Http\Controllers\Api\ResidentPortal\AccountDeletionRequestController as ResidentAccountDeletionRequestController;
+use App\Http\Controllers\Api\ResidentPortal\AnnouncementController as ResidentAnnouncementController;
+use App\Http\Controllers\Api\ResidentPortal\AuthController as ResidentAuthController;
+use App\Http\Controllers\Api\ResidentPortal\DistributionController as ResidentDistributionController;
+use App\Http\Controllers\Api\ResidentPortal\EmergencyController as ResidentEmergencyController;
+use App\Http\Controllers\Api\ResidentPortal\GrievanceController as ResidentGrievanceController;
+use App\Http\Controllers\Api\ResidentPortal\HouseholdController as ResidentHouseholdController;
+use App\Http\Controllers\Api\ResidentPortal\NotificationController as ResidentNotificationController;
+use App\Http\Controllers\Api\ResidentPortal\ProfileController as ResidentProfileController;
+use App\Http\Controllers\Api\ResidentPortal\ProgramController as ResidentProgramController;
+use App\Http\Controllers\Api\ResidentPortal\PublicServicePortalController as ResidentPublicServicePortalController;
+use App\Http\Controllers\Api\ResidentPortal\ServiceTrackingController as ResidentServiceTrackingController;
+use App\Http\Controllers\Api\ResidentPortal\SupportRequestController as ResidentSupportRequestController;
+use App\Http\Controllers\Api\SystemSettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AddressController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CitizenServicesAdminController;
-use App\Http\Controllers\Api\ResidentController;
-use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\HouseholdController;
-use App\Http\Controllers\Api\ResidentApiController;
-use App\Http\Controllers\Api\AyudaProgramController;
-use App\Http\Controllers\Api\DistributionController;
-use App\Http\Controllers\Api\SystemSettingController;
-use App\Http\Controllers\Api\DistributionBatchController;
-use App\Http\Controllers\Api\EligibilityCriteriaController;
-use App\Http\Controllers\Api\AddressController as ApiAddressController;
-use App\Http\Controllers\Api\ResidentPortal\AuthController as ResidentAuthController;
-use App\Http\Controllers\Api\PublicServiceLinkController;
-use App\Http\Controllers\Api\EmergencyAlertController;
-use App\Http\Controllers\Api\ResidentPortal\GrievanceController as ResidentGrievanceController;
-use App\Http\Controllers\Api\ResidentPortal\EmergencyController as ResidentEmergencyController;
-use App\Http\Controllers\Api\ResidentPortal\ServiceTrackingController as ResidentServiceTrackingController;
-use App\Http\Controllers\Api\ResidentPortal\ProfileController as ResidentProfileController;
-use App\Http\Controllers\Api\ResidentPortal\HouseholdController as ResidentHouseholdController;
-use App\Http\Controllers\Api\ResidentPortal\ProgramController as ResidentProgramController;
-use App\Http\Controllers\Api\ResidentPortal\DistributionController as ResidentDistributionController;
-use App\Http\Controllers\Api\ResidentPortal\AnnouncementController as ResidentAnnouncementController;
-use App\Http\Controllers\Api\ResidentPortal\NotificationController as ResidentNotificationController;
-use App\Http\Controllers\Api\ResidentPortal\PublicServicePortalController as ResidentPublicServicePortalController;
-use App\Http\Controllers\Api\ResidentPortal\AccountDeletionRequestController as ResidentAccountDeletionRequestController;
-use App\Http\Controllers\Api\ResidentPortal\SupportRequestController as ResidentSupportRequestController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -50,7 +50,6 @@ Route::prefix('api')->middleware(['auth'])->group(function () {
 // Public routes (login, register)
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
-
 
 Route::prefix('residents/id-card')->middleware(['auth:sanctum', 'permission:view-residents'])->group(function () {
     Route::get('/{residentId}', [ResidentController::class, 'getForIdCard']);
@@ -105,7 +104,6 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
     Route::get('/households/{id}/residents', [ResidentController::class, 'byHousehold'])->middleware('permission:view-households');
     Route::patch('/residents/{id}/signature', [ResidentController::class, 'updateSignature'])->middleware('permission:edit-residents');
 
-
     // Household routes
     Route::apiResource('households', HouseholdController::class)
         ->middlewareFor(['index', 'show'], 'permission:view-households')
@@ -153,13 +151,13 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
 
     // System Settings routes (admin only)
     Route::middleware('permission:configure-system')->group(function () {
-    Route::get('/settings', [SystemSettingController::class, 'index']);
-    Route::get('/settings/{key}', [SystemSettingController::class, 'show']);
-    Route::post('/settings', [SystemSettingController::class, 'store']);
-    Route::put('/settings/{key}', [SystemSettingController::class, 'update']);
-    Route::delete('/settings/{key}', [SystemSettingController::class, 'destroy']);
-    Route::get('/settings/group/{group}', [SystemSettingController::class, 'byGroup']);
-    Route::post('/settings/clear-cache', [SystemSettingController::class, 'clearCache']);
+        Route::get('/settings', [SystemSettingController::class, 'index']);
+        Route::get('/settings/{key}', [SystemSettingController::class, 'show']);
+        Route::post('/settings', [SystemSettingController::class, 'store']);
+        Route::put('/settings/{key}', [SystemSettingController::class, 'update']);
+        Route::delete('/settings/{key}', [SystemSettingController::class, 'destroy']);
+        Route::get('/settings/group/{group}', [SystemSettingController::class, 'byGroup']);
+        Route::post('/settings/clear-cache', [SystemSettingController::class, 'clearCache']);
     });
 
     Route::middleware('permission:manage-citizen-services')->prefix('citizen-services')->group(function () {
@@ -198,6 +196,7 @@ Route::middleware('auth:sanctum')->name('api.')->group(function () {
 Route::prefix('resident-portal')->name('api.resident-portal.')->group(function () {
     Route::post('/login', [ResidentAuthController::class, 'login'])->name('login');
     Route::post('/register', [ResidentAuthController::class, 'register'])->name('register');
+    Route::post('/register/email-code', [ResidentAuthController::class, 'sendEmailCode'])->middleware('throttle:10,1')->name('register.email-code');
     Route::post('/reset-mpin', [ResidentAuthController::class, 'resetMpin'])->middleware('throttle:5,1')->name('reset-mpin');
 });
 

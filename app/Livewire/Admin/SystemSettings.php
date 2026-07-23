@@ -3,7 +3,9 @@
 namespace App\Livewire\Admin;
 
 use App\Models\SystemSetting;
+use App\Services\DynamicMailConfig;
 use App\Services\ModuleSettings;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -11,28 +13,61 @@ use Mary\Traits\Toast;
 
 class SystemSettings extends Component
 {
-    use WithFileUploads;
     use Toast;
+    use WithFileUploads;
 
     // Form fields - all explicitly defined
     public $app_name_1 = '';
+
     public $app_name_2 = '';
+
     public $app_logo;
+
     public $app_favicon;
 
     public $municipality = '';
+
     public $province = '';
+
     public $region = '';
+
     public $region_code = '';
+
     public $province_code = '';
+
     public $municipality_code = '';
 
     public $contact_email = '';
+
     public $contact_phone = '';
+
     public $office_address = '';
+
+    public bool $mail_dynamic_enabled = false;
+
+    public string $mail_mailer = 'smtp';
+
+    public string $mail_host = '';
+
+    public int $mail_port = 587;
+
+    public string $mail_username = '';
+
+    public string $mail_password = '';
+
+    public string $mail_scheme = 'smtp';
+
+    public string $mail_from_address = '';
+
+    public string $mail_from_name = 'Project ACCESS';
+
+    public string $mail_test_recipient = '';
+
+    public bool $mail_password_configured = false;
 
     // For displaying current images
     public $current_logo_url = '';
+
     public $current_favicon_url = '';
 
     // Active tab
@@ -70,6 +105,68 @@ class SystemSettings extends Component
         }
 
         $this->loadModuleSettings();
+        $this->loadMailSettings();
+    }
+
+    public function loadMailSettings(): void
+    {
+        $this->mail_dynamic_enabled = SystemSetting::get('mail.dynamic_enabled', '0') === '1';
+        $this->mail_mailer = SystemSetting::get('mail.mailer', 'smtp');
+        $this->mail_host = SystemSetting::get('mail.host', '');
+        $this->mail_port = (int) SystemSetting::get('mail.port', '587');
+        $this->mail_username = SystemSetting::get('mail.username', '');
+        $this->mail_scheme = SystemSetting::get('mail.scheme', 'smtp');
+        $this->mail_from_address = SystemSetting::get('mail.from_address', '');
+        $this->mail_from_name = SystemSetting::get('mail.from_name', 'Project ACCESS');
+        $this->mail_password = '';
+        $this->mail_password_configured = (bool) SystemSetting::get('mail.password');
+        if ($this->mail_test_recipient === '') {
+            $this->mail_test_recipient = $this->mail_from_address;
+        }
+    }
+
+    public function saveMailSettings(DynamicMailConfig $dynamicMail): void
+    {
+        $validated = $this->validate([
+            'mail_dynamic_enabled' => ['boolean'],
+            'mail_mailer' => ['required', 'in:smtp,log'],
+            'mail_host' => ['required_if:mail_mailer,smtp', 'nullable', 'string', 'max:255'],
+            'mail_port' => ['required_if:mail_mailer,smtp', 'integer', 'between:1,65535'],
+            'mail_username' => ['nullable', 'string', 'max:255'],
+            'mail_password' => ['nullable', 'string', 'max:1000'],
+            'mail_scheme' => ['nullable', 'in:smtp,smtps'],
+            'mail_from_address' => ['required', 'email:rfc', 'max:255'],
+            'mail_from_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        foreach ([
+            'dynamic_enabled' => $validated['mail_dynamic_enabled'] ? '1' : '0',
+            'mailer' => $validated['mail_mailer'], 'host' => $validated['mail_host'] ?? '',
+            'port' => (string) $validated['mail_port'], 'username' => $validated['mail_username'] ?? '',
+            'scheme' => $validated['mail_scheme'] ?? 'smtp', 'from_address' => $validated['mail_from_address'],
+            'from_name' => $validated['mail_from_name'],
+        ] as $key => $value) {
+            SystemSetting::set("mail.{$key}", $value);
+        }
+        if ($this->mail_password !== '') {
+            SystemSetting::set('mail.password', $dynamicMail->encryptPassword($this->mail_password));
+        }
+
+        $dynamicMail->apply();
+        app('mail.manager')->purge($this->mail_mailer);
+        $this->loadMailSettings();
+        $this->success('Email configuration saved. New web requests use it immediately; restart queue workers if applicable.');
+    }
+
+    public function sendTestEmail(DynamicMailConfig $dynamicMail): void
+    {
+        $this->validate(['mail_test_recipient' => ['required', 'email:rfc', 'max:255']]);
+        $dynamicMail->apply();
+        app('mail.manager')->purge(config('mail.default'));
+        Mail::raw('This is a Project ACCESS email configuration test.', function ($message): void {
+            $message->to($this->mail_test_recipient)->subject('Project ACCESS email test');
+        });
+        $this->success('Test email sent to '.$this->mail_test_recipient.'.');
     }
 
     public function loadModuleSettings(): void
@@ -115,6 +212,7 @@ class SystemSettings extends Component
         \Cache::forget('system_settings_public');
 
         $this->success('Appearance settings updated successfully!');
+
         // Reload settings
         return redirect()->route('admin.system-settings');
     }

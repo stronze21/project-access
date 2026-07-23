@@ -8,6 +8,7 @@
                     'appearance' => 'Appearance',
                     'location' => 'Location',
                     'contact' => 'Contact',
+                    'email' => 'Email',
                     'modules' => 'Modules',
                 ] as $tab => $label)
                     <button type="button" wire:click="changeTab('{{ $tab }}')"
@@ -151,6 +152,26 @@
                             <x-mary-button type="submit" class="btn-primary">Save Modules</x-mary-button>
                         </div>
                     </form>
+                @endif
+
+                @if ($activeTab === 'email')
+                    <h2 class="text-xl font-medium">Email Delivery</h2>
+                    <p class="mb-4 text-sm text-gray-600">Configure confirmation-code and system email delivery without editing the environment file. Stored passwords are encrypted.</p>
+                    <form wire:submit.prevent="saveMailSettings" class="space-y-4">
+                        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4"><x-mary-toggle label="Use database email settings" wire:model="mail_dynamic_enabled" /><p class="mt-1 text-xs text-blue-800">When disabled, the application uses the existing .env mail configuration.</p></div>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <x-mary-select label="Mailer" wire:model="mail_mailer" :options="[['id'=>'smtp','name'=>'SMTP'],['id'=>'log','name'=>'Log only (testing)']]" />
+                            <x-mary-select label="Connection" wire:model="mail_scheme" :options="[['id'=>'smtp','name'=>'SMTP / STARTTLS'],['id'=>'smtps','name'=>'Implicit TLS (SMTPS)']]" />
+                            <x-mary-input label="SMTP host" wire:model="mail_host" />
+                            <x-mary-input label="SMTP port" type="number" wire:model="mail_port" />
+                            <x-mary-input label="Username" wire:model="mail_username" autocomplete="off" />
+                            <x-mary-input label="Password" type="password" wire:model="mail_password" autocomplete="new-password" hint="{{ $mail_password_configured ? 'A password is configured. Leave blank to keep it.' : 'Enter the SMTP password.' }}" />
+                            <x-mary-input label="From address" type="email" wire:model="mail_from_address" />
+                            <x-mary-input label="From name" wire:model="mail_from_name" />
+                        </div>
+                        <div class="flex justify-end"><x-mary-button type="submit" class="btn-primary" spinner="saveMailSettings">Save Email Settings</x-mary-button></div>
+                    </form>
+                    <div class="mt-6 border-t pt-5"><h3 class="font-semibold text-slate-800">Send a test email</h3><div class="mt-3 flex flex-col gap-3 sm:flex-row"><x-mary-input type="email" wire:model="mail_test_recipient" placeholder="recipient@example.com" class="flex-1" /><x-mary-button wire:click="sendTestEmail" spinner="sendTestEmail" class="btn-outline" label="Send Test" /></div></div>
                 @endif
             </x-mary-card>
         </div>

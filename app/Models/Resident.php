@@ -278,6 +278,11 @@ class Resident extends Authenticatable
         return $this->hasMany(ResidentNotification::class);
     }
 
+    public function identityChangeRequests(): HasMany
+    {
+        return $this->hasMany(ResidentIdentityChangeRequest::class);
+    }
+
     /**
      * Get all device tokens for this resident.
      */

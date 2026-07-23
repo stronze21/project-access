@@ -7,6 +7,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\ModuleSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -85,5 +86,26 @@ class ModuleSettingsTest extends TestCase
         SystemSetting::clearCache();
 
         $this->assertFalse(app(ModuleSettings::class)->enabled('sentiments'));
+    }
+
+    public function test_system_settings_store_dynamic_mail_password_encrypted(): void
+    {
+        Livewire::test(SystemSettings::class)
+            ->set('mail_dynamic_enabled', true)
+            ->set('mail_mailer', 'smtp')
+            ->set('mail_host', 'smtp.example.test')
+            ->set('mail_port', 587)
+            ->set('mail_username', 'mailer')
+            ->set('mail_password', 'secret-password')
+            ->set('mail_scheme', 'smtp')
+            ->set('mail_from_address', 'noreply@example.test')
+            ->set('mail_from_name', 'Project ACCESS')
+            ->call('saveMailSettings')
+            ->assertHasNoErrors();
+
+        $stored = SystemSetting::where('key', 'mail.password')->value('value');
+        $this->assertNotSame('secret-password', $stored);
+        $this->assertSame('secret-password', Crypt::decryptString($stored));
+        $this->assertSame('smtp.example.test', config('mail.mailers.smtp.host'));
     }
 }

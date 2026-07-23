@@ -168,6 +168,13 @@
                         </div>
 
                         <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-base-content/70">
+                            <div class="col-span-2 rounded-lg bg-blue-50 px-2.5 py-2 text-blue-900">
+                                <p class="font-semibold text-blue-700">Complainant</p>
+                                <p class="mt-0.5 font-semibold">{{ $complaint->complainantNameForAdmin() }}</p>
+                                @if($complaint->complainantIdentifierForAdmin())
+                                    <p class="mt-0.5 font-mono text-[11px] text-blue-700">Resident ID/PIN: {{ $complaint->complainantIdentifierForAdmin() }}</p>
+                                @endif
+                            </div>
                             <div class="rounded-lg bg-base-200 px-2.5 py-2">
                                 <p class="font-semibold text-base-content/60">Department</p>
                                 <p class="mt-0.5 text-base-content/80">{{ $complaint->assignedDepartment?->name ?? 'Unassigned' }}</p>
@@ -213,6 +220,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-base-content/60">Reference</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-base-content/60">Title</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-base-content/60">Complainant</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-base-content/60">Status</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-base-content/60">Priority</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-base-content/60">Department</th>
@@ -251,6 +259,12 @@
                                         <p class="text-xs text-base-content/60">{{ $complaint->category?->name }}</p>
                                     </td>
                                     <td class="px-4 py-3 text-sm">
+                                        <p class="font-semibold text-base-content">{{ $complaint->complainantNameForAdmin() }}</p>
+                                        @if($complaint->complainantIdentifierForAdmin())
+                                            <p class="font-mono text-xs text-base-content/60">{{ $complaint->complainantIdentifierForAdmin() }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
                                         <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }} badge badge-sm">
                                             {{ str_replace('_', ' ', ucfirst($complaint->status)) }}
                                         </span>
@@ -277,7 +291,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="px-4 py-10 text-center text-sm text-base-content/70">No complaints found.</td>
+                                    <td colspan="11" class="px-4 py-10 text-center text-sm text-base-content/70">No complaints found.</td>
                                 </tr>
                             @endforelse
                         </tbody>

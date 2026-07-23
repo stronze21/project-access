@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\SystemSetting;
+use App\Services\DynamicMailConfig;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +16,7 @@ class SettingsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton('settings', function ($app) {
-            return new \App\Services\SettingsService();
+            return new \App\Services\SettingsService;
         });
     }
 
@@ -27,6 +28,7 @@ class SettingsServiceProvider extends ServiceProvider
         // Only load settings when the system_settings table exists
         try {
             if (\Schema::hasTable('system_settings')) {
+                app(DynamicMailConfig::class)->apply();
                 // Load all public settings for views
                 View::composer('*', function ($view) {
                     $settings = \Cache::rememberForever('system_settings_public', function () {
@@ -42,11 +44,11 @@ class SettingsServiceProvider extends ServiceProvider
                 // Register a Blade directive to get settings
                 Blade::directive('setting', function ($expression) {
                     return "<?php echo \App\Models\SystemSetting::get($expression); ?>";
-});
-}
-} catch (\Exception $e) {
-// Table doesn't exist yet, probably during migration
-// Do nothing and continue with default values
-}
-}
+                });
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, probably during migration
+            // Do nothing and continue with default values
+        }
+    }
 }

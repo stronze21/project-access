@@ -8,12 +8,24 @@
     </div>
     <section class="auth-mpin-panel identifier">
         <a class="text-button back-account" href="{{ route('resident-portal.login') }}"><span class="material-symbols-rounded">arrow_back</span> Back to sign in</a>
-        <h1>Activate account</h1><p>Verify your registered resident information and create an MPIN.</p>
+        <h1>Activate account</h1><p>Verify your resident information, email address, and create an MPIN.</p>
         <form method="POST" action="{{ route('resident-portal.register.store') }}" class="form-stack" data-activation-form>
             @csrf
             <label>Resident ID<input name="resident_id" value="{{ old('resident_id') }}" required autocomplete="username"></label>
             <label>Last name<input name="last_name" value="{{ old('last_name') }}" required></label>
             <label>Birth date<input type="date" name="birth_date" value="{{ old('birth_date') }}" required></label>
+            <label>Email address<input type="email" name="email" value="{{ old('email', $emailChallengeAddress) }}" required autocomplete="email"></label>
+            <button class="outline-button" type="submit" formaction="{{ route('resident-portal.register.email-code') }}" formnovalidate>
+                {{ $emailChallengeId ? 'Send a new confirmation code' : 'Send confirmation code' }}
+            </button>
+            @if($emailChallengeId)
+                <input type="hidden" name="email_challenge_id" value="{{ $emailChallengeId }}">
+                <div class="portal-alert success"><span class="material-symbols-rounded filled">mark_email_read</span><span>Enter the six-digit code sent to {{ $emailChallengeAddress }}. It expires in 10 minutes.</span></div>
+                <label>Confirmation code<input name="email_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"></label>
+            @else
+                <input type="hidden" name="email_challenge_id" value="">
+                <label>Confirmation code<input name="email_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required disabled placeholder="Send a code first"></label>
+            @endif
             <label>Create 6-digit MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin" required autocomplete="new-password"></label>
             <label>Confirm MPIN<input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" name="mpin_confirmation" required autocomplete="new-password"></label>
             <div class="auth-consent">
@@ -28,7 +40,7 @@
                 <input id="bhwis_import_consented" type="checkbox" name="bhwis_import_consented" value="1" data-legal-checkbox="consent" required disabled>
                 <div class="auth-consent-copy"><label for="bhwis_import_consented">I consent to retrieving and importing my registered BHWIS information for account activation.</label> <button type="button" class="auth-legal-button" data-legal-open="consent">Read the consent details</button><span>.</span></div>
             </div>
-            <button class="primary-button" type="submit" data-activation-submit disabled>Activate account</button>
+            <button class="primary-button" type="submit" data-activation-submit disabled data-email-ready="{{ $emailChallengeId ? '1' : '0' }}">Verify email and activate account</button>
             <noscript><p class="auth-script-warning">JavaScript is required to review and accept the activation agreements.</p></noscript>
         </form>
     </section>

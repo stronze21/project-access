@@ -11,6 +11,7 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('resident
         Route::get('/forgot-mpin', [ResidentPortalAuthController::class, 'showForgotMpin'])->name('mpin.forgot');
         Route::post('/forgot-mpin', [ResidentPortalAuthController::class, 'resetMpin'])->middleware('throttle:5,1')->name('mpin.reset');
         Route::get('/register', [ResidentPortalAuthController::class, 'showRegister'])->name('register');
+        Route::post('/register/email-code', [ResidentPortalAuthController::class, 'sendEmailCode'])->middleware('throttle:10,1')->name('register.email-code');
         Route::post('/register', [ResidentPortalAuthController::class, 'register'])->name('register.store');
     });
 
@@ -19,8 +20,8 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('resident
         Route::post('/logout', [ResidentPortalAuthController::class, 'logout'])->name('logout');
         Route::put('/account/mpin', [ResidentPortalAuthController::class, 'changeMpin'])->name('mpin.update');
         Route::put('/profile', [ResidentPortalController::class, 'updateProfile'])->name('profile.update');
-        Route::post('/profile/photo', [ResidentPortalController::class, 'uploadPhoto'])->name('profile.photo');
-        Route::post('/profile/signature', [ResidentPortalController::class, 'uploadSignature'])->name('profile.signature');
+        Route::post('/profile/photo', [ResidentPortalController::class, 'requestPhotoReplacement'])->name('profile.photo');
+        Route::post('/profile/signature', [ResidentPortalController::class, 'requestSignatureReplacement'])->name('profile.signature');
         Route::post('/actions/support', [ResidentPortalController::class, 'storeSupport'])->name('support.store');
         Route::post('/actions/account-deletion', [ResidentPortalController::class, 'storeAccountDeletion'])->name('account-deletion.store');
         Route::post('/actions/notifications/read-all', [ResidentPortalController::class, 'readAllNotifications'])->name('notifications.read-all');

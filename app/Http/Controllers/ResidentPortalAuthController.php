@@ -8,6 +8,7 @@ use App\Exceptions\ResidentAlreadyActivatedException;
 use App\Exceptions\ResidentIdentityMismatchException;
 use App\Models\Resident;
 use App\Services\Bhwis\ResidentActivationService;
+use App\Services\ResidentEmailVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,36 @@ class ResidentPortalAuthController extends Controller
 
     public function showRegister(): View
     {
-        return view('resident-portal.auth.register');
+        return view('resident-portal.auth.register', [
+            'emailChallengeId' => old('email_challenge_id', session('resident_email_challenge_id')),
+            'emailChallengeAddress' => old('email', session('resident_email_challenge_address')),
+        ]);
+    }
+
+    public function sendEmailCode(Request $request, ResidentEmailVerificationService $verification): RedirectResponse
+    {
+        $validated = $request->validate([
+            'resident_id' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'birth_date' => ['required', 'date', 'before:today'],
+            'email' => ['required', 'email:rfc', 'max:255'],
+        ]);
+
+        try {
+            $challenge = $verification->send($validated, $request);
+        } catch (ResidentIdentityMismatchException) {
+            return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->withErrors(['resident_id' => 'No matching resident record was found.']);
+        } catch (ResidentAlreadyActivatedException) {
+            return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->withErrors(['resident_id' => 'This resident account is already activated.']);
+        } catch (BhwisUnavailableException) {
+            return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->withErrors(['resident_id' => 'Resident verification is temporarily unavailable. Please try again later.']);
+        }
+
+        return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->with([
+            'resident_email_challenge_id' => $challenge->challenge_id,
+            'resident_email_challenge_address' => $challenge->email,
+            'status' => 'A six-digit confirmation code was sent to '.$challenge->email.'.',
+        ]);
     }
 
     public function showForgotMpin(): View
@@ -97,17 +127,22 @@ class ResidentPortalAuthController extends Controller
         return redirect()->intended(route('resident-portal.home'));
     }
 
-    public function register(Request $request, ResidentActivationService $activation): RedirectResponse
+    public function register(Request $request, ResidentActivationService $activation, ResidentEmailVerificationService $verification): RedirectResponse
     {
         $validated = $request->validate([
             'resident_id' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'birth_date' => ['required', 'date'],
+            'email' => ['required', 'email:rfc', 'max:255'],
+            'email_challenge_id' => ['required', 'uuid'],
+            'email_code' => ['required', 'digits:6'],
             'mpin' => ['required', 'digits:6', 'confirmed'],
             'terms_accepted' => ['required', 'accepted'],
             'privacy_notice_acknowledged' => ['required', 'accepted'],
             'bhwis_import_consented' => ['required', 'accepted'],
         ]);
+
+        $challenge = $verification->verify($validated);
 
         try {
             $resident = $activation->activate($validated, $request, 'web');
@@ -124,6 +159,8 @@ class ResidentPortalAuthController extends Controller
             return back()->withErrors(['resident_id' => 'Too many activation attempts. Please try again later.'])
                 ->setStatusCode(429);
         }
+
+        $verification->consume($challenge);
 
         Auth::guard('resident')->login($resident, true);
         $request->session()->regenerate();

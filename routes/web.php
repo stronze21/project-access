@@ -7,6 +7,7 @@ use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ResidentCsvController;
 use App\Http\Controllers\ResidentIdCardController;
+use App\Http\Controllers\ResidentIdentityChangeRequestMediaController;
 use App\Http\Controllers\SupportRequestController;
 use App\Livewire\Admin\CitizenServicesManager;
 use App\Livewire\Admin\RoleManagement;
@@ -34,6 +35,7 @@ use App\Livewire\RegistrationOfficerDashboard;
 use App\Livewire\Reports;
 use App\Livewire\Reports\DistributionsReport;
 use App\Livewire\Reports\ReportController;
+use App\Livewire\ResidentIdentityChangeRequests;
 use App\Livewire\ResidentList;
 use App\Livewire\ResidentPhotoSignatureManager;
 use App\Livewire\ResidentRegistration;
@@ -120,6 +122,13 @@ Route::middleware([
         Route::get('/photo-signature-manager', ResidentPhotoSignatureManager::class)
             ->middleware('permission:import-residents')
             ->name('residents.photo-signature-manager');
+
+        Route::get('/identity-change-requests', ResidentIdentityChangeRequests::class)
+            ->middleware('permission:edit-residents')
+            ->name('residents.identity-change-requests');
+        Route::get('/identity-change-requests/{identityRequest}/media', ResidentIdentityChangeRequestMediaController::class)
+            ->middleware('permission:edit-residents')
+            ->name('residents.identity-change-requests.media');
 
         // New route for signature update
         Route::get('/{residentId}/update-signature', ResidentSignatureUpdate::class)

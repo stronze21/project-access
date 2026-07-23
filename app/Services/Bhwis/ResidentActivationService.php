@@ -65,6 +65,7 @@ class ResidentActivationService
                 $credential = $data['mpin'] ?? $data['password'] ?? null;
                 $resident->forceFill([
                     isset($data['mpin']) ? 'mpin' : 'password' => $credential,
+                    'email' => strtolower(trim($data['email'])),
                     'last_login_at' => now(),
                 ])->save();
 
@@ -96,6 +97,28 @@ class ResidentActivationService
                 'exception' => $e::class,
             ]);
             throw $e;
+        }
+    }
+
+    public function assertCanActivate(array $data): void
+    {
+        $pin = trim((string) $data['resident_id']);
+        $resident = Resident::query()->where('resident_id', $pin)->first();
+
+        if ($resident) {
+            $this->assertIdentity($resident, $data);
+            if ($resident->mpin || $resident->password) {
+                throw new ResidentAlreadyActivatedException;
+            }
+            if (! $resident->is_active) {
+                throw new ResidentIdentityMismatchException;
+            }
+
+            return;
+        }
+
+        if (! $this->gateway->findResident($pin, $data['last_name'], $data['birth_date'])) {
+            throw new ResidentIdentityMismatchException;
         }
     }
 

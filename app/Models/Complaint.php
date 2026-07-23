@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 class Complaint extends Model
@@ -18,23 +18,35 @@ class Complaint extends Model
     public const DISPLAY_TIMEZONE = 'Asia/Manila';
 
     public const STATUS_RECEIVED = 'received';
+
     public const STATUS_ASSIGNED = 'assigned';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_RESOLVED = 'resolved';
+
     public const STATUS_CLOSED = 'closed';
 
     public const PRIORITY_LOW = 'low';
+
     public const PRIORITY_MEDIUM = 'medium';
+
     public const PRIORITY_HIGH = 'high';
+
     public const PRIORITY_URGENT = 'urgent';
 
     public const VISIBILITY_PUBLIC_NAMED = 'public_named';
+
     public const VISIBILITY_PUBLIC_ANONYMOUS = 'public_anonymous';
+
     public const VISIBILITY_PRIVATE = 'private';
 
     public const MODERATION_NORMAL = 'normal';
+
     public const MODERATION_SPAM = 'spam';
+
     public const MODERATION_ABUSIVE = 'abusive';
+
     public const MODERATION_INVALID = 'invalid';
 
     protected $fillable = [
@@ -237,6 +249,19 @@ class Complaint extends Model
         $duration = $this->formatDuration($this->created_at, $end);
 
         return $accomplishedAt ? $duration : $duration.' (ongoing)';
+    }
+
+    public function complainantNameForAdmin(): string
+    {
+        return $this->submitter?->resident?->full_name
+            ?? $this->submitter?->name
+            ?? $this->reporter_name
+            ?? 'Anonymous submission';
+    }
+
+    public function complainantIdentifierForAdmin(): ?string
+    {
+        return $this->submitter?->resident?->resident_id;
     }
 
     public function timeMetricTitle(): string

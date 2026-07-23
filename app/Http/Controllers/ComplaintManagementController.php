@@ -20,7 +20,10 @@ class ComplaintManagementController extends Controller
         abort_unless($user?->isInternalUser(), 403);
 
         $baseQuery = Complaint::query()
-            ->with(['category:id,name', 'assignedDepartment:id,name', 'assignedOfficer:id,name'])
+            ->with([
+                'category:id,name', 'assignedDepartment:id,name', 'assignedOfficer:id,name',
+                'submitter:id,resident_id,name', 'submitter.resident:id,resident_id,first_name,last_name,middle_name,suffix',
+            ])
             ->latest('id');
 
         $this->applyRoleScope($baseQuery, $user);
@@ -100,7 +103,8 @@ class ComplaintManagementController extends Controller
         $this->authorize('viewInternal', $complaint);
 
         $complaint->load([
-            'submitter:id,name,email',
+            'submitter:id,resident_id,name,email',
+            'submitter.resident:id,resident_id,first_name,last_name,middle_name,suffix',
             'category:id,name',
             'barangay:id,name',
             'assignedDepartment:id,name',

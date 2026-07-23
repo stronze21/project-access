@@ -333,13 +333,16 @@ class ResidentWebPortalTest extends TestCase
         ]);
     }
 
-    public function test_resident_can_update_signature_and_submit_portal_support_and_data_requests(): void
+    public function test_resident_can_request_signature_replacement_and_submit_portal_support_and_data_requests(): void
     {
         $resident = $this->resident();
         $session = ['resident_portal_expires_at' => now()->addDays(60)];
 
         $this->actingAs($resident, 'resident')->withSession($session)
-            ->post('/resident-portal/profile/signature', ['signature' => 'data:image/png;base64,'.base64_encode('signature')])
+            ->post('/resident-portal/profile/signature', [
+                'signature' => 'data:image/png;base64,'.base64_encode('signature'),
+                'reason' => 'My signature has permanently changed.',
+            ])
             ->assertSessionHasNoErrors();
 
         $this->actingAs($resident, 'resident')->withSession($session)
@@ -350,7 +353,12 @@ class ResidentWebPortalTest extends TestCase
             ->post('/resident-portal/actions/account-deletion', ['requested_action' => 'delete-app-data-only', 'retention_acknowledged' => '1'])
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('residents', ['id' => $resident->id, 'signature_status' => 'completed']);
+        $this->assertNull($resident->fresh()->signature);
+        $this->assertDatabaseHas('resident_identity_change_requests', [
+            'resident_id' => $resident->id,
+            'type' => 'signature',
+            'status' => 'pending',
+        ]);
         $this->assertDatabaseHas('support_requests', ['resident_id' => $resident->id, 'source' => 'resident-web']);
         $this->assertDatabaseHas('account_deletion_requests', ['resident_id' => $resident->id, 'source' => 'resident-web']);
     }

@@ -9,6 +9,7 @@ use App\Exceptions\ResidentIdentityMismatchException;
 use App\Http\Controllers\Controller;
 use App\Models\Resident;
 use App\Services\Bhwis\ResidentActivationService;
+use App\Services\ResidentEmailVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,36 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    public function sendEmailCode(Request $request, ResidentEmailVerificationService $verification): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'resident_id' => 'required|string|max:100',
+            'birth_date' => 'required|date|before:today',
+            'last_name' => 'required|string|max:100',
+            'email' => 'required|email:rfc|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Please check your information and try again.', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $challenge = $verification->send($validator->validated(), $request);
+        } catch (ResidentIdentityMismatchException) {
+            return response()->json(['message' => 'No matching resident record found.'], 404);
+        } catch (ResidentAlreadyActivatedException) {
+            return response()->json(['message' => 'This resident account has already been activated.'], 409);
+        } catch (BhwisUnavailableException) {
+            return response()->json(['message' => 'Resident verification is temporarily unavailable.', 'retryable' => true], 503);
+        }
+
+        return response()->json([
+            'message' => 'A confirmation code was sent to your email address.',
+            'challenge_id' => $challenge->challenge_id,
+            'expires_in' => 600,
+        ]);
+    }
+
     /**
      * Login a resident and issue a Sanctum token.
      *
@@ -84,12 +115,15 @@ class AuthController extends Controller
      * Project ACCESS validates an existing local resident first. BHWIS is only
      * queried to validate and import a resident who is missing locally.
      */
-    public function register(Request $request, ResidentActivationService $activation): JsonResponse
+    public function register(Request $request, ResidentActivationService $activation, ResidentEmailVerificationService $verification): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'resident_id' => 'required|string',
             'birth_date' => 'required|date',
             'last_name' => 'required|string',
+            'email' => 'required|email:rfc|max:255',
+            'email_challenge_id' => 'required|uuid',
+            'email_code' => 'required|digits:6',
             'mpin' => 'required_without:password|nullable|digits:6|confirmed',
             'password' => 'required_without:mpin|nullable|string|min:8|confirmed',
             'device_name' => 'nullable|string|max:255',
@@ -104,6 +138,8 @@ class AuthController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+        $challenge = $verification->verify($validator->validated());
 
         try {
             $resident = $activation->activate($validator->validated(), $request, 'api');
@@ -129,6 +165,8 @@ class AuthController extends Controller
                 'retry_after' => $e->retryAfter,
             ], 429)->header('Retry-After', (string) $e->retryAfter);
         }
+
+        $verification->consume($challenge);
 
         $deviceName = $request->device_name ?? ($request->userAgent() ?? 'mobile-app');
         $token = $resident->createToken($deviceName, ['resident-portal'])->plainTextToken;

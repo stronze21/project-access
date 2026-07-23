@@ -17,9 +17,12 @@ return new class extends Migration
             $table->string('terms_version');
             $table->string('privacy_version');
             $table->string('bhwis_consent_version');
-            $table->timestamp('terms_accepted_at');
-            $table->timestamp('privacy_acknowledged_at');
-            $table->timestamp('bhwis_consented_at');
+            // DATETIME avoids MySQL/MariaDB's legacy implicit defaults for
+            // consecutive non-null TIMESTAMP columns. These values are always
+            // supplied explicitly when the consent audit is created.
+            $table->dateTime('terms_accepted_at');
+            $table->dateTime('privacy_acknowledged_at');
+            $table->dateTime('bhwis_consented_at');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->string('device_name')->nullable();

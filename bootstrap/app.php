@@ -2,10 +2,10 @@
 
 use App\Exceptions\BhwisUnavailableException;
 use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\EnsureIdempotentRequest;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureResidentPortalMobileDevice;
 use App\Http\Middleware\EnsureResidentPortalSessionFresh;
-use App\Http\Middleware\EnsureIdempotentRequest;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -52,6 +52,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->dontFlash(['current_password', 'password', 'password_confirmation', 'mpin', 'mpin_confirmation', 'email_code']);
+
         $exceptions->render(function (BhwisUnavailableException $exception, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([

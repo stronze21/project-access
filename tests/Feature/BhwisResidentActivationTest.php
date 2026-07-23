@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Exceptions\BhwisUnavailableException;
 use App\Models\Resident;
+use App\Models\ResidentEmailVerificationCode;
 use App\Services\Bhwis\BhwisGateway;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
@@ -26,6 +27,7 @@ class BhwisResidentActivationTest extends TestCase
     {
         $this->postJson('/api/resident-portal/register', [
             'resident_id' => 'PIN-1', 'last_name' => 'Santos', 'birth_date' => '1990-05-21',
+            'email' => 'resident@example.test', 'email_challenge_id' => (string) str()->uuid(), 'email_code' => '123456',
             'mpin' => '123456', 'mpin_confirmation' => '123456',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['terms_accepted', 'privacy_notice_acknowledged', 'bhwis_import_consented']);
@@ -69,6 +71,7 @@ class BhwisResidentActivationTest extends TestCase
 
         $payload = $this->payload('PIN-LOCAL');
         $payload['last_name'] = 'Incorrect';
+        ResidentEmailVerificationCode::where('challenge_id', $payload['email_challenge_id'])->update(['last_name' => 'Incorrect']);
 
         $this->postJson('/api/resident-portal/register', $payload)
             ->assertNotFound()
@@ -132,11 +135,21 @@ class BhwisResidentActivationTest extends TestCase
 
     private function payload(string $pin): array
     {
-        return [
+        $payload = [
             'resident_id' => $pin, 'last_name' => 'Santos', 'birth_date' => '1990-05-21',
+            'email' => strtolower($pin).'@example.test', 'email_code' => '123456',
             'mpin' => '123456', 'mpin_confirmation' => '123456',
             'terms_accepted' => true, 'privacy_notice_acknowledged' => true, 'bhwis_import_consented' => true,
             'device_name' => 'test-device',
         ];
+        $challenge = ResidentEmailVerificationCode::create([
+            'challenge_id' => (string) str()->uuid(), 'resident_identifier' => $pin,
+            'last_name' => $payload['last_name'], 'birth_date' => $payload['birth_date'],
+            'email' => $payload['email'], 'code_hash' => Hash::make($payload['email_code']),
+            'expires_at' => now()->addMinutes(10),
+        ]);
+        $payload['email_challenge_id'] = $challenge->challenge_id;
+
+        return $payload;
     }
 }

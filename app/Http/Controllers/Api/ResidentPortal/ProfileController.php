@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\ResidentPortal;
 
 use App\Http\Controllers\Controller;
+use App\Services\ResidentIdentityChangeRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Validator;
 
 class ProfileController extends Controller
 {
+    public function __construct(private ResidentIdentityChangeRequestService $identityChanges) {}
+
     /**
      * Get the authenticated resident's profile.
      */
@@ -60,57 +63,45 @@ class ProfileController extends Controller
         ]);
     }
 
-    /**
-     * Upload/update the resident's profile photo.
-     */
+    /** Submit a verified replacement request; never directly changes identity media. */
     public function uploadPhoto(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'reason' => 'required|string|min:10|max:1000',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $resident = $request->user();
-
-        // Delete old photo if exists
-        if ($resident->photo_path && Storage::disk('public')->exists($resident->photo_path)) {
-            Storage::disk('public')->delete($resident->photo_path);
-        }
-
-        $path = $request->file('photo')->store('resident-photos', 'public');
-
-        $resident->update(['photo_path' => $path]);
+        $changeRequest = $this->identityChanges->submitPhoto($request->user(), $request->file('photo'), $request->string('reason')->toString());
 
         return response()->json([
-            'message' => 'Photo uploaded successfully',
-            'photo_url' => Storage::disk('public')->url($path),
-        ]);
+            'message' => 'Profile photo replacement request submitted for identity verification.',
+            'request' => ['reference_number' => $changeRequest->reference_number, 'status' => $changeRequest->status],
+            'photo_url' => null,
+        ], 202);
     }
 
-    /**
-     * Upload/update the resident's signature (base64 data URL).
-     */
+    /** Submit a verified replacement request; never directly changes identity media. */
     public function uploadSignature(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'signature' => 'required|string',
+            'signature' => 'required|string|starts_with:data:image/png;base64,|max:1500000',
+            'reason' => 'required|string|min:10|max:1000',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $resident = $request->user();
-        $resident->signature = $request->signature;
-        $resident->signature_status = 'completed';
-        $resident->save();
+        $changeRequest = $this->identityChanges->submitSignature($request->user(), $request->string('signature')->toString(), $request->string('reason')->toString());
 
         return response()->json([
-            'message' => 'Signature updated successfully',
-        ]);
+            'message' => 'Signature replacement request submitted for identity verification.',
+            'request' => ['reference_number' => $changeRequest->reference_number, 'status' => $changeRequest->status],
+        ], 202);
     }
 
     /**

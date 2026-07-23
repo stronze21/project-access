@@ -18,6 +18,7 @@ use App\Models\Poll;
 use App\Models\PollVote;
 use App\Models\PublicServiceLink;
 use App\Models\Resident;
+use App\Models\ResidentIdentityChangeRequest;
 use App\Models\ResidentNotification;
 use App\Models\SentimentComment;
 use App\Models\SentimentPost;
@@ -27,12 +28,12 @@ use App\Models\SosDepartment;
 use App\Models\SupportRequest;
 use App\Services\ModuleSettings;
 use App\Services\ResidentCitizenAccountService;
+use App\Services\ResidentIdentityChangeRequestService;
 use App\Services\SentimentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -44,6 +45,7 @@ class ResidentPortalController extends Controller
         private ResidentCitizenAccountService $citizenAccounts,
         private ModuleSettings $modules,
         private SentimentService $sentiments,
+        private ResidentIdentityChangeRequestService $identityChanges,
     ) {}
 
     public function home(Request $request): View
@@ -72,26 +74,26 @@ class ResidentPortalController extends Controller
         return back()->with('status', 'Profile updated successfully.');
     }
 
-    public function uploadPhoto(Request $request): RedirectResponse
+    public function requestPhotoReplacement(Request $request): RedirectResponse
     {
-        $validated = $request->validate(['photo' => ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120']]);
-        $resident = $this->resident();
+        $validated = $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+        $changeRequest = $this->identityChanges->submitPhoto($this->resident(), $validated['photo'], $validated['reason']);
 
-        if ($resident->photo_path && Storage::disk('public')->exists($resident->photo_path)) {
-            Storage::disk('public')->delete($resident->photo_path);
-        }
-
-        $resident->update(['photo_path' => $validated['photo']->store('resident-photos', 'public')]);
-
-        return back()->with('status', 'Profile photo updated.');
+        return back()->with('status', "Profile photo replacement request {$changeRequest->reference_number} submitted for verification.");
     }
 
-    public function uploadSignature(Request $request): RedirectResponse
+    public function requestSignatureReplacement(Request $request): RedirectResponse
     {
-        $validated = $request->validate(['signature' => ['required', 'string', 'starts_with:data:image/png;base64,', 'max:1500000']]);
-        $this->resident()->update(['signature' => $validated['signature'], 'signature_status' => 'completed']);
+        $validated = $request->validate([
+            'signature' => ['required', 'string', 'starts_with:data:image/png;base64,', 'max:1500000'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+        $changeRequest = $this->identityChanges->submitSignature($this->resident(), $validated['signature'], $validated['reason']);
 
-        return back()->with('status', 'Signature updated successfully.');
+        return back()->with('status', "Signature replacement request {$changeRequest->reference_number} submitted for verification.");
     }
 
     public function storeSupport(Request $request): RedirectResponse
@@ -418,6 +420,13 @@ class ResidentPortalController extends Controller
 
         if ($screen === 'account-deletion') {
             return ['items' => AccountDeletionRequest::where('resident_id', $resident->id)->latest('submitted_at')->paginate(10)];
+        }
+
+        if ($screen === 'settings') {
+            return [
+                'identityRequests' => ResidentIdentityChangeRequest::where('resident_id', $resident->id)
+                    ->latest()->take(10)->get(),
+            ];
         }
 
         if ($screen === 'citizen-services/tracking') {
