@@ -33,7 +33,9 @@ class AuthController extends Controller
         try {
             $challenge = $verification->send($validator->validated(), $request);
         } catch (ResidentIdentityMismatchException) {
-            return response()->json(['message' => 'No matching resident record found.'], 404);
+            return response()->json([
+                'message' => 'No matching resident record found. Check the Resident ID/PIN, last name (surname), and birth date exactly as recorded in the local resident record.',
+            ], 404);
         } catch (ResidentAlreadyActivatedException) {
             return response()->json(['message' => 'This resident account has already been activated.'], 409);
         } catch (BhwisUnavailableException) {
@@ -145,7 +147,7 @@ class AuthController extends Controller
             $resident = $activation->activate($validator->validated(), $request, 'api');
         } catch (ResidentIdentityMismatchException) {
             return response()->json([
-                'message' => 'No matching resident record found. Please verify your information or contact your barangay office.',
+                'message' => 'No matching resident record found. Check the Resident ID/PIN, last name (surname), and birth date exactly as recorded in the local resident record.',
                 'errors' => ['resident_id' => ['No matching resident record found.']],
             ], 404);
         } catch (ResidentAlreadyActivatedException) {

@@ -12,7 +12,7 @@
         <form method="POST" action="{{ route('resident-portal.register.store') }}" class="form-stack" data-activation-form>
             @csrf
             <label>Resident ID<input name="resident_id" value="{{ old('resident_id') }}" required autocomplete="username"></label>
-            <label>Last name<input name="last_name" value="{{ old('last_name') }}" required></label>
+            <label>Last name (surname)<input name="last_name" value="{{ old('last_name') }}" required></label>
             <label>Birth date<input type="date" name="birth_date" value="{{ old('birth_date') }}" required></label>
             <label>Email address<input type="email" name="email" value="{{ old('email', $emailChallengeAddress) }}" required autocomplete="email"></label>
             <button class="outline-button" type="submit" formaction="{{ route('resident-portal.register.email-code') }}" formnovalidate>

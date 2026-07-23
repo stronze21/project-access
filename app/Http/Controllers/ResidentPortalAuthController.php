@@ -42,7 +42,7 @@ class ResidentPortalAuthController extends Controller
         try {
             $challenge = $verification->send($validated, $request);
         } catch (ResidentIdentityMismatchException) {
-            return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->withErrors(['resident_id' => 'No matching resident record was found.']);
+            return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->withErrors(['resident_id' => 'No matching resident record was found. Check the Resident ID/PIN, last name (surname), and birth date exactly as recorded in the local resident record.']);
         } catch (ResidentAlreadyActivatedException) {
             return back()->withInput($request->only(['resident_id', 'last_name', 'birth_date', 'email']))->withErrors(['resident_id' => 'This resident account is already activated.']);
         } catch (BhwisUnavailableException) {
@@ -148,7 +148,7 @@ class ResidentPortalAuthController extends Controller
             $resident = $activation->activate($validated, $request, 'web');
         } catch (ResidentIdentityMismatchException) {
             return back()->withInput($request->except(['mpin', 'mpin_confirmation']))
-                ->withErrors(['resident_id' => 'No matching resident record was found.']);
+                ->withErrors(['resident_id' => 'No matching resident record was found. Check the Resident ID/PIN, last name (surname), and birth date exactly as recorded in the local resident record.']);
         } catch (ResidentAlreadyActivatedException) {
             return back()->withErrors(['resident_id' => 'This resident account is already activated.']);
         } catch (BhwisUnavailableException) {
