@@ -43,12 +43,12 @@
     </div>
 
     <!-- Status Banner -->
-    <div
+    <div role="alert"
         class="mb-6 p-4 rounded-lg border
-        @if ($distribution->status === 'distributed') bg-green-50 border-green-200
-        @elseif($distribution->status === 'verified') bg-blue-50 border-blue-200
-        @elseif($distribution->status === 'pending') bg-yellow-50 border-yellow-200
-        @else bg-red-50 border-red-200 @endif">
+        @if ($distribution->status === 'distributed') alert-success bg-green-50 border-green-200
+        @elseif($distribution->status === 'verified') alert-info bg-blue-50 border-blue-200
+        @elseif($distribution->status === 'pending') alert-warning bg-yellow-50 border-yellow-200
+        @else alert-error bg-red-50 border-red-200 @endif">
         <div class="flex items-center">
             <div class="flex-shrink-0">
                 @if ($distribution->status === 'distributed')

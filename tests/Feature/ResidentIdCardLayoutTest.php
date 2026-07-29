@@ -64,6 +64,22 @@ class ResidentIdCardLayoutTest extends TestCase
         }
     }
 
+    public function test_front_preview_only_renders_the_front_id_card_without_print_controls(): void
+    {
+        $resident = $this->createResident();
+
+        $response = $this->withoutMiddleware()->get(
+            route('residents.id-card.landscape', ['id' => $resident->id, 'preview' => 'front'])
+        );
+
+        $response
+            ->assertOk()
+            ->assertSee('data-side="front"', false)
+            ->assertDontSee('data-side="back"', false)
+            ->assertDontSee('Print ID Card')
+            ->assertDontSee('ID Card Editor');
+    }
+
     public function test_resident_qr_code_is_rendered_as_svg_without_imagick(): void
     {
         $resident = $this->createResident([

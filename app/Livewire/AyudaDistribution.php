@@ -239,6 +239,9 @@ class AyudaDistribution extends Component
             return;
         }
 
+        // Replace the scanner with the resolved beneficiary as soon as a scan succeeds.
+        $this->showScanner = false;
+
         if ($result['type'] === 'resident') {
             $this->selectedResident = Resident::findOrFail($result['object']['id']);
             $this->selectedHousehold = $this->selectedResident->household ?? [];

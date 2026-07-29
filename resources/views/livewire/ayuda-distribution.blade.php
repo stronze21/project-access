@@ -116,64 +116,31 @@
                 @endif
 
                 @if ($selectedResident)
-                    <div class="p-4 mb-4 border border-blue-200 rounded-lg bg-blue-50">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0">
-                                <svg class="w-5 h-5 text-blue-500" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm0-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="flex-1 ml-3">
-                                <h3 class="text-sm font-medium text-blue-800">Selected Resident</h3>
-                                <div class="mt-1 text-sm text-blue-700">
-                                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        <div>
-                                            <p><span class="font-medium">Name:</span>
-                                                {{ $selectedResident->full_name }}</p>
-                                            <p><span class="font-medium">ID:</span>
-                                                {{ $selectedResident->resident_id }}</p>
-                                            <p><span class="font-medium">Gender:</span>
-                                                {{ ucfirst($selectedResident->gender) }}</p>
-                                            <p><span class="font-medium">Age:</span> {{ $selectedResident->getAge() }}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            @if ($selectedResident->household)
-                                                <p><span class="font-medium">Household:</span>
-                                                    {{ $selectedResident->household->household_id }}</p>
-                                                <p><span class="font-medium">Address:</span>
-                                                    {{ $selectedResident->household->address }},
-                                                    {{ $selectedResident->household->barangay }}</p>
-                                                <p><span class="font-medium">Household Members:</span>
-                                                    {{ $selectedResident->household->member_count }}</p>
-                                            @else
-                                                <p class="text-amber-700">No household assigned</p>
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    <!-- Eligibility Status -->
-                                    @if ($selectedProgramId)
-                                        <div
-                                            class="mt-2 p-2 rounded-md {{ $isEligible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                            <p class="font-medium">
-                                                {{ $isEligible ? '✓ Eligible' : '✗ Not Eligible' }}:
-                                                {{ $eligibilityMessage }}
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <div class="ml-3">
-                                <x-mary-button wire:click="$set('selectedResident', null)" icon="o-x-circle"
-                                    class="tagged-color btn-secondary btn-outline btn-secline" size="xs" />
-                            </div>
+                    <div class="max-w-2xl mx-auto mb-4" data-testid="scanned-resident-id-card">
+                        <div class="relative overflow-hidden bg-gray-100 border border-gray-200 rounded-xl shadow-lg"
+                            style="aspect-ratio: 3.375 / 2.125;">
+                            <iframe
+                                src="{{ route('residents.id-card.landscape', ['id' => $selectedResident->id, 'preview' => 'front']) }}"
+                                title="Front ID card of {{ $selectedResident->full_name }}"
+                                class="absolute inset-0 w-full h-full border-0"
+                                loading="eager"></iframe>
+                        </div>
+                        <div class="flex justify-end mt-2">
+                            <x-mary-button wire:click="$set('selectedResident', null)" icon="o-x-circle"
+                                class="tagged-color btn-secondary btn-outline btn-secline" size="sm"
+                                label="Clear resident" />
                         </div>
                     </div>
+
+                    @if ($selectedProgramId)
+                        <div
+                            class="max-w-xl p-3 mx-auto mb-4 text-sm rounded-md {{ $isEligible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            <p class="font-medium">
+                                {{ $isEligible ? '✓ Eligible' : '✗ Not Eligible' }}:
+                                {{ $eligibilityMessage }}
+                            </p>
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>

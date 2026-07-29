@@ -230,6 +230,42 @@
         background-color: rgb(8 47 73 / 0.55) !important;
     }
 
+    /*
+     * Semantic feedback banners need their own dark surfaces. DaisyUI's
+     * light alert colors and legacy Tailwind color utilities otherwise
+     * produce bright panels with low-contrast copy in dark mode.
+     */
+    .dark .alert-info {
+        border-color: rgb(14 116 144 / 0.75) !important;
+        background-color: rgb(8 47 73 / 0.82) !important;
+        color: rgb(207 250 254) !important;
+    }
+
+    .dark .alert-success {
+        border-color: rgb(5 150 105 / 0.7) !important;
+        background-color: rgb(2 44 34 / 0.86) !important;
+        color: rgb(209 250 229) !important;
+    }
+
+    .dark .alert-warning {
+        border-color: rgb(217 119 6 / 0.72) !important;
+        background-color: rgb(69 38 8 / 0.88) !important;
+        color: rgb(254 243 199) !important;
+    }
+
+    .dark .alert-error {
+        border-color: rgb(225 29 72 / 0.68) !important;
+        background-color: rgb(76 5 25 / 0.86) !important;
+        color: rgb(255 228 230) !important;
+    }
+
+    .dark .alert-info :is(svg, h1, h2, h3, h4, p, span),
+    .dark .alert-success :is(svg, h1, h2, h3, h4, p, span),
+    .dark .alert-warning :is(svg, h1, h2, h3, h4, p, span),
+    .dark .alert-error :is(svg, h1, h2, h3, h4, p, span) {
+        color: inherit !important;
+    }
+
     .dark .hover\:bg-gray-50:hover,
     .dark .hover\:bg-gray-100:hover,
     .dark .hover\:bg-slate-50:hover,
@@ -261,18 +297,25 @@
         color: rgb(199 210 254 / var(--tw-text-opacity, 1)) !important;
     }
 
+    .dark .bg-amber-50,
+    .dark .bg-yellow-50,
     .dark .bg-amber-100,
     .dark .bg-yellow-100 {
         background-color: rgb(113 63 18 / 0.62) !important;
     }
 
+    .dark .text-amber-400,
+    .dark .text-yellow-400,
     .dark .text-amber-700,
     .dark .text-amber-800,
+    .dark .text-amber-900,
     .dark .text-yellow-700,
-    .dark .text-yellow-800 {
+    .dark .text-yellow-800,
+    .dark .text-yellow-900 {
         color: rgb(254 240 138 / var(--tw-text-opacity, 1)) !important;
     }
 
+    .dark .bg-orange-50,
     .dark .bg-orange-100 {
         background-color: rgb(124 45 18 / 0.62) !important;
     }
@@ -282,30 +325,43 @@
         color: rgb(254 215 170 / var(--tw-text-opacity, 1)) !important;
     }
 
+    .dark .bg-emerald-50,
+    .dark .bg-green-50,
     .dark .bg-emerald-100,
     .dark .bg-green-100 {
         background-color: rgb(6 78 59 / 0.62) !important;
     }
 
+    .dark .text-emerald-400,
+    .dark .text-green-400,
     .dark .text-emerald-700,
     .dark .text-emerald-800,
+    .dark .text-emerald-900,
     .dark .text-green-700,
-    .dark .text-green-800 {
+    .dark .text-green-800,
+    .dark .text-green-900 {
         color: rgb(167 243 208 / var(--tw-text-opacity, 1)) !important;
     }
 
+    .dark .bg-rose-50,
+    .dark .bg-red-50,
     .dark .bg-rose-100,
     .dark .bg-red-100 {
         background-color: rgb(136 19 55 / 0.62) !important;
     }
 
+    .dark .text-rose-400,
+    .dark .text-red-400,
     .dark .text-rose-700,
     .dark .text-rose-800,
+    .dark .text-rose-900,
     .dark .text-red-700,
-    .dark .text-red-800 {
+    .dark .text-red-800,
+    .dark .text-red-900 {
         color: rgb(254 205 211 / var(--tw-text-opacity, 1)) !important;
     }
 
+    .dark .bg-purple-50,
     .dark .bg-purple-100 {
         background-color: rgb(88 28 135 / 0.62) !important;
     }
@@ -315,6 +371,7 @@
         color: rgb(233 213 255 / var(--tw-text-opacity, 1)) !important;
     }
 
+    .dark .bg-pink-50,
     .dark .bg-pink-100 {
         background-color: rgb(131 24 67 / 0.62) !important;
     }
@@ -363,6 +420,27 @@
     .dark .border-slate-200,
     .dark .border-slate-300 {
         border-color: rgb(51 65 85 / var(--tw-border-opacity, 1)) !important;
+    }
+
+    .dark .border-blue-200,
+    .dark .border-cyan-200 {
+        border-color: rgb(14 116 144 / 0.72) !important;
+    }
+
+    .dark .border-green-200,
+    .dark .border-emerald-200 {
+        border-color: rgb(5 150 105 / 0.65) !important;
+    }
+
+    .dark .border-yellow-200,
+    .dark .border-amber-200,
+    .dark .border-orange-200 {
+        border-color: rgb(217 119 6 / 0.66) !important;
+    }
+
+    .dark .border-red-200,
+    .dark .border-rose-200 {
+        border-color: rgb(225 29 72 / 0.62) !important;
     }
 
     .dark .shadow,

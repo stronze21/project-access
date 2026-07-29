@@ -6,9 +6,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACCESS ID - {{ $resident->full_name }}</title>
     @include('residents.partials.access-id-card-styles')
+    @if (request('preview') === 'front')
+        <style>
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                min-height: 0;
+                overflow: hidden;
+                background: #fff;
+            }
+
+            body {
+                display: flex;
+                align-items: flex-start;
+                justify-content: flex-start;
+                padding: 0;
+            }
+
+            .card-sheet,
+            .print-page {
+                width: 100%;
+                height: 100%;
+            }
+
+            .print-page {
+                box-shadow: none;
+                transform: scale(var(--preview-scale, 1));
+                transform-origin: top left;
+            }
+        </style>
+        <script>
+            const fitFrontIdCard = () => {
+                document.documentElement.style.setProperty('--preview-scale', window.innerWidth / 324);
+            };
+
+            fitFrontIdCard();
+            window.addEventListener('resize', fitFrontIdCard);
+        </script>
+    @endif
 </head>
 
 <body>
+    @if (request('preview') !== 'front')
     <nav class="print-controls" aria-label="ID card actions">
         <button type="button" onclick="window.print()">Print ID Card</button>
         <a href="{{ route('residents.show', $resident->id) }}">Back to Resident</a>
@@ -72,12 +112,18 @@
             </div>
         </div>
     </aside>
+    @endif
 
     <main class="card-sheet" aria-label="ACCESS identification card for {{ $resident->full_name }}">
-        @include('residents.partials.access-id-card', ['resident' => $resident])
+        @include('residents.partials.access-id-card', [
+            'resident' => $resident,
+            'side' => request('preview') === 'front' ? 'front' : 'both',
+        ])
     </main>
 
+    @if (request('preview') !== 'front')
     @include('residents.partials.access-id-card-editor')
+    @endif
 </body>
 
 </html>

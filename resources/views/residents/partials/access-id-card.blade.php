@@ -12,6 +12,7 @@
     $birthdate = $resident->formattedBirthDate() ?? '';
 @endphp
 
+@if (($side ?? 'both') !== 'back')
 <section class="print-page card-front" data-resident-id="{{ $resident->resident_id }}" data-side="front">
     @if ($photoUrl)
         <img class="resident-photo editable-element" data-editor-key="photo" data-editor-label="Resident Photo"
@@ -43,7 +44,9 @@
             src="{{ $signatureUrl }}" alt="Signature or thumbmark of {{ $resident->full_name }}">
     @endif
 </section>
+@endif
 
+@if (($side ?? 'both') !== 'front')
 <section class="print-page card-back" data-resident-id="{{ $resident->resident_id }}" data-side="back">
     <img class="back-artwork" src="{{ asset('images/id-cards/access-id-back.jpg') }}" alt="">
     <span class="back-qr-mask" aria-hidden="true"></span>
@@ -55,3 +58,4 @@
         (075) 551 2146. Unauthorized use is strictly prohibited.
     </p>
 </section>
+@endif
