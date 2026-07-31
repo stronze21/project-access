@@ -17,7 +17,7 @@ class ResidentCsvController extends Controller
      */
     protected $middleware = [
         'permission:export-residents' => ['only' => ['export', 'download']],
-        'permission:import-residents' => ['only' => ['import', 'processImport']],
+        'permission:import-residents' => ['only' => ['import', 'processImport', 'confirmImport', 'cancelImport']],
     ];
 
     /**
@@ -71,9 +71,21 @@ class ResidentCsvController extends Controller
     /**
      * Show the import form
      */
-    public function import()
+    public function import(Request $request)
     {
-        return view('residents.import');
+        $pendingImport = $request->session()->get('resident_csv_import');
+        $preview = null;
+
+        if ($pendingImport && Storage::exists($pendingImport['path'])) {
+            $preview = $this->csvService->previewFromCsv(Storage::path($pendingImport['path']));
+        } elseif ($pendingImport) {
+            $request->session()->forget('resident_csv_import');
+        }
+
+        return view('residents.import', [
+            'preview' => $preview,
+            'pendingFilename' => $pendingImport['filename'] ?? null,
+        ]);
     }
 
     /**
@@ -86,29 +98,62 @@ class ResidentCsvController extends Controller
         ]);
 
         try {
-            // Store file temporarily
+            $this->deletePendingImport($request);
+
+            // Store the file until the user confirms or cancels the preview.
             $path = $request->file('csv_file')->store('temp');
-            $fullPath = Storage::path($path);
+            $request->session()->put('resident_csv_import', [
+                'path' => $path,
+                'filename' => $request->file('csv_file')->getClientOriginalName(),
+            ]);
 
-            // Process the file
-            $importStats = $this->csvService->importFromCsv($fullPath);
-
-            // Delete the temporary file
-            Storage::delete($path);
-
-            if (! empty($importStats['errors'])) {
-                return redirect()->route('residents.import')
-                    ->with('warning', 'Import completed with errors')
-                    ->with('importStats', $importStats);
-            }
-
-            return redirect()->route('residents.index')
-                ->with('success', 'Import completed successfully')
-                ->with('importStats', $importStats);
+            return redirect()->route('residents.import');
         } catch (\Exception $e) {
             return redirect()->route('residents.import')
-                ->with('error', 'Import failed: '.$e->getMessage());
+                ->with('error', 'Preview failed: '.$e->getMessage());
         }
+    }
+
+    public function confirmImport(Request $request)
+    {
+        $pendingImport = $request->session()->get('resident_csv_import');
+
+        if (! $pendingImport || ! Storage::exists($pendingImport['path'])) {
+            return redirect()->route('residents.import')
+                ->with('error', 'The pending import file has expired. Please upload it again.');
+        }
+
+        $fullPath = Storage::path($pendingImport['path']);
+        $preview = $this->csvService->previewFromCsv($fullPath);
+
+        if ($preview['errors'] !== [] || $preview['failed'] > 0) {
+            return redirect()->route('residents.import')
+                ->with('error', 'Resolve the preview errors before importing.');
+        }
+
+        try {
+            $importStats = $this->csvService->importFromCsv($fullPath);
+        } finally {
+            $this->deletePendingImport($request);
+        }
+
+        if (! empty($importStats['errors'])) {
+            return redirect()->route('residents.import')
+                ->with('warning', 'Import completed with errors')
+                ->with('importStats', $importStats);
+        }
+
+        return redirect()->route('residents.index')
+            ->with('success', 'Import completed successfully')
+            ->with('importStats', $importStats);
+    }
+
+    public function cancelImport(Request $request)
+    {
+        $this->deletePendingImport($request);
+
+        return redirect()->route('residents.import')
+            ->with('success', 'Import preview cancelled.');
     }
 
     /**
@@ -164,5 +209,14 @@ class ResidentCsvController extends Controller
         return response($csv)
             ->header('Content-Type', 'text/csv; charset=UTF-8')
             ->header('Content-Disposition', 'attachment; filename="residents_template.csv"');
+    }
+
+    private function deletePendingImport(Request $request): void
+    {
+        $pendingImport = $request->session()->pull('resident_csv_import');
+
+        if ($pendingImport && isset($pendingImport['path'])) {
+            Storage::delete($pendingImport['path']);
+        }
     }
 }

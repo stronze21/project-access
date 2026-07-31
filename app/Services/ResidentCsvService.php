@@ -4,13 +4,83 @@ namespace App\Services;
 
 use App\Models\Household;
 use App\Models\Resident;
+use App\Services\Legacy\LegacyCsvImporter;
 use Carbon\Carbon;
+use Database\Seeders\LocationsSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ResidentCsvService
 {
+    private ?array $managedBarangays = null;
+
+    public function previewFromCsv(string $filePath): array
+    {
+        $file = fopen($filePath, 'r');
+        $headers = $this->readHeaders($file);
+        $preview = [
+            'total' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0,
+            'errors' => [],
+            'rows' => [],
+        ];
+
+        $missingHeaders = array_diff($this->requiredHeaders(), $headers);
+        if ($missingHeaders !== []) {
+            fclose($file);
+            $preview['errors'][] = 'Missing required headers: '.implode(', ', $missingHeaders);
+
+            return $preview;
+        }
+
+        $seenResidentIds = [];
+        $rowNumber = 1;
+
+        while (($data = fgetcsv($file)) !== false) {
+            $rowNumber++;
+            $preview['total']++;
+            $rowData = $this->normalizeHouseholdLocation($this->mapCsvRow($headers, $data));
+            $residentId = $rowData['resident_id'] ?? '';
+            $errors = $this->validatePreviewRow($rowData);
+
+            if ($residentId !== '' && isset($seenResidentIds[$residentId])) {
+                $errors[] = "Duplicate resident_id; first appears on row {$seenResidentIds[$residentId]}.";
+            }
+            if ($residentId !== '') {
+                $seenResidentIds[$residentId] ??= $rowNumber;
+            }
+
+            $status = 'new';
+            if ($errors !== []) {
+                $status = 'error';
+                $preview['failed']++;
+            } elseif ($residentId !== '' && Resident::where('resident_id', $residentId)->exists()) {
+                $status = 'update';
+                $preview['updated']++;
+            } else {
+                $preview['created']++;
+            }
+
+            $preview['rows'][] = [
+                'row' => $rowNumber,
+                'resident_id' => $residentId,
+                'name' => trim(($rowData['first_name'] ?? '').' '.($rowData['last_name'] ?? '')),
+                'birth_date' => $rowData['birth_date'] ?? '',
+                'address' => $rowData['address'] ?? '',
+                'barangay' => $rowData['barangay'] ?? '',
+                'status' => $status,
+                'errors' => $errors,
+            ];
+        }
+
+        fclose($file);
+
+        return $preview;
+    }
+
     /**
      * Generate CSV content for exporting residents
      *
@@ -128,7 +198,7 @@ class ResidentCsvService
     public function importFromCsv($filePath)
     {
         $file = fopen($filePath, 'r');
-        $headers = fgetcsv($file);
+        $headers = $this->readHeaders($file);
         $stats = [
             'total' => 0,
             'created' => 0,
@@ -137,16 +207,8 @@ class ResidentCsvService
             'errors' => [],
         ];
 
-        // Lowercase and normalize headers
-        $headers = array_map(function ($header) {
-            $header = preg_replace('/^\xEF\xBB\xBF/', '', $header);
-
-            return Str::snake(strtolower(trim($header)));
-        }, $headers);
-
         // Validate required headers
-        $requiredHeaders = ['first_name', 'last_name', 'birth_date', 'gender', 'address', 'barangay'];
-        $missingHeaders = array_diff($requiredHeaders, $headers);
+        $missingHeaders = array_diff($this->requiredHeaders(), $headers);
 
         if (! empty($missingHeaders)) {
             $stats['errors'][] = 'Missing required headers: '.implode(', ', $missingHeaders);
@@ -162,12 +224,7 @@ class ResidentCsvService
                 $stats['total']++;
 
                 // Map CSV data to array with keys from headers
-                $rowData = [];
-                foreach ($headers as $index => $header) {
-                    if (isset($data[$index])) {
-                        $rowData[$header] = trim($data[$index]);
-                    }
-                }
+                $rowData = $this->normalizeHouseholdLocation($this->mapCsvRow($headers, $data));
 
                 try {
                     // Check if resident already exists by resident_id
@@ -306,6 +363,166 @@ class ResidentCsvService
         }
 
         return $residentData;
+    }
+
+    private function readHeaders($file): array
+    {
+        $headers = fgetcsv($file);
+
+        if (! is_array($headers)) {
+            return [];
+        }
+
+        return array_map(function ($header) {
+            $header = preg_replace('/^\xEF\xBB\xBF/', '', $header);
+
+            return Str::snake(strtolower(trim($header)));
+        }, $headers);
+    }
+
+    private function requiredHeaders(): array
+    {
+        return ['first_name', 'last_name', 'birth_date', 'gender', 'address', 'barangay'];
+    }
+
+    private function mapCsvRow(array $headers, array $data): array
+    {
+        $rowData = [];
+
+        foreach ($headers as $index => $header) {
+            if (isset($data[$index])) {
+                $rowData[$header] = trim($data[$index]);
+            }
+        }
+
+        return $rowData;
+    }
+
+    private function validatePreviewRow(array $data): array
+    {
+        $errors = [];
+
+        foreach ($this->requiredHeaders() as $field) {
+            if (($data[$field] ?? '') === '') {
+                $errors[] = Str::headline($field).' is required.';
+            }
+        }
+
+        if (strcasecmp((string) ($data['barangay'] ?? ''), 'Unknown') === 0) {
+            $errors[] = 'Barangay could not be resolved from the managed mappings.';
+        }
+
+        if (($data['monthly_income'] ?? '') !== '' && ! is_numeric($data['monthly_income'])) {
+            $errors[] = 'Monthly income must be numeric.';
+        }
+
+        if (($data['gender'] ?? '') !== '' && ! in_array(strtolower($data['gender']), ['male', 'female', 'other'], true)) {
+            $errors[] = 'Gender must be male, female, or other.';
+        }
+
+        if (($data['civil_status'] ?? '') !== '' && ! in_array(strtolower($data['civil_status']), ['single', 'married', 'widowed', 'divorced', 'separated', 'other'], true)) {
+            $errors[] = 'Civil status is invalid.';
+        }
+
+        foreach (['birth_date', 'date_issue'] as $field) {
+            if (($data[$field] ?? '') === '') {
+                continue;
+            }
+
+            try {
+                Carbon::parse($data[$field]);
+            } catch (\Throwable) {
+                $errors[] = Str::headline($field).' is not a valid date.';
+            }
+        }
+
+        return $errors;
+    }
+
+    private function normalizeHouseholdLocation(array $data): array
+    {
+        $address = trim((string) ($data['address'] ?? ''));
+        $barangay = trim((string) ($data['barangay'] ?? ''));
+
+        if ($barangay === '' || strcasecmp($barangay, 'Unknown') === 0) {
+            $barangay = $this->barangayFromAddress($address) ?? $barangay;
+        }
+
+        $data['barangay'] = $barangay;
+        $cleanAddress = $this->addressWithoutLocation($address, [
+            $barangay,
+            (string) ($data['city_municipality'] ?? ''),
+            (string) ($data['province'] ?? ''),
+            (string) ($data['region'] ?? ''),
+        ]);
+        $data['address'] = $cleanAddress !== '' ? $cleanAddress : ',';
+
+        return $data;
+    }
+
+    private function barangayFromAddress(string $address): ?string
+    {
+        $normalizedAddress = $this->normalizeLocationName($address);
+
+        foreach ($this->managedBarangays() as $barangay) {
+            if (str_contains($normalizedAddress, $this->normalizeLocationName($barangay['legacy_name']))) {
+                return $barangay['project_name'];
+            }
+        }
+
+        return null;
+    }
+
+    private function managedBarangays(): array
+    {
+        if ($this->managedBarangays !== null) {
+            return $this->managedBarangays;
+        }
+
+        $projectNames = collect(LocationsSeeder::getBarangayRecords())->pluck('name', 'code');
+
+        return $this->managedBarangays = DB::table('legacy_barangay_mappings')
+            ->where('source_system', LegacyCsvImporter::SOURCE_SYSTEM)
+            ->where('status', 'mapped')
+            ->get(['legacy_name', 'brgy_code'])
+            ->map(fn ($mapping) => [
+                'legacy_name' => $mapping->legacy_name,
+                'project_name' => $projectNames[$mapping->brgy_code] ?? $mapping->legacy_name,
+            ])
+            ->sortByDesc(fn ($mapping) => strlen($this->normalizeLocationName($mapping['legacy_name'])))
+            ->values()
+            ->all();
+    }
+
+    private function addressWithoutLocation(string $address, array $locationNames): string
+    {
+        $locationNames = array_values(array_filter(array_unique([
+            ...$locationNames,
+            'City of Alaminos',
+            'Alaminos City',
+            'Alaminos',
+            'Pangasinan',
+            'Region I (Ilocos Region)',
+            'Region I',
+        ])));
+
+        foreach ($locationNames as $locationName) {
+            $address = str_ireplace($locationName, '', $address);
+        }
+
+        $address = preg_replace('/\b(?:brgy|barangay)\.?\s*/i', '', $address) ?? $address;
+        $address = preg_replace('/\bPang\.?\b/i', '', $address) ?? $address;
+        $address = preg_replace('/\s*,\s*,+/', ',', $address) ?? $address;
+
+        return trim($address, " \t\n\r\0\x0B,.-");
+    }
+
+    private function normalizeLocationName(string $name): string
+    {
+        $name = strtolower(trim($name));
+        $name = str_replace(['sta.', 'sta ', 'pocal-pocal', 'tawin-tawin'], ['santa', 'santa ', 'pocalpocal', 'tawintawin'], $name);
+
+        return preg_replace('/[^a-z0-9]+/', '', $name) ?? '';
     }
 
     /**

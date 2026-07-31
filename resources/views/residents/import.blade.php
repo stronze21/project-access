@@ -75,6 +75,103 @@
                     @endif
                 @endif
 
+                @if (session('success'))
+                    <x-mary-alert class="tagged-color alert-success mb-4">
+                        {{ session('success') }}
+                    </x-mary-alert>
+                @endif
+
+                @if ($preview)
+                    <div class="mb-8">
+                        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                            <div>
+                                <h3 class="text-xl font-semibold">Import Preview</h3>
+                                <p class="text-sm text-gray-600">{{ $pendingFilename }} — no records have been saved yet.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <form action="{{ route('residents.import.cancel') }}" method="POST">
+                                    @csrf
+                                    <x-mary-button type="submit" class="btn-outline">Cancel</x-mary-button>
+                                </form>
+                                <form action="{{ route('residents.import.confirm') }}" method="POST">
+                                    @csrf
+                                    <x-mary-button type="submit" class="tagged-color btn-primary"
+                                        icon="o-check" :disabled="$preview['failed'] > 0 || !empty($preview['errors'])">
+                                        Confirm Import
+                                    </x-mary-button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 my-5 md:grid-cols-4">
+                            <div class="p-3 text-center border rounded-lg">
+                                <div class="text-sm text-gray-500">Total</div>
+                                <div class="text-2xl font-semibold">{{ $preview['total'] }}</div>
+                            </div>
+                            <div class="p-3 text-center border border-green-200 rounded-lg bg-green-50">
+                                <div class="text-sm text-green-700">New</div>
+                                <div class="text-2xl font-semibold text-green-700">{{ $preview['created'] }}</div>
+                            </div>
+                            <div class="p-3 text-center border border-blue-200 rounded-lg bg-blue-50">
+                                <div class="text-sm text-blue-700">Updates</div>
+                                <div class="text-2xl font-semibold text-blue-700">{{ $preview['updated'] }}</div>
+                            </div>
+                            <div class="p-3 text-center border border-red-200 rounded-lg bg-red-50">
+                                <div class="text-sm text-red-700">Errors</div>
+                                <div class="text-2xl font-semibold text-red-700">{{ $preview['failed'] }}</div>
+                            </div>
+                        </div>
+
+                        @if (!empty($preview['errors']))
+                            <div class="p-3 mb-4 text-sm text-red-800 border border-red-200 rounded-lg bg-red-50">
+                                @foreach ($preview['errors'] as $error)
+                                    <div>{{ $error }}</div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <div class="overflow-x-auto border rounded-lg max-h-[32rem]">
+                            <table class="table w-full">
+                                <thead class="sticky top-0 bg-base-100">
+                                    <tr>
+                                        <th>Row</th>
+                                        <th>Resident ID</th>
+                                        <th>Name</th>
+                                        <th>Birth Date</th>
+                                        <th>Address</th>
+                                        <th>Barangay</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($preview['rows'] as $row)
+                                        <tr>
+                                            <td>{{ $row['row'] }}</td>
+                                            <td>{{ $row['resident_id'] ?: 'Auto-generated' }}</td>
+                                            <td>{{ $row['name'] }}</td>
+                                            <td>{{ $row['birth_date'] }}</td>
+                                            <td>{{ trim($row['address'], ' ,') !== '' ? $row['address'] : '—' }}</td>
+                                            <td>{{ $row['barangay'] }}</td>
+                                            <td>
+                                                @if ($row['status'] === 'update')
+                                                    <span class="badge badge-info">Update</span>
+                                                @elseif ($row['status'] === 'new')
+                                                    <span class="badge badge-success">New</span>
+                                                @else
+                                                    <span class="badge badge-error">Error</span>
+                                                    <div class="mt-1 text-xs text-red-700">
+                                                        {{ implode(' ', $row['errors']) }}
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-1 gap-8 md:grid-cols-5">
                     <div class="md:col-span-3">
                         <h3 class="mb-4 text-xl font-semibold">Upload CSV File</h3>
@@ -100,7 +197,7 @@
 
                             <div class="pt-4 mt-4 border-t">
                                 <x-mary-button type="submit" class="tagged-color btn-primary" icon="o-arrow-up-tray">
-                                    Upload and Import
+                                    Upload and Preview
                                 </x-mary-button>
 
                                 <x-mary-button link="{{ route('residents.import.template') }}"
@@ -123,7 +220,8 @@
                                 <li>For boolean fields (is_pwd, etc.), use "Yes" or "No" values.</li>
                                 <li>Date format should be YYYY-MM-DD (e.g., 1990-01-15).</li>
                                 <li>If a resident_id is provided, the system will update the existing record.</li>
-                                <li>If no resident_id is provided, a new resident will be created.</li>
+                                <li>If the resident_id does not exist or is blank, a new resident will be created.</li>
+                                <li>Review each New, Update, or Error status before confirming the import.</li>
                                 <li>The system will try to match households by address and barangay.</li>
                                 <li>For gender, use "male", "female", or "other".</li>
                                 <li>For civil_status, use "single", "married", "widowed", "divorced", "separated", or

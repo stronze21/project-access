@@ -107,6 +107,12 @@ Route::middleware([
         Route::post('/import/process', [ResidentCsvController::class, 'processImport'])
             ->middleware('permission:import-residents')
             ->name('residents.import.process');
+        Route::post('/import/confirm', [ResidentCsvController::class, 'confirmImport'])
+            ->middleware('permission:import-residents')
+            ->name('residents.import.confirm');
+        Route::post('/import/cancel', [ResidentCsvController::class, 'cancelImport'])
+            ->middleware('permission:import-residents')
+            ->name('residents.import.cancel');
         Route::get('/import/template', [ResidentCsvController::class, 'downloadTemplate'])
             ->middleware('permission:import-residents')
             ->name('residents.import.template');

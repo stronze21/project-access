@@ -126,8 +126,24 @@ class Household extends Model
      */
     public function getFullAddressAttribute(): string
     {
+        $structuredLocations = array_filter([
+            $this->barangay,
+            $this->city_municipality,
+            $this->province,
+            $this->getRawOriginal('region'),
+        ]);
+        $locationKeys = collect($structuredLocations)
+            ->flatMap(fn ($location) => $this->locationAliases($location))
+            ->unique()
+            ->all();
+
+        $addressParts = preg_split('/\s*,\s*/', (string) $this->address) ?: [];
+        $addressParts = array_values(array_filter($addressParts, function ($part) use ($locationKeys) {
+            return $part !== '' && ! in_array($this->normalizeLocationPart($part), $locationKeys, true);
+        }));
+
         $parts = [
-            $this->address,
+            ...$addressParts,
             $this->barangay,
             $this->city_municipality,
             $this->province,
@@ -137,7 +153,36 @@ class Household extends Model
             $parts[] = $this->postal_code;
         }
 
-        return strtoupper(implode(', ', array_filter($parts)));
+        $parts = collect(array_filter($parts))
+            ->unique(fn ($part) => $this->normalizeLocationPart($part))
+            ->values()
+            ->all();
+
+        return strtoupper(implode(', ', $parts));
+    }
+
+    private function locationAliases(string $location): array
+    {
+        $normalized = $this->normalizeLocationPart($location);
+        $withoutCityPrefix = preg_replace('/^cityof/', '', $normalized) ?? $normalized;
+        $withoutCitySuffix = preg_replace('/city$/', '', $normalized) ?? $normalized;
+
+        return array_values(array_unique([
+            $normalized,
+            $withoutCityPrefix,
+            $withoutCitySuffix,
+            $withoutCityPrefix.'city',
+            'cityof'.$withoutCitySuffix,
+        ]));
+    }
+
+    private function normalizeLocationPart(string $part): string
+    {
+        $part = strtolower(trim($part));
+        $part = preg_replace('/^(?:brgy|barangay)\.?\s*/i', '', $part) ?? $part;
+        $part = str_replace(['pocal-pocal', 'tawin-tawin'], ['pocalpocal', 'tawintawin'], $part);
+
+        return preg_replace('/[^a-z0-9]+/', '', $part) ?? '';
     }
 
     /**
