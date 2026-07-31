@@ -289,46 +289,26 @@
                 <div class="pt-4 mt-6 border-t">
                     <h3 class="mb-2 text-sm font-medium text-gray-500">Status Indicators</h3>
                     <div class="flex flex-wrap gap-2">
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_pwd ? 'PWD' : 'Not PWD' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_senior_citizen ? 'Senior Citizen' : 'Not Senior' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_solo_parent ? 'Solo Parent' : 'Not Solo Parent' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_pregnant ? 'Pregnant' : 'Not Pregnant' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_lactating ? 'Lactating' : 'Not Lactating' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_indigenous ? 'Indigenous' : 'Not Indigenous' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_pwd ? 'info' : 'gray' }}">
-                            {{ $resident->is_registered_voter ? 'Registered Voter' : 'Not a Voter' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_bhw ? 'success' : 'gray' }}">
-                            {{ $resident->is_bhw ? 'Barangay Health Worker' : 'Not BHW' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_scholar ? 'success' : 'gray' }}">
-                            {{ $resident->is_scholar ? 'Scholar' : 'Not Scholar' }}
-                        </x-mary-badge>
-
-                        <x-mary-badge class="badge-{{ $resident->is_legacy_imported ? 'secondary' : 'gray' }}">
-                            {{ $resident->is_legacy_imported ? 'Legacy Imported' : 'Native Record' }}
-                        </x-mary-badge>
+                        <x-mary-badge value="PWD: {{ $resident->is_pwd ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_pwd ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Senior Citizen: {{ $resident->is_senior_citizen ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_senior_citizen ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Solo Parent: {{ $resident->is_solo_parent ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_solo_parent ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Pregnant: {{ $resident->is_pregnant ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_pregnant ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Lactating: {{ $resident->is_lactating ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_lactating ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Indigenous: {{ $resident->is_indigenous ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_indigenous ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Registered Voter: {{ $resident->is_registered_voter ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_registered_voter ? 'badge-info' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Barangay Health Worker: {{ $resident->is_bhw ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_bhw ? 'badge-success' : 'badge-ghost' }}" />
+                        <x-mary-badge value="Scholar: {{ $resident->is_scholar ? 'Yes' : 'No' }}"
+                            class="{{ $resident->is_scholar ? 'badge-success' : 'badge-ghost' }}" />
+                        <x-mary-badge value="{{ $resident->is_legacy_imported ? 'Record Source: Legacy Import' : 'Record Source: Native' }}"
+                            class="{{ $resident->is_legacy_imported ? 'badge-secondary' : 'badge-ghost' }}" />
                     </div>
                 </div>
 
