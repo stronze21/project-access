@@ -139,6 +139,8 @@ class ResidentCsvService
 
         // Lowercase and normalize headers
         $headers = array_map(function ($header) {
+            $header = preg_replace('/^\xEF\xBB\xBF/', '', $header);
+
             return Str::snake(strtolower(trim($header)));
         }, $headers);
 
@@ -261,7 +263,9 @@ class ResidentCsvService
             'contact_number' => $data['contact_number'] ?? null,
             'email' => $data['email'] ?? null,
             'occupation' => $data['occupation'] ?? null,
-            'monthly_income' => $data['monthly_income'] ?? null,
+            'monthly_income' => isset($data['monthly_income']) && $data['monthly_income'] !== ''
+                ? $data['monthly_income']
+                : null,
             'educational_attainment' => $data['educational_attainment'] ?? null,
             'special_sector' => $data['special_sector'] ?? null,
             'notes' => $data['notes'] ?? null,
