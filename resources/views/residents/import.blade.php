@@ -36,7 +36,7 @@
                     @if (session('importStats'))
                         <div class="p-4 mb-4 border rounded-lg bg-amber-50">
                             <h3 class="mb-2 text-lg font-medium text-amber-800">Import Statistics</h3>
-                            <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
                                 <div class="p-2 text-center border rounded bg-base">
                                     <p class="text-sm text-gray-600">Total Records</p>
                                     <p class="text-xl font-semibold">{{ session('importStats')['total'] }}</p>
@@ -50,6 +50,11 @@
                                     <p class="text-sm text-gray-600">Updated</p>
                                     <p class="text-xl font-semibold text-blue-700">
                                         {{ session('importStats')['updated'] }}</p>
+                                </div>
+                                <div class="p-2 text-center border rounded bg-gray-50">
+                                    <p class="text-sm text-gray-600">Unchanged</p>
+                                    <p class="text-xl font-semibold text-gray-700">
+                                        {{ session('importStats')['unchanged'] ?? 0 }}</p>
                                 </div>
                                 <div class="p-2 text-center border rounded bg-red-50">
                                     <p class="text-sm text-gray-600">Failed</p>
@@ -103,7 +108,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3 my-5 md:grid-cols-4">
+                        <div class="grid grid-cols-2 gap-3 my-5 md:grid-cols-5">
                             <div class="p-3 text-center border rounded-lg">
                                 <div class="text-sm text-gray-500">Total</div>
                                 <div class="text-2xl font-semibold">{{ $preview['total'] }}</div>
@@ -115,6 +120,10 @@
                             <div class="p-3 text-center border border-blue-200 rounded-lg bg-blue-50">
                                 <div class="text-sm text-blue-700">Updates</div>
                                 <div class="text-2xl font-semibold text-blue-700">{{ $preview['updated'] }}</div>
+                            </div>
+                            <div class="p-3 text-center border rounded-lg bg-gray-50">
+                                <div class="text-sm text-gray-700">Unchanged</div>
+                                <div class="text-2xl font-semibold text-gray-700">{{ $preview['unchanged'] }}</div>
                             </div>
                             <div class="p-3 text-center border border-red-200 rounded-lg bg-red-50">
                                 <div class="text-sm text-red-700">Errors</div>
@@ -155,8 +164,13 @@
                                             <td>
                                                 @if ($row['status'] === 'update')
                                                     <span class="badge badge-info">Update</span>
+                                                    <div class="mt-1 text-xs text-blue-700">
+                                                        Changes: {{ implode(', ', array_map(fn ($field) => str_replace('_', ' ', $field), $row['changes'])) }}
+                                                    </div>
                                                 @elseif ($row['status'] === 'new')
                                                     <span class="badge badge-success">New</span>
+                                                @elseif ($row['status'] === 'unchanged')
+                                                    <span class="badge badge-ghost">Unchanged</span>
                                                 @else
                                                     <span class="badge badge-error">Error</span>
                                                     <div class="mt-1 text-xs text-red-700">

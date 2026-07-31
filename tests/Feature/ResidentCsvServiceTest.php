@@ -188,4 +188,42 @@ class ResidentCsvServiceTest extends TestCase
         $this->assertSame('Updated', $resident->fresh()->first_name);
         $this->assertNull($resident->fresh()->monthly_income);
     }
+
+    public function test_exported_resident_without_changes_is_classified_and_imported_as_unchanged(): void
+    {
+        Storage::fake('local');
+
+        $household = Household::create([
+            'household_id' => 'HH-UNCHANGED-0001',
+            'address' => 'Existing Address',
+            'barangay' => 'Existing Barangay',
+            'city_municipality' => 'Alicia',
+            'province' => 'Isabela',
+        ]);
+        $resident = Resident::create([
+            'household_id' => $household->id,
+            'resident_id' => '00-UNCHANGED',
+            'first_name' => 'No',
+            'last_name' => 'Changes',
+            'birth_date' => '2000-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+            'is_active' => true,
+        ]);
+
+        Storage::disk('local')->put('unchanged-export.csv', app(ResidentCsvService::class)->exportToCsv());
+        $path = Storage::disk('local')->path('unchanged-export.csv');
+
+        $preview = app(ResidentCsvService::class)->previewFromCsv($path);
+        $this->assertSame('unchanged', $preview['rows'][0]['status'], implode(', ', $preview['rows'][0]['changes']));
+        $this->assertSame(1, $preview['unchanged']);
+        $this->assertSame(0, $preview['updated']);
+
+        $originalUpdatedAt = $resident->updated_at;
+        $result = app(ResidentCsvService::class)->importFromCsv($path);
+
+        $this->assertSame(1, $result['unchanged']);
+        $this->assertSame(0, $result['updated']);
+        $this->assertTrue($resident->fresh()->updated_at->equalTo($originalUpdatedAt));
+    }
 }

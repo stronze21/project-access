@@ -23,6 +23,7 @@ class ResidentCsvService
             'total' => 0,
             'created' => 0,
             'updated' => 0,
+            'unchanged' => 0,
             'failed' => 0,
             'errors' => [],
             'rows' => [],
@@ -54,12 +55,14 @@ class ResidentCsvService
             }
 
             $status = 'new';
+            $changes = [];
             if ($errors !== []) {
                 $status = 'error';
                 $preview['failed']++;
-            } elseif ($residentId !== '' && Resident::where('resident_id', $residentId)->exists()) {
-                $status = 'update';
-                $preview['updated']++;
+            } elseif ($residentId !== '' && ($existingResident = Resident::where('resident_id', $residentId)->first())) {
+                $changes = $this->residentImportChanges($existingResident, $rowData);
+                $status = $changes !== [] ? 'update' : 'unchanged';
+                $preview[$status === 'update' ? 'updated' : 'unchanged']++;
             } else {
                 $preview['created']++;
             }
@@ -72,6 +75,7 @@ class ResidentCsvService
                 'address' => $rowData['address'] ?? '',
                 'barangay' => $rowData['barangay'] ?? '',
                 'status' => $status,
+                'changes' => $changes,
                 'errors' => $errors,
             ];
         }
@@ -203,6 +207,7 @@ class ResidentCsvService
             'total' => 0,
             'created' => 0,
             'updated' => 0,
+            'unchanged' => 0,
             'failed' => 0,
             'errors' => [],
         ];
@@ -241,8 +246,13 @@ class ResidentCsvService
                     $residentData['household_id'] = $household->id;
 
                     if ($existingResident) {
-                        $existingResident->update($residentData);
-                        $stats['updated']++;
+                        $existingResident->fill($residentData);
+                        if ($this->meaningfulDirtyFields($existingResident) !== []) {
+                            $existingResident->save();
+                            $stats['updated']++;
+                        } else {
+                            $stats['unchanged']++;
+                        }
                     } else {
                         if (empty($residentData['resident_id'])) {
                             $residentData['resident_id'] = Resident::generateResidentId();
@@ -311,21 +321,21 @@ class ResidentCsvService
         $residentData = [
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
-            'middle_name' => $data['middle_name'] ?? null,
-            'suffix' => $data['suffix'] ?? null,
+            'middle_name' => $this->nullableCsvValue($data['middle_name'] ?? null),
+            'suffix' => $this->nullableCsvValue($data['suffix'] ?? null),
             'birth_date' => ! empty($data['birth_date']) ? Carbon::parse($data['birth_date']) : null,
-            'birthplace' => $data['birthplace'] ?? null,
+            'birthplace' => $this->nullableCsvValue($data['birthplace'] ?? null),
             'gender' => $data['gender'] ?? 'other',
             'civil_status' => $data['civil_status'] ?? 'single',
-            'contact_number' => $data['contact_number'] ?? null,
-            'email' => $data['email'] ?? null,
-            'occupation' => $data['occupation'] ?? null,
+            'contact_number' => $this->nullableCsvValue($data['contact_number'] ?? null),
+            'email' => $this->nullableCsvValue($data['email'] ?? null),
+            'occupation' => $this->nullableCsvValue($data['occupation'] ?? null),
             'monthly_income' => isset($data['monthly_income']) && $data['monthly_income'] !== ''
                 ? $data['monthly_income']
                 : null,
-            'educational_attainment' => $data['educational_attainment'] ?? null,
-            'special_sector' => $data['special_sector'] ?? null,
-            'notes' => $data['notes'] ?? null,
+            'educational_attainment' => $this->nullableCsvValue($data['educational_attainment'] ?? null),
+            'special_sector' => $this->nullableCsvValue($data['special_sector'] ?? null),
+            'notes' => $this->nullableCsvValue($data['notes'] ?? null),
         ];
 
         // Handle boolean fields
@@ -363,6 +373,13 @@ class ResidentCsvService
         }
 
         return $residentData;
+    }
+
+    private function nullableCsvValue(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
     }
 
     private function readHeaders($file): array
@@ -458,6 +475,40 @@ class ResidentCsvService
         $data['address'] = $cleanAddress !== '' ? $cleanAddress : ',';
 
         return $data;
+    }
+
+    private function residentImportChanges(Resident $resident, array $rowData): array
+    {
+        $householdId = Household::where('address', $rowData['address'])
+            ->where('barangay', $rowData['barangay'])
+            ->value('id');
+
+        $resident->fill([
+            ...$this->mapResidentData($rowData),
+            'household_id' => $householdId,
+        ]);
+
+        return $this->meaningfulDirtyFields($resident);
+    }
+
+    private function meaningfulDirtyFields(Resident $resident): array
+    {
+        $dirty = $resident->getDirty();
+
+        foreach (['birth_date', 'date_issue'] as $dateField) {
+            if (! array_key_exists($dateField, $dirty)) {
+                continue;
+            }
+
+            $original = substr((string) $resident->getRawOriginal($dateField), 0, 10);
+            $incoming = substr((string) $dirty[$dateField], 0, 10);
+
+            if ($original === $incoming) {
+                unset($dirty[$dateField]);
+            }
+        }
+
+        return array_keys($dirty);
     }
 
     private function barangayFromAddress(string $address): ?string
