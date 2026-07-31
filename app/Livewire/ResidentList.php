@@ -147,6 +147,14 @@ class ResidentList extends Component
     }
 
     /**
+     * Reset all filters from the resident list UI.
+     */
+    public function resetFilters()
+    {
+        $this->clearFilters();
+    }
+
+    /**
      * Sort by field
      */
     public function sortBy($field)
