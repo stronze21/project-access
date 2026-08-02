@@ -49,6 +49,22 @@ class AuthController extends Controller
         ]);
     }
 
+    public function verifyEmailCode(Request $request, ResidentEmailVerificationService $verification): JsonResponse
+    {
+        $validated = $request->validate([
+            'resident_id' => 'required|string|max:100',
+            'birth_date' => 'required|date|before:today',
+            'last_name' => 'required|string|max:100',
+            'email' => 'required|email:rfc|max:255',
+            'email_challenge_id' => 'required|uuid',
+            'email_code' => 'required|digits:6',
+        ]);
+
+        $verification->verify($validated);
+
+        return response()->json(['message' => 'Email confirmation code verified.']);
+    }
+
     /**
      * Login a resident and issue a Sanctum token.
      *

@@ -32,6 +32,12 @@ class ResidentEmailVerificationTest extends TestCase
             return $mail->hasTo('maria@example.test');
         });
 
+        $this->postJson('/api/resident-portal/register/email-code/verify', [
+            'resident_id' => 'PIN-EMAIL', 'last_name' => 'Santos', 'birth_date' => '1990-05-21',
+            'email' => 'maria@example.test', 'email_challenge_id' => $challengeResponse->json('challenge_id'),
+            'email_code' => $code,
+        ])->assertOk()->assertJsonPath('message', 'Email confirmation code verified.');
+
         $this->postJson('/api/resident-portal/register', [
             'resident_id' => 'PIN-EMAIL', 'last_name' => 'Santos', 'birth_date' => '1990-05-21',
             'email' => 'maria@example.test', 'email_challenge_id' => $challengeResponse->json('challenge_id'),

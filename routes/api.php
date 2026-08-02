@@ -197,6 +197,7 @@ Route::prefix('resident-portal')->name('api.resident-portal.')->group(function (
     Route::post('/login', [ResidentAuthController::class, 'login'])->name('login');
     Route::post('/register', [ResidentAuthController::class, 'register'])->name('register');
     Route::post('/register/email-code', [ResidentAuthController::class, 'sendEmailCode'])->middleware('throttle:10,1')->name('register.email-code');
+    Route::post('/register/email-code/verify', [ResidentAuthController::class, 'verifyEmailCode'])->middleware('throttle:10,1')->name('register.email-code.verify');
     Route::post('/reset-mpin', [ResidentAuthController::class, 'resetMpin'])->middleware('throttle:5,1')->name('reset-mpin');
 });
 
