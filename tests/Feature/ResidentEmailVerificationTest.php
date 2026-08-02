@@ -17,7 +17,7 @@ class ResidentEmailVerificationTest extends TestCase
         Mail::fake();
         Resident::create([
             'resident_id' => 'PIN-EMAIL', 'first_name' => 'Maria', 'last_name' => 'Santos',
-            'birth_date' => '1990-05-21', 'gender' => 'female', 'civil_status' => 'single', 'is_active' => true,
+            'birth_date' => '1990-05-21', 'gender' => 'female', 'civil_status' => 'single', 'is_active' => false,
         ]);
 
         $challengeResponse = $this->postJson('/api/resident-portal/register/email-code', [
@@ -46,6 +46,7 @@ class ResidentEmailVerificationTest extends TestCase
         ])->assertCreated();
 
         $this->assertDatabaseHas('residents', ['resident_id' => 'PIN-EMAIL', 'email' => 'maria@example.test']);
+        $this->assertTrue(Resident::where('resident_id', 'PIN-EMAIL')->firstOrFail()->is_active);
         $this->assertDatabaseHas('resident_email_verification_codes', ['challenge_id' => $challengeResponse->json('challenge_id')]);
         $this->assertNotNull(\App\Models\ResidentEmailVerificationCode::where('challenge_id', $challengeResponse->json('challenge_id'))->value('consumed_at'));
     }

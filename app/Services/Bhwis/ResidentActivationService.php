@@ -58,14 +58,11 @@ class ResidentActivationService
                 if ($resident->mpin || $resident->password) {
                     throw new ResidentAlreadyActivatedException;
                 }
-                if (! $resident->is_active) {
-                    throw new ResidentIdentityMismatchException;
-                }
-
                 $credential = $data['mpin'] ?? $data['password'] ?? null;
                 $resident->forceFill([
                     isset($data['mpin']) ? 'mpin' : 'password' => $credential,
                     'email' => strtolower(trim($data['email'])),
+                    'is_active' => true,
                     'last_login_at' => now(),
                 ])->save();
 
@@ -110,10 +107,6 @@ class ResidentActivationService
             if ($resident->mpin || $resident->password) {
                 throw new ResidentAlreadyActivatedException;
             }
-            if (! $resident->is_active) {
-                throw new ResidentIdentityMismatchException;
-            }
-
             return;
         }
 
