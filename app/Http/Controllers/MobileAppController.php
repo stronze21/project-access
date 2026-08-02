@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\MobileAppReleaseService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 
 class MobileAppController extends Controller
@@ -38,5 +39,20 @@ class MobileAppController extends Controller
             ),
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function release(): JsonResponse
+    {
+        $release = $this->releases->release();
+
+        return response()->json([
+            'name' => $release['name'],
+            'version_name' => (string) $release['version_name'],
+            'version_code' => (string) $release['version_code'],
+            'release_notes' => $release['release_notes'],
+            'apk_uploaded_at' => $release['apk_uploaded_at'],
+            'has_apk' => $release['has_apk'],
+            'download_page_url' => route('mobile-app.index'),
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 }

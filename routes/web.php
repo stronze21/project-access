@@ -72,6 +72,7 @@ Route::post('/support', [SupportRequestController::class, 'store'])->name('suppo
 Route::get('/account-deletion', [AccountDeletionRequestController::class, 'create'])->name('account-deletion.create');
 Route::post('/account-deletion', [AccountDeletionRequestController::class, 'store'])->name('account-deletion.store');
 Route::get('/mobile-app', [MobileAppController::class, 'index'])->name('mobile-app.index');
+Route::get('/mobile-app/release.json', [MobileAppController::class, 'release'])->name('mobile-app.release');
 Route::get('/mobile-app/download', [MobileAppController::class, 'download'])->name('mobile-app.download');
 
 Route::middleware([

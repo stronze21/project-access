@@ -55,6 +55,32 @@ class MobileAppPageTest extends TestCase
             ->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
+    public function test_public_release_metadata_exposes_current_version_and_download_page(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('mobile-apps/test.apk', 'apk-bytes');
+        app(MobileAppReleaseService::class)->saveDetails([
+            'name' => 'ProjectAccess Mobile',
+            'description' => 'Resident app.',
+            'version_name' => '2.1.0',
+            'version_code' => '21',
+            'release_notes' => 'Bug fixes.',
+            'features' => 'Requests',
+            'source_project_path' => MobileAppReleaseService::SOURCE_PROJECT_PATH,
+        ]);
+        app(MobileAppReleaseService::class)->saveApk('mobile-apps/test.apk', 'signed.apk', 9);
+
+        $response = $this->getJson('/mobile-app/release.json')
+            ->assertOk()
+            ->assertJsonPath('version_name', '2.1.0')
+            ->assertJsonPath('version_code', '21')
+            ->assertJsonPath('has_apk', true)
+            ->assertJsonPath('download_page_url', route('mobile-app.index'))
+            ->assertJsonMissingPath('apk_path');
+
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+    }
+
     public function test_download_404s_when_no_apk_exists(): void
     {
         $this->get('/mobile-app/download')
