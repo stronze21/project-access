@@ -83,6 +83,7 @@ class ResidentPortalAuthController extends Controller
         }
 
         $resident->forceFill(['mpin' => Hash::make($validated['mpin'])])->save();
+        $resident->tokens()->delete();
 
         return redirect()->route('resident-portal.login')->with('status', 'Your MPIN has been reset. You can now sign in.');
     }

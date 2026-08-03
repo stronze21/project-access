@@ -95,6 +95,33 @@ class ResidentWebPortalTest extends TestCase
             ->assertRedirect(route('resident-portal.home'));
     }
 
+    public function test_resident_can_open_password_recovery_from_login_and_reset_mpin(): void
+    {
+        $resident = $this->resident();
+        $resident->createToken('existing-device', ['resident-portal']);
+
+        $this->get('/resident-portal/login')
+            ->assertOk()
+            ->assertSee('Forgot password or MPIN?')
+            ->assertSee(route('resident-portal.mpin.forgot'), false);
+
+        $this->get('/resident-portal/forgot-mpin')
+            ->assertOk()
+            ->assertSee('Forgot password or MPIN?');
+
+        $this->post('/resident-portal/forgot-mpin', [
+            'resident_id' => $resident->resident_id,
+            'last_name' => $resident->last_name,
+            'birth_date' => $resident->birth_date->format('Y-m-d'),
+            'mpin' => '654321',
+            'mpin_confirmation' => '654321',
+        ])->assertRedirect(route('resident-portal.login'));
+
+        $resident->refresh();
+        $this->assertTrue(Hash::check('654321', $resident->mpin));
+        $this->assertCount(0, $resident->tokens);
+    }
+
     public function test_birthday_fallback_requires_mpin_update(): void
     {
         $resident = $this->resident(['mpin' => null, 'birth_date' => '1990-05-21']);

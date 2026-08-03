@@ -1,5 +1,5 @@
 @extends('layouts.resident-portal', ['guest' => true])
-@section('title', 'Reset MPIN - SmartCity ACCESS')
+@section('title', 'Forgot Password - SmartCity ACCESS')
 @section('content')
 <div class="auth-mpin-page">
     <div class="auth-mpin-brand">
@@ -7,7 +7,7 @@
         <div class="auth-mpin-project">SmartCity ACCESS</div>
     </div>
     <section class="auth-mpin-panel identifier">
-        <h1>Reset your MPIN</h1><p>Verify your resident record, then choose a new 6-digit MPIN.</p>
+        <h1>Forgot password or MPIN?</h1><p>Verify your resident record, then choose a new 6-digit MPIN for your account.</p>
         <form class="form-stack" method="POST" action="{{ route('resident-portal.mpin.reset') }}">@csrf
             <label>Resident ID<input name="resident_id" value="{{ old('resident_id') }}" required autocomplete="username"></label>
             <label>Last name<input name="last_name" value="{{ old('last_name') }}" required autocomplete="family-name"></label>

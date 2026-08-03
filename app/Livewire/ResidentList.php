@@ -288,7 +288,8 @@ class ResidentList extends Component
 
                 foreach ($terms as $term) {
                     $q->where(function ($sub) use ($term) {
-                        $sub->where('first_name', 'like', "%{$term}%")
+                        $sub->where('resident_id', 'like', "%{$term}%")
+                            ->orWhere('first_name', 'like', "%{$term}%")
                             ->orWhere('middle_name', 'like', "%{$term}%")
                             ->orWhere('last_name', 'like', "%{$term}%");
                     });
