@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Services\AndroidApkMetadataReader;
 use App\Services\MobileAppReleaseService;
+use App\Services\MobileReleaseNotesReader;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -62,7 +63,7 @@ class AppReleaseManager extends Component
         $this->success('App release details saved.');
     }
 
-    public function updatedApk(AndroidApkMetadataReader $metadataReader): void
+    public function updatedApk(AndroidApkMetadataReader $metadataReader, MobileReleaseNotesReader $notesReader): void
     {
         $this->apkMetadataMessage = null;
 
@@ -74,13 +75,22 @@ class AppReleaseManager extends Component
             $metadata = $metadataReader->read($this->apk->getRealPath());
             $this->versionName = $metadata['version_name'];
             $this->versionCode = $metadata['version_code'];
-            $this->apkMetadataMessage = "Detected version {$this->versionName} (build {$this->versionCode}). Release Details were updated.";
+            $releaseNotes = $notesReader->forRelease($this->versionName, $this->versionCode);
+            if ($releaseNotes !== null) {
+                $this->releaseNotes = $releaseNotes;
+            }
+            $notesStatus = $releaseNotes !== null ? ' Version and Release Notes were updated.' : ' Version details were updated; no matching tracked release notes were found.';
+            $this->apkMetadataMessage = "Detected version {$this->versionName} (build {$this->versionCode}).{$notesStatus}";
         } catch (\Throwable $exception) {
             $this->addError('apk', $exception->getMessage());
         }
     }
 
-    public function uploadApk(MobileAppReleaseService $releases, AndroidApkMetadataReader $metadataReader): void
+    public function uploadApk(
+        MobileAppReleaseService $releases,
+        AndroidApkMetadataReader $metadataReader,
+        MobileReleaseNotesReader $notesReader
+    ): void
     {
         $this->validate([
             'apk' => ['required', 'file', 'max:204800'],
@@ -98,6 +108,7 @@ class AppReleaseManager extends Component
             $metadata = $metadataReader->read($this->apk->getRealPath());
             $this->versionName = $metadata['version_name'];
             $this->versionCode = $metadata['version_code'];
+            $this->releaseNotes = $notesReader->forRelease($this->versionName, $this->versionCode) ?? $this->releaseNotes;
         } catch (\Throwable $exception) {
             $this->addError('apk', $exception->getMessage());
 

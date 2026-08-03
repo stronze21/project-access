@@ -7,6 +7,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\AndroidApkMetadataReader;
 use App\Services\MobileAppReleaseService;
+use App\Services\MobileReleaseNotesReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -120,17 +121,31 @@ class MobileAppPageTest extends TestCase
                 'version_code' => '42',
             ]);
         });
+        $this->mock(MobileReleaseNotesReader::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('forRelease')->twice()->with('3.2.1', '42')->andReturn("• Added automatic updates.\n• Improved reliability.");
+        });
 
         Livewire::test(AppReleaseManager::class)
             ->set('apk', UploadedFile::fake()->create('smartcity-access.apk', 100, 'application/vnd.android.package-archive'))
             ->assertSet('versionName', '3.2.1')
             ->assertSet('versionCode', '42')
+            ->assertSet('releaseNotes', "• Added automatic updates.\n• Improved reliability.")
             ->assertSee('Detected version 3.2.1 (build 42)')
             ->call('uploadApk')
             ->assertHasNoErrors();
 
         $this->assertSame('3.2.1', SystemSetting::get('mobile_app.version_name'));
         $this->assertSame('42', SystemSetting::get('mobile_app.version_code'));
+        $this->assertSame("• Added automatic updates.\n• Improved reliability.", SystemSetting::get('mobile_app.release_notes'));
         $this->assertTrue(app(MobileAppReleaseService::class)->release()['has_apk']);
+    }
+
+    public function test_tracked_release_notes_are_read_for_the_matching_version_and_build(): void
+    {
+        $notes = app(MobileReleaseNotesReader::class)->forRelease('1.0.4', '5');
+
+        $this->assertNotNull($notes);
+        $this->assertStringContainsString("• Added a “What's New” dialog", $notes);
+        $this->assertStringContainsString('• Added secure MPIN reset', $notes);
     }
 }
