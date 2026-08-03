@@ -144,8 +144,9 @@ class MobileAppPageTest extends TestCase
     {
         $notes = app(MobileReleaseNotesReader::class)->forRelease('1.0.4', '5');
 
+        $this->assertFileExists(public_path('RELEASE_NOTES.md'));
         $this->assertNotNull($notes);
-        $this->assertStringContainsString("• Added a “What's New” dialog", $notes);
+        $this->assertStringContainsString("• Added a \"What's New\" dialog", $notes);
         $this->assertStringContainsString('• Added secure MPIN reset', $notes);
     }
 }

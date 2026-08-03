@@ -6,7 +6,7 @@ class MobileReleaseNotesReader
 {
     public function forRelease(string $versionName, string $versionCode): ?string
     {
-        $path = base_path('ProjectAccessApp/RELEASE_NOTES.md');
+        $path = public_path('RELEASE_NOTES.md');
         if (! is_file($path) || ! is_readable($path)) {
             return null;
         }
