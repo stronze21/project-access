@@ -27,7 +27,7 @@
         <div class="icon-field"><span class="material-symbols-rounded">person</span><input id="login" form="resident-login" name="login" value="{{ old('login') }}" required autocomplete="username" placeholder="R-2026-0001"></div>
         <button type="button" class="primary-button" data-mpin-continue>Continue</button>
         <a class="outline-button" href="{{ route('resident-portal.register') }}">Create New Account</a>
-        <a class="text-button" href="{{ route('resident-portal.mpin.forgot') }}">Forgot password or MPIN?</a>
+        <a class="text-button" href="{{ route('resident-portal.mpin.forgot') }}">Forgot MPIN?</a>
     </section>
     <section class="auth-mpin-panel unlock" data-mpin-panel hidden>
         <button type="button" class="text-button back-account" data-mpin-back><span class="material-symbols-rounded">arrow_back</span> Change account</button>
@@ -46,7 +46,7 @@
             </div>
             <button class="primary-button" type="submit" data-login-submit>Sign in</button>
         </form>
-        <a class="text-button" href="{{ route('resident-portal.mpin.forgot') }}">Forgot password or MPIN?</a>
+        <a class="text-button" href="{{ route('resident-portal.mpin.forgot') }}">Forgot MPIN?</a>
     </section>
     <div class="auth-legal-links"><a href="{{ route('legal.privacy') }}">Privacy Notice</a><span>•</span><a href="{{ route('legal.terms') }}">Terms</a><span>•</span><a href="{{ route('legal.support') }}">Support</a></div>
 </div>

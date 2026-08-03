@@ -95,19 +95,19 @@ class ResidentWebPortalTest extends TestCase
             ->assertRedirect(route('resident-portal.home'));
     }
 
-    public function test_resident_can_open_password_recovery_from_login_and_reset_mpin(): void
+    public function test_resident_can_open_mpin_recovery_from_login_and_reset_mpin(): void
     {
         $resident = $this->resident();
         $resident->createToken('existing-device', ['resident-portal']);
 
         $this->get('/resident-portal/login')
             ->assertOk()
-            ->assertSee('Forgot password or MPIN?')
+            ->assertSee('Forgot MPIN?')
             ->assertSee(route('resident-portal.mpin.forgot'), false);
 
         $this->get('/resident-portal/forgot-mpin')
             ->assertOk()
-            ->assertSee('Forgot password or MPIN?');
+            ->assertSee('Forgot MPIN?');
 
         $this->post('/resident-portal/forgot-mpin', [
             'resident_id' => $resident->resident_id,
