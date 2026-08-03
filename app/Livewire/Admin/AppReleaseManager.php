@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Services\AndroidApkMetadataReader;
 use App\Services\MobileAppReleaseService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class AppReleaseManager extends Component
     public string $sourceProjectPath = MobileAppReleaseService::SOURCE_PROJECT_PATH;
 
     public $apk;
+    public ?string $apkMetadataMessage = null;
 
     public ?string $currentApkName = null;
     public ?string $currentApkSizeLabel = null;
@@ -60,7 +62,25 @@ class AppReleaseManager extends Component
         $this->success('App release details saved.');
     }
 
-    public function uploadApk(MobileAppReleaseService $releases): void
+    public function updatedApk(AndroidApkMetadataReader $metadataReader): void
+    {
+        $this->apkMetadataMessage = null;
+
+        if (! $this->apk) {
+            return;
+        }
+
+        try {
+            $metadata = $metadataReader->read($this->apk->getRealPath());
+            $this->versionName = $metadata['version_name'];
+            $this->versionCode = $metadata['version_code'];
+            $this->apkMetadataMessage = "Detected version {$this->versionName} (build {$this->versionCode}). Release Details were updated.";
+        } catch (\Throwable $exception) {
+            $this->addError('apk', $exception->getMessage());
+        }
+    }
+
+    public function uploadApk(MobileAppReleaseService $releases, AndroidApkMetadataReader $metadataReader): void
     {
         $this->validate([
             'apk' => ['required', 'file', 'max:204800'],
@@ -73,6 +93,26 @@ class AppReleaseManager extends Component
 
             return;
         }
+
+        try {
+            $metadata = $metadataReader->read($this->apk->getRealPath());
+            $this->versionName = $metadata['version_name'];
+            $this->versionCode = $metadata['version_code'];
+        } catch (\Throwable $exception) {
+            $this->addError('apk', $exception->getMessage());
+
+            return;
+        }
+
+        $releases->saveDetails([
+            'name' => $this->name,
+            'description' => $this->description,
+            'version_name' => $this->versionName,
+            'version_code' => $this->versionCode,
+            'release_notes' => $this->releaseNotes,
+            'features' => $this->featuresText,
+            'source_project_path' => $this->sourceProjectPath,
+        ]);
 
         $previousPath = $releases->release()['apk_path'] ?? null;
         $version = Str::slug(str_replace('.', '-', $this->versionName ?: 'latest'));
@@ -90,6 +130,7 @@ class AppReleaseManager extends Component
         );
 
         $this->apk = null;
+        $this->apkMetadataMessage = null;
         $this->loadRelease($releases);
         $this->success('APK uploaded and marked as the latest release.');
     }

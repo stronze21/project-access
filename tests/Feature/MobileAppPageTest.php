@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Admin\AppReleaseManager;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\AndroidApkMetadataReader;
 use App\Services\MobileAppReleaseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
+use Mockery\MockInterface;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -104,5 +109,28 @@ class MobileAppPageTest extends TestCase
             ->get('/admin/app-release')
             ->assertOk()
             ->assertSee('App Release Manager');
+    }
+
+    public function test_selecting_and_uploading_apk_autofills_and_saves_embedded_version_metadata(): void
+    {
+        Storage::fake('public');
+        $this->mock(AndroidApkMetadataReader::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('read')->twice()->andReturn([
+                'version_name' => '3.2.1',
+                'version_code' => '42',
+            ]);
+        });
+
+        Livewire::test(AppReleaseManager::class)
+            ->set('apk', UploadedFile::fake()->create('smartcity-access.apk', 100, 'application/vnd.android.package-archive'))
+            ->assertSet('versionName', '3.2.1')
+            ->assertSet('versionCode', '42')
+            ->assertSee('Detected version 3.2.1 (build 42)')
+            ->call('uploadApk')
+            ->assertHasNoErrors();
+
+        $this->assertSame('3.2.1', SystemSetting::get('mobile_app.version_name'));
+        $this->assertSame('42', SystemSetting::get('mobile_app.version_code'));
+        $this->assertTrue(app(MobileAppReleaseService::class)->release()['has_apk']);
     }
 }

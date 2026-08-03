@@ -79,6 +79,9 @@
                         @error('apk')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                        @if ($apkMetadataMessage)
+                            <p class="mt-2 text-sm font-medium text-emerald-700">{{ $apkMetadataMessage }}</p>
+                        @endif
                         <div wire:loading wire:target="apk" class="mt-2 text-sm text-slate-600">Preparing upload...</div>
                     </div>
 
