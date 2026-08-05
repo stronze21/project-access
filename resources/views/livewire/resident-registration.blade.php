@@ -523,7 +523,7 @@
                         <h3 class="mb-4 text-lg font-semibold">Household Address</h3>
 
                         <div class="mb-4">
-                            <x-mary-textarea label="House #, Street Name, Purok Name" wire:model="address" required
+                            <x-mary-textarea label="House #, Street Name, Purok Name" wire:model="address"
                                 error="{{ $errors->first('address') }}" />
                         </div>
 

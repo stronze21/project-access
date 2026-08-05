@@ -127,7 +127,7 @@ class ResidentRegistration extends Component
     public $isLegacyImported = false;
 
     // Household related - keep only what's necessary for address
-    #[Validate('required|string|min:5|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $address = '';
 
     // Location data from the AddressSelector
