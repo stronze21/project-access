@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\CitizenServiceRequest;
+use App\Models\CitizenServiceType;
 use App\Models\Complaint;
 use App\Models\ComplaintCategory;
 use App\Models\Resident;
@@ -28,11 +29,13 @@ class ResidentThreeCitizenServicesSeeder extends Seeder
             ['description' => 'General resident concerns requiring city action.', 'is_active' => true]
         );
 
+        $typeNames = CitizenServiceType::query()->pluck('name', 'code');
+
         $serviceRequests = [
-            ['reference_number' => 'CSR-RESIDENT3-001', 'service_type' => 'certificate', 'service_name' => 'Barangay Clearance', 'status' => 'submitted', 'current_step' => 'Application received', 'days_ago' => 2, 'expected_days' => 5, 'notes' => 'For local employment requirements.'],
-            ['reference_number' => 'CSR-RESIDENT3-002', 'service_type' => 'permit', 'service_name' => 'Business Permit Renewal', 'status' => 'processing', 'current_step' => 'Assessment and fee validation', 'days_ago' => 7, 'expected_days' => 3, 'notes' => 'Renewal documents are under review.'],
-            ['reference_number' => 'CSR-RESIDENT3-003', 'service_type' => 'assistance', 'service_name' => 'Medical Assistance', 'status' => 'for-release', 'current_step' => 'Approved for release', 'days_ago' => 12, 'expected_days' => 1, 'notes' => 'Bring a valid resident ID when claiming.'],
-            ['reference_number' => 'CSR-RESIDENT3-004', 'service_type' => 'certificate', 'service_name' => 'Residency Certificate', 'status' => 'completed', 'current_step' => 'Certificate released', 'days_ago' => 20, 'expected_days' => -14, 'notes' => 'Digital copy released to the resident.'],
+            ['reference_number' => 'CSR-RESIDENT3-001', 'service_type' => 'certificate', 'status' => 'submitted', 'current_step' => 'Application received', 'days_ago' => 2, 'expected_days' => 5, 'notes' => 'For local employment requirements.'],
+            ['reference_number' => 'CSR-RESIDENT3-002', 'service_type' => 'permit', 'status' => 'processing', 'current_step' => 'Assessment and fee validation', 'days_ago' => 7, 'expected_days' => 3, 'notes' => 'Renewal documents are under review.'],
+            ['reference_number' => 'CSR-RESIDENT3-003', 'service_type' => 'assistance', 'status' => 'for-release', 'current_step' => 'Approved for release', 'days_ago' => 12, 'expected_days' => 1, 'notes' => 'Bring a valid resident ID when claiming.'],
+            ['reference_number' => 'CSR-RESIDENT3-004', 'service_type' => 'certificate', 'status' => 'completed', 'current_step' => 'Certificate released', 'days_ago' => 20, 'expected_days' => -14, 'notes' => 'Digital copy released to the resident.'],
         ];
 
         foreach ($serviceRequests as $row) {
@@ -44,7 +47,7 @@ class ResidentThreeCitizenServicesSeeder extends Seeder
                 [
                     'resident_id' => $resident->id,
                     'service_type' => $row['service_type'],
-                    'service_name' => $row['service_name'],
+                    'service_name' => $typeNames[$row['service_type']] ?? $row['service_type'],
                     'status' => $row['status'],
                     'current_step' => $row['current_step'],
                     'submitted_at' => $submittedAt,

@@ -28,7 +28,7 @@ class ResidentPortalCitizenServicesTest extends TestCase
         CitizenServiceRequest::create([
             'resident_id' => $resident->id,
             'service_type' => 'business-permit',
-            'service_name' => 'Business Permit Renewal',
+            'service_name' => 'Business Permit',
             'status' => 'processing',
             'current_step' => 'Assessment review',
         ]);
@@ -46,11 +46,53 @@ class ResidentPortalCitizenServicesTest extends TestCase
         $this->getJson('/api/resident-portal/services')
             ->assertOk()
             ->assertJsonPath('summary.total', 1)
-            ->assertJsonPath('data.0.service_name', 'Business Permit Renewal');
+            ->assertJsonPath('data.0.service_name', 'Business Permit');
 
         $this->getJson('/api/resident-portal/public-services')
             ->assertOk()
             ->assertJsonPath('data.0.title', 'Business Permit Portal');
+    }
+
+    public function test_authenticated_resident_can_create_service_request_with_derived_name(): void
+    {
+        $resident = $this->createResident();
+
+        Sanctum::actingAs($resident);
+
+        $this->postJson('/api/resident-portal/services', [
+            'service_type' => 'certificate',
+            'notes' => 'Needed for employment.',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.service_type', 'certificate')
+            ->assertJsonPath('data.service_name', 'Certificate');
+
+        $this->assertDatabaseHas('citizen_service_requests', [
+            'resident_id' => $resident->id,
+            'service_type' => 'certificate',
+            'service_name' => 'Certificate',
+            'notes' => 'Needed for employment.',
+        ]);
+    }
+
+    public function test_service_create_ignores_client_provided_service_name(): void
+    {
+        $resident = $this->createResident();
+
+        Sanctum::actingAs($resident);
+
+        $this->postJson('/api/resident-portal/services', [
+            'service_type' => 'permit',
+            'service_name' => 'Custom Title That Should Be Ignored',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.service_name', 'Permit');
+
+        $this->assertDatabaseHas('citizen_service_requests', [
+            'resident_id' => $resident->id,
+            'service_type' => 'permit',
+            'service_name' => 'Permit',
+        ]);
     }
 
     public function test_authenticated_resident_can_only_view_members_of_their_household(): void

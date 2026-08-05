@@ -18,7 +18,7 @@ class CitizenServiceRequestManagementTest extends TestCase
     {
         $request = CitizenServiceRequest::create([
             'service_type' => 'permit',
-            'service_name' => 'Business Permit Renewal',
+            'service_name' => 'Permit',
             'status' => 'submitted',
             'current_step' => 'Application received',
         ]);
@@ -29,14 +29,14 @@ class CitizenServiceRequestManagementTest extends TestCase
             ->assertSet('activeTab', 'requests')
             ->assertSee('Service Tracking Management')
             ->assertSee($request->reference_number)
-            ->assertSee('Business Permit Renewal');
+            ->assertSee('Permit');
     }
 
     public function test_staff_can_update_a_service_request(): void
     {
         $request = CitizenServiceRequest::create([
             'service_type' => 'certificate',
-            'service_name' => 'Certificate Request',
+            'service_name' => 'Certificate',
             'status' => 'submitted',
             'current_step' => 'Application received',
         ]);
@@ -96,7 +96,7 @@ class CitizenServiceRequestManagementTest extends TestCase
         $type = CitizenServiceType::where('code', 'certificate')->firstOrFail();
         CitizenServiceRequest::create([
             'service_type' => $type->code,
-            'service_name' => 'Residency Certificate',
+            'service_name' => $type->name,
             'status' => 'submitted',
             'current_step' => 'Application received',
         ]);

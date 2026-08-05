@@ -77,7 +77,6 @@ class ServiceTrackingController extends Controller
                 'required',
                 Rule::exists('citizen_service_types', 'code')->where('is_active', true),
             ],
-            'service_name' => 'required|string|max:255',
             'current_step' => 'nullable|string|max:150',
             'expected_completion_at' => 'nullable|date',
             'notes' => 'nullable|string',
@@ -88,10 +87,14 @@ class ServiceTrackingController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $serviceType = CitizenServiceType::where('code', $request->service_type)
+            ->where('is_active', true)
+            ->firstOrFail();
+
         $serviceRequest = CitizenServiceRequest::create([
             'resident_id' => $request->user()->id,
-            'service_type' => $request->service_type,
-            'service_name' => $request->service_name,
+            'service_type' => $serviceType->code,
+            'service_name' => $serviceType->name,
             'status' => 'submitted',
             'current_step' => $request->current_step ?? 'Application received',
             'expected_completion_at' => $request->expected_completion_at,

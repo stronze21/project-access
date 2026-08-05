@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\CitizenServiceRequest;
+use App\Models\CitizenServiceType;
 use App\Models\Resident;
 use Illuminate\Database\Seeder;
-use App\Models\CitizenServiceRequest;
 
 class CitizenServiceRequestSeeder extends Seeder
 {
@@ -19,10 +20,11 @@ class CitizenServiceRequestSeeder extends Seeder
             return;
         }
 
+        $typeNames = CitizenServiceType::query()->pluck('name', 'code');
+
         $templates = [
             [
                 'service_type' => 'business-permit',
-                'service_name' => 'Business Permit Renewal',
                 'status' => 'processing',
                 'current_step' => 'Assessment and fee validation',
                 'expected_completion_at' => now()->addDays(4),
@@ -30,7 +32,6 @@ class CitizenServiceRequestSeeder extends Seeder
             ],
             [
                 'service_type' => 'civil-registry',
-                'service_name' => 'Birth Certificate Request',
                 'status' => 'submitted',
                 'current_step' => 'Application received',
                 'expected_completion_at' => now()->addDays(7),
@@ -38,7 +39,6 @@ class CitizenServiceRequestSeeder extends Seeder
             ],
             [
                 'service_type' => 'tax-payment',
-                'service_name' => 'Real Property Tax Clearance',
                 'status' => 'for-release',
                 'current_step' => 'Ready for digital release',
                 'expected_completion_at' => now()->addDay(),
@@ -46,7 +46,6 @@ class CitizenServiceRequestSeeder extends Seeder
             ],
             [
                 'service_type' => 'financial-aid',
-                'service_name' => 'Medical Assistance Application',
                 'status' => 'completed',
                 'current_step' => 'Approved and released',
                 'expected_completion_at' => now()->subDay(),
@@ -57,11 +56,12 @@ class CitizenServiceRequestSeeder extends Seeder
 
         foreach ($residents as $index => $resident) {
             $template = $templates[$index % count($templates)];
+            $serviceType = $template['service_type'];
 
             CitizenServiceRequest::create([
                 'resident_id' => $resident->id,
-                'service_type' => $template['service_type'],
-                'service_name' => $template['service_name'],
+                'service_type' => $serviceType,
+                'service_name' => $typeNames[$serviceType] ?? $serviceType,
                 'status' => $template['status'],
                 'current_step' => $template['current_step'],
                 'submitted_at' => now()->subDays(rand(1, 14)),

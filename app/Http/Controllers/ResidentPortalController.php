@@ -156,12 +156,18 @@ class ResidentPortalController extends Controller
                 'required',
                 Rule::exists('citizen_service_types', 'code')->where('is_active', true),
             ],
-            'service_name' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:3000'],
         ]);
 
-        CitizenServiceRequest::create($validated + [
+        $serviceType = CitizenServiceType::where('code', $validated['service_type'])
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        CitizenServiceRequest::create([
             'resident_id' => $this->resident()->id,
+            'service_type' => $serviceType->code,
+            'service_name' => $serviceType->name,
+            'notes' => $validated['notes'] ?? null,
             'status' => 'submitted',
             'current_step' => 'Application received',
         ]);

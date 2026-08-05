@@ -1,5 +1,10 @@
 # SmartCity ACCESS release notes
 
+## 1.0.5 (build 6)
+
+- Service requests now use a service type dropdown instead of free-text name and type fields.
+- Choosing a service type is enough to submit; optional notes still capture extra details.
+
 ## 1.0.4 (build 5)
 
 - Added a "What's New" dialog that shows release notes once after an app update.
