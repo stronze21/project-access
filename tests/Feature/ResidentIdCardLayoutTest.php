@@ -148,6 +148,11 @@ class ResidentIdCardLayoutTest extends TestCase
         $this->assertStringContainsString('Landscape CR80 format', $batchForm);
         $this->assertStringContainsString('Print IDs by Barangay', $batchForm);
         $this->assertStringNotContainsString('fetch(', $batchForm);
+
+        $batchPreview = file_get_contents(resource_path('views/residents/id-card-batch-landscape.blade.php'));
+        $this->assertStringContainsString('batch-toolbar-meta', $batchPreview);
+        $this->assertStringContainsString('Back to Selection', $batchPreview);
+        $this->assertStringNotContainsString('Tracking reference:', $batchPreview);
     }
 
     private function createResident(array $overrides = []): Resident
