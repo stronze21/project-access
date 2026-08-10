@@ -14,18 +14,21 @@
             @csrf
             <button type="submit">Print {{ $residents->count() }} ID Card(s)</button>
         </form>
-        <a href="{{ route('residents.id-cards.form', array_filter(['barangay' => $barangay ?? null, 'status' => $status ?? null, 'batch_number' => $batchNumber ?? null])) }}">Back to Barangay Selection</a>
+        <a href="{{ route('residents.id-cards.form', array_filter(['barangay' => $barangay ?? null, 'status' => $status ?? null])) }}">Back to Barangay Selection</a>
         @if ($barangay ?? null)
-            <span>{{ $barangay === 'all' ? 'All Barangays' : $barangay }} · Batch {{ $batchNumber }} · {{ $totalResidents }} matching resident(s)</span>
+            <span>{{ $barangay === 'all' ? 'All Barangays' : $barangay }} · Batch {{ $batchNumber }} · {{ $residents->count() }} assigned ID(s)</span>
         @endif
         <span>Tracking reference: {{ $printBatch->reference_number }}</span>
+        @unless ($printBatch->exclude_printed)
+            <span>Reprint mode: previously printed residents included</span>
+        @endunless
         @if ($hasNextBatch ?? false)
             <form action="{{ route('residents.id-cards.batch') }}" method="POST">
                 @csrf
                 <input type="hidden" name="barangay" value="{{ $barangay }}">
                 <input type="hidden" name="status" value="{{ $status }}">
-                <input type="hidden" name="batch_number" value="{{ $batchNumber + 1 }}">
-                <button type="submit">Open Batch {{ $batchNumber + 1 }}</button>
+                <input type="hidden" name="exclude_printed" value="{{ $printBatch->exclude_printed ? 1 : 0 }}">
+                <button type="submit">Generate Next Unassigned Batch</button>
             </form>
         @endif
     </nav>

@@ -16,6 +16,7 @@ class ResidentIdPrintBatch extends Model
         'user_id',
         'barangay',
         'status_filter',
+        'exclude_printed',
         'batch_number',
         'total_matching',
         'resident_count',
@@ -23,7 +24,10 @@ class ResidentIdPrintBatch extends Model
         'printed_at',
     ];
 
-    protected $casts = ['printed_at' => 'datetime'];
+    protected $casts = [
+        'exclude_printed' => 'boolean',
+        'printed_at' => 'datetime',
+    ];
 
     public function user(): BelongsTo
     {

@@ -222,6 +222,65 @@ class ResidentPinAndIdBatchTest extends TestCase
             ->assertSee('Santos, Maria');
     }
 
+    public function test_new_residents_append_to_open_batch_but_never_to_printed_batch(): void
+    {
+        $household = $this->household('Poblacion');
+        $user = $this->staff(['view-residents']);
+        $first = $this->resident('26-00001', ['household_id' => $household->id, 'last_name' => 'Zulu']);
+
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'active',
+        ])->assertRedirect();
+        $batchOne = ResidentIdPrintBatch::latest('id')->firstOrFail();
+
+        $second = $this->resident('26-00002', ['household_id' => $household->id, 'last_name' => 'Abad']);
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'active',
+        ])->assertRedirect(route('residents.id-cards.batches.print', $batchOne));
+
+        $this->assertSame(1, ResidentIdPrintBatch::count());
+        $this->assertSame([$first->id, $second->id], $batchOne->items()->orderBy('id')->pluck('resident_id')->all());
+
+        $this->actingAs($user)->postJson(route('residents.id-cards.batches.printed', $batchOne))->assertOk();
+        $third = $this->resident('26-00003', ['household_id' => $household->id]);
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'active',
+        ])->assertRedirect();
+
+        $batchTwo = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertNotSame($batchOne->id, $batchTwo->id);
+        $this->assertSame(2, $batchTwo->batch_number);
+        $this->assertSame([$third->id], $batchTwo->items()->pluck('resident_id')->all());
+        $this->assertSame([$first->id, $second->id], $batchOne->items()->orderBy('id')->pluck('resident_id')->all());
+    }
+
+    public function test_printed_residents_are_hidden_by_default_but_can_be_explicitly_included_for_reprint(): void
+    {
+        $household = $this->household('Poblacion');
+        $resident = $this->resident('26-00001', ['household_id' => $household->id]);
+        $user = $this->staff(['view-residents']);
+
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'active', 'exclude_printed' => 1,
+        ])->assertRedirect();
+        $originalBatch = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->actingAs($user)->postJson(route('residents.id-cards.batches.printed', $originalBatch))->assertOk();
+
+        $this->actingAs($user)->from(route('residents.id-cards.form'))->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'active', 'exclude_printed' => 1,
+        ])->assertRedirect(route('residents.id-cards.form'))
+            ->assertSessionHasErrors('barangay');
+
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'active', 'exclude_printed' => 0,
+        ])->assertRedirect();
+
+        $reprintBatch = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertFalse($reprintBatch->exclude_printed);
+        $this->assertNotSame($originalBatch->id, $reprintBatch->id);
+        $this->assertSame([$resident->id], $reprintBatch->items()->pluck('resident_id')->all());
+    }
+
     private function staff(array $permissions): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

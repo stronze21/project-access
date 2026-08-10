@@ -22,7 +22,7 @@
                 <form action="{{ route('residents.id-cards.batch') }}" method="POST" class="mt-6 space-y-6">
                     @csrf
 
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <x-mary-select name="barangay" id="filter-barangay" label="Barangay" required
                             placeholder="Select a barangay" :options="collect([['key' => 'all', 'id' => 'All Barangays']])->concat(collect($barangayList)->map(fn ($barangay) => ['key' => $barangay, 'id' => $barangay]))->values()->toArray()"
                             option-value="key" option-label="id" :value="old('barangay', $selectedBarangay)" />
@@ -33,10 +33,18 @@
                             ['key' => 'inactive', 'id' => 'Inactive Residents'],
                         ]" option-value="key" option-label="id" :value="old('status', $selectedStatus)" />
 
-                        <x-mary-input name="batch_number" id="batch-number" label="Batch Number" type="number"
-                            min="1" :value="old('batch_number', $selectedBatchNumber)"
-                            hint="Batch 1 = first 100, batch 2 = next 100." />
                     </div>
+
+                    <input type="hidden" name="exclude_printed" value="0">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4">
+                        <input type="checkbox" name="exclude_printed" value="1"
+                            class="checkbox checkbox-primary mt-0.5"
+                            @checked(old('exclude_printed', $excludePrinted))>
+                        <span>
+                            <strong class="block text-sm text-gray-900">Hide residents already assigned or printed</strong>
+                            <span class="mt-1 block text-xs text-gray-500">Recommended to prevent duplicate ID printing. Uncheck only when an intentional reprint is required.</span>
+                        </span>
+                    </label>
 
                     @if ($errors->any())
                         <div class="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800" role="alert">
@@ -50,7 +58,7 @@
                     @endif
 
                     <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                        Choose a barangay and batch number. The server will load that group directly, so this page no longer depends on the browser resident-list loader.
+                        With duplicate protection enabled, residents already assigned to a tracked batch remain there. New residents are added to the latest unprinted batch when space is available, or placed in a new batch automatically. Printed batches are never changed.
                     </div>
 
                     <div class="flex justify-end pt-4 border-t">

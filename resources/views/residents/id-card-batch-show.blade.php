@@ -14,6 +14,7 @@
                     <div><dt class="text-xs text-gray-500">Batch</dt><dd class="font-semibold">{{ $printBatch->batch_number }}</dd></div>
                     <div><dt class="text-xs text-gray-500">IDs</dt><dd class="font-semibold">{{ $printBatch->resident_count }}</dd></div>
                     <div><dt class="text-xs text-gray-500">Status</dt><dd class="font-semibold">{{ str($printBatch->status)->replace('_', ' ')->headline() }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">Duplicate policy</dt><dd>{{ $printBatch->exclude_printed ? 'Previously assigned IDs hidden' : 'Reprint mode enabled' }}</dd></div>
                     <div><dt class="text-xs text-gray-500">User</dt><dd>{{ $printBatch->user?->name ?: 'Unknown user' }}</dd></div>
                     <div><dt class="text-xs text-gray-500">Generated</dt><dd>{{ $printBatch->created_at->format('M d, Y h:i A') }}</dd></div>
                     <div><dt class="text-xs text-gray-500">Print initiated</dt><dd>{{ $printBatch->printed_at?->format('M d, Y h:i A') ?: 'Not yet' }}</dd></div>
