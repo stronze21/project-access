@@ -2,10 +2,12 @@
     <x-slot name="header">
         <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Generate Batch ACCESS ID Cards</h2>
-            <x-mary-button link="{{ route('residents.index') }}"
-                class="tagged-color btn-secondary btn-outline btn-secline" icon="o-arrow-left">
-                Back to Residents
-            </x-mary-button>
+            <div class="flex gap-2">
+                <x-mary-button link="{{ route('residents.id-cards.batches.index') }}"
+                    class="btn-secondary btn-outline" icon="o-clock">Print History</x-mary-button>
+                <x-mary-button link="{{ route('residents.index') }}"
+                    class="tagged-color btn-secondary btn-outline btn-secline" icon="o-arrow-left">Back to Residents</x-mary-button>
+            </div>
         </div>
     </x-slot>
 
@@ -22,7 +24,7 @@
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                         <x-mary-select name="barangay" id="filter-barangay" label="Barangay" required
-                            placeholder="Select a barangay" :options="collect($barangayList)->map(fn ($barangay) => ['key' => $barangay, 'id' => $barangay])->toArray()"
+                            placeholder="Select a barangay" :options="collect([['key' => 'all', 'id' => 'All Barangays']])->concat(collect($barangayList)->map(fn ($barangay) => ['key' => $barangay, 'id' => $barangay]))->values()->toArray()"
                             option-value="key" option-label="id" :value="old('barangay', $selectedBarangay)" />
 
                         <x-mary-select name="status" id="filter-status" label="Resident Status" :options="[

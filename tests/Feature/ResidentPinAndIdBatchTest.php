@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ActivityLog;
 use App\Models\Household;
 use App\Models\Resident;
+use App\Models\ResidentIdPrintBatch;
 use App\Models\User;
 use App\Services\ResidentPinService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,6 +158,60 @@ class ResidentPinAndIdBatchTest extends TestCase
         ])->assertOk()
             ->assertViewHas('residents', fn ($residents) => $residents->count() === 1)
             ->assertViewHas('hasNextBatch', false);
+    }
+
+    public function test_all_barangays_can_be_printed_in_server_side_batches(): void
+    {
+        $firstHousehold = $this->household('San Antonio');
+        $secondHousehold = $this->household('Poblacion');
+        $this->resident('26-00001', ['household_id' => $firstHousehold->id]);
+        $this->resident('26-00002', ['household_id' => $secondHousehold->id]);
+
+        $this->actingAs($this->staff(['view-residents']))
+            ->post(route('residents.id-cards.batch'), [
+                'barangay' => 'all',
+                'status' => 'active',
+                'batch_number' => 1,
+            ])->assertOk()
+            ->assertViewHas('residents', fn ($residents) => $residents->count() === 2)
+            ->assertViewHas('barangay', 'all');
+    }
+
+    public function test_generated_batch_tracks_resident_ids_and_print_initiation(): void
+    {
+        $household = $this->household('Poblacion');
+        $resident = $this->resident('26-00001', ['household_id' => $household->id]);
+        $user = $this->staff(['view-residents']);
+
+        $response = $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion',
+            'status' => 'active',
+            'batch_number' => 1,
+        ])->assertOk();
+
+        /** @var ResidentIdPrintBatch $batch */
+        $batch = $response->viewData('printBatch');
+        $this->assertSame('generated', $batch->status);
+        $this->assertDatabaseHas('resident_id_print_batch_items', [
+            'print_batch_id' => $batch->id,
+            'resident_id' => $resident->id,
+            'resident_pin' => '26-00001',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('residents.id-cards.batches.printed', $batch))
+            ->assertOk()
+            ->assertJsonPath('reference_number', $batch->reference_number);
+
+        $this->assertSame('print_initiated', $batch->fresh()->status);
+        $this->assertNotNull($batch->fresh()->printed_at);
+        $this->assertNotNull($batch->items()->firstOrFail()->printed_at);
+
+        $this->actingAs($user)
+            ->get(route('residents.id-cards.batches.show', $batch))
+            ->assertOk()
+            ->assertSee('26-00001')
+            ->assertSee('Santos, Maria');
     }
 
     private function staff(array $permissions): User

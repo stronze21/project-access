@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Resident;
+use App\Models\ResidentIdPrintBatch;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -37,7 +41,16 @@ class ResidentIdCardController extends Controller
         $validated = $request->validate([
             'residents' => ['nullable', 'array', 'max:'.self::MAX_BATCH_SIZE, 'required_without:barangay'],
             'residents.*' => ['required', 'integer', 'distinct', 'exists:residents,id'],
-            'barangay' => ['nullable', 'string', 'max:255', 'required_without:residents', Rule::exists('households', 'barangay')],
+            'barangay' => [
+                'nullable',
+                'string',
+                'max:255',
+                'required_without:residents',
+                Rule::when(
+                    $request->input('barangay') !== 'all',
+                    Rule::exists('households', 'barangay')
+                ),
+            ],
             'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
             'batch_number' => ['nullable', 'integer', 'min:1'],
         ], [
@@ -53,7 +66,10 @@ class ResidentIdCardController extends Controller
 
         if ($barangay) {
             $query = Resident::with('household')
-                ->whereHas('household', fn ($household) => $household->where('barangay', $barangay))
+                ->when(
+                    $barangay !== 'all',
+                    fn ($residents) => $residents->whereHas('household', fn ($household) => $household->where('barangay', $barangay))
+                )
                 ->when($status === 'active', fn ($residents) => $residents->where('is_active', true))
                 ->when($status === 'inactive', fn ($residents) => $residents->where('is_active', false))
                 ->orderBy('last_name')
@@ -67,14 +83,37 @@ class ResidentIdCardController extends Controller
                 ->get();
 
             if ($residents->isEmpty()) {
+                $barangayLabel = $barangay === 'all' ? 'all barangays' : $barangay;
                 throw ValidationException::withMessages([
-                    'batch_number' => "No residents were found in batch {$batchNumber} for {$barangay}.",
+                    'batch_number' => "No residents were found in batch {$batchNumber} for {$barangayLabel}.",
                 ]);
             }
         } else {
             $residentIds = $validated['residents'];
             $residents = Resident::with('household')->whereIn('id', $residentIds)->get();
+            $totalResidents = $residents->count();
         }
+
+        $printBatch = DB::transaction(function () use ($request, $residents, $barangay, $status, $batchNumber, $totalResidents) {
+            $batch = ResidentIdPrintBatch::create([
+                'reference_number' => (string) Str::uuid(),
+                'user_id' => $request->user()?->id,
+                'barangay' => $barangay,
+                'status_filter' => $status,
+                'batch_number' => $batchNumber,
+                'total_matching' => $totalResidents,
+                'resident_count' => $residents->count(),
+                'status' => 'generated',
+            ]);
+
+            $batch->items()->createMany($residents->map(fn (Resident $resident) => [
+                'resident_id' => $resident->id,
+                'resident_pin' => $resident->resident_id,
+                'resident_name' => $resident->full_name,
+            ])->all());
+
+            return $batch;
+        });
 
         return view('residents.id-card-batch-landscape', [
             'residents' => $residents,
@@ -84,6 +123,7 @@ class ResidentIdCardController extends Controller
             'batchNumber' => $batchNumber,
             'totalResidents' => $totalResidents,
             'hasNextBatch' => $totalResidents !== null && $batchNumber * self::MAX_BATCH_SIZE < $totalResidents,
+            'printBatch' => $printBatch,
         ]);
     }
 
@@ -105,6 +145,42 @@ class ResidentIdCardController extends Controller
             'selectedBarangay' => request('barangay'),
             'selectedStatus' => request('status', 'active'),
             'selectedBatchNumber' => max(1, request()->integer('batch_number', 1)),
+        ]);
+    }
+
+    public function batchHistory()
+    {
+        $printBatches = ResidentIdPrintBatch::with('user')
+            ->latest()
+            ->paginate(25);
+
+        return view('residents.id-card-batch-history', compact('printBatches'));
+    }
+
+    public function showBatch(ResidentIdPrintBatch $printBatch)
+    {
+        $printBatch->load(['user', 'items.resident']);
+
+        return view('residents.id-card-batch-show', compact('printBatch'));
+    }
+
+    public function markBatchPrinted(Request $request, ResidentIdPrintBatch $printBatch): JsonResponse
+    {
+        $printedAt = now();
+
+        DB::transaction(function () use ($request, $printBatch, $printedAt) {
+            $printBatch->update([
+                'user_id' => $request->user()?->id,
+                'status' => 'print_initiated',
+                'printed_at' => $printedAt,
+            ]);
+            $printBatch->items()->update(['printed_at' => $printedAt]);
+        });
+
+        return response()->json([
+            'message' => 'Print initiation recorded.',
+            'reference_number' => $printBatch->reference_number,
+            'printed_at' => $printedAt->toIso8601String(),
         ]);
     }
 
