@@ -82,6 +82,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $residentPortalPermissions = [
             'manage-announcements',
             'manage-citizen-services',
+            'manage-scholarship-applications',
+            'view-scholarship-applications',
         ];
 
         $bosesmotoPermissions = [
@@ -162,6 +164,8 @@ class RolesAndPermissionsSeeder extends Seeder
             // Resident Portal management
             'manage-announcements',
             'manage-citizen-services',
+            'manage-scholarship-applications',
+            'view-scholarship-applications',
         ]);
 
         // 3. Registration Officer

@@ -38,6 +38,7 @@
         'support-requests.*',
         'account-deletion-requests.*',
         'announcements.*',
+        'scholarships.*',
         'bosesmoto.*',
         'complaints.*',
         'sentiments.*',
@@ -506,13 +507,18 @@
                                         </div>
                                         @endif
 
-                                        @if (auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements'))
+                                        @if (auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements') || auth()->user()->can('manage-scholarship-applications'))
                                             <div class="my-1 border-t border-slate-100"></div>
                                         @endif
 
                                         @can('manage-announcements')
                                             <a href="{{ route('announcements.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 Announcements
+                                            </a>
+                                        @endcan
+                                        @can('manage-scholarship-applications')
+                                            <a href="{{ route('scholarships.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Scholarships
                                             </a>
                                         @endcan
                                         @can('manage-citizen-services')
@@ -925,6 +931,11 @@
                                 @can('manage-announcements')
                                     <x-responsive-nav-link href="{{ route('announcements.index') }}" :active="request()->routeIs('announcements.*')">
                                         Announcements
+                                    </x-responsive-nav-link>
+                                @endcan
+                                @can('manage-scholarship-applications')
+                                    <x-responsive-nav-link href="{{ route('scholarships.index') }}" :active="request()->routeIs('scholarships.*')">
+                                        Scholarships
                                     </x-responsive-nav-link>
                                 @endcan
                                 @can('manage-citizen-services')

@@ -1,7 +1,7 @@
 @extends('layouts.resident-portal')
 @php
     $portal = fn (string $path = '') => url('/resident-portal'.($path ? '/'.ltrim($path, '/') : ''));
-    $statusClass = fn (?string $status) => in_array($status, ['completed','released','distributed','resolved','closed','active','approved'], true) ? 'success' : (in_array($status, ['rejected','cancelled','urgent','critical','denied'], true) ? 'danger' : 'warning');
+    $statusClass = fn (?string $status) => in_array($status, ['completed','released','distributed','resolved','closed','active','approved','awarded','conditionally_approved'], true) ? 'success' : (in_array($status, ['rejected','cancelled','urgent','critical','denied'], true) ? 'danger' : 'warning');
     $photoUrl = null;
     if ($resident->photo_path) {
         $photoPath = str_replace('\\', '/', $resident->photo_path);
@@ -35,6 +35,7 @@
     <div class="home-app-title"><span class="home-app-name-primary">SmartCity</span><span class="home-app-name-secondary">ACCESS</span></div>
     <div class="home-services-rail" aria-label="Resident services">
         @foreach([
+            ['scholarships','school','Scholarships','blue'],
             ['ayuda','volunteer_activism','AyudaHub','ayuda'],
             ['citizen-services/tracking','track_changes','Track','blue'],
             ['citizen-services/public-services','account_balance','Portals','green'],
@@ -92,7 +93,11 @@
     </div>
     <p class="section-header">Members ({{ $data['members']->count() }})</p>
     @forelse($data['members'] as $member)
-        @php($memberPhoto = $member->photo_path ? '/storage/'.ltrim(preg_replace('#^/?storage/#', '', str_replace('\\', '/', $member->photo_path)), '/') : null)
+        @php
+            $memberPhoto = $member->photo_path
+                ? '/storage/'.ltrim(preg_replace('#^/?storage/#', '', str_replace('\\', '/', $member->photo_path)), '/')
+                : null;
+        @endphp
         <div class="native-card household-member-card">
             @if($memberPhoto)<img src="{{ $memberPhoto }}" alt="">@else<span class="household-member-avatar material-symbols-rounded filled">person</span>@endif
             <div><strong>{{ $member->full_name }}</strong><small>{{ str($member->relationship_to_head ?: 'member')->replace('_', ' ')->headline() }} · Age {{ $member->getAge() }}</small><span>{{ $member->resident_id }}</span></div>
@@ -164,6 +169,7 @@
     <div class="cs-benefit-row"><span><i class="material-symbols-rounded filled">touch_app</i>Convenient</span><span><i class="material-symbols-rounded filled">verified_user</i>Secure</span><span><i class="material-symbols-rounded filled">speed</i>Efficient</span></div>
     <div class="cs-tile-grid">
         @foreach([
+            ['scholarships','school','Scholarships','Apply for ACSP and track status','blue'],
             ['bosesmoto','record_voice_over','BosesMoTo','Complaints, polls, community voice','blue'],
             ['citizen-services/tracking','track_changes','Track Services','Follow submitted requests','blue'],
             ['citizen-services/public-services','account_balance','City Portals','Open public services','green'],
@@ -174,6 +180,135 @@
         @endforeach
     </div>
     <p class="section-header">ACCESS Services</p><div class="native-card action-list"><a href="{{ $portal('citizen-services/alerts') }}"><span class="material-symbols-rounded filled red-text">warning</span> Emergency alerts <span class="material-symbols-rounded">chevron_right</span></a><a href="{{ $portal('announcements') }}"><span class="material-symbols-rounded filled blue-text">campaign</span> Updates and notifications <span class="material-symbols-rounded">chevron_right</span></a><a href="{{ $portal('citizen-services/grievances') }}"><span class="material-symbols-rounded filled amber-text">report_problem</span> Report an issue <span class="material-symbols-rounded">chevron_right</span></a></div>
+
+@elseif($screen === 'scholarships')
+    <a class="back-link" href="{{ $portal('citizen-services') }}"><span class="material-symbols-rounded">arrow_back</span> Services</a>
+    <x-resident-portal-page-header icon="school" title="Scholarships" subtitle="Alaminos City Scholarship Program (ACSP) applications." />
+    @if($data['openPrograms']->isNotEmpty())
+        <a class="primary-button" href="{{ $portal('scholarships/apply') }}"><span class="material-symbols-rounded">add</span> Apply for Scholarships</a>
+    @else
+        <div class="portal-alert warning"><span class="material-symbols-rounded filled">info</span><span>No scholarship programs are open for applications right now.</span></div>
+    @endif
+    <p class="section-header">Your applications</p>
+    @forelse($data['items'] as $item)
+        <a class="native-card list-card" href="{{ $portal('scholarships/'.$item->id) }}">
+            <span class="list-icon blue"><span class="material-symbols-rounded filled">school</span></span>
+            <div>
+                <strong>{{ $item->program?->name ?? 'ACSP' }}</strong>
+                <small>{{ $item->reference_number }} · {{ $item->applicant_type === 'new' ? 'New Applicant' : 'On-going Scholar' }}</small>
+            </div>
+            <span class="status-chip {{ $statusClass($item->status) }}">{{ $item->statusLabel() }}</span>
+        </a>
+    @empty
+        <x-resident-portal-empty icon="school" title="No scholarship applications" message="Apply online and track your ACSP application here." />
+    @endforelse
+    {{ $data['items']->links() }}
+
+@elseif($screen === 'scholarships/apply')
+    <a class="back-link" href="{{ $portal('scholarships') }}"><span class="material-symbols-rounded">arrow_back</span> Scholarships</a>
+    <x-resident-portal-page-header icon="school" title="Apply for Scholarships" subtitle="Select your scholar type and start uploading documents." />
+    <form class="native-card form-stack" method="POST" action="{{ route('resident-portal.scholarships.store') }}">
+        @csrf
+        <label>Scholarship program
+            <select name="scholarship_program_id" required>
+                @foreach($data['programs'] as $program)
+                    <option value="{{ $program->id }}" @selected((string) old('scholarship_program_id') === (string) $program->id)>{{ $program->name }}{{ $program->academic_year ? ' · '.$program->academic_year : '' }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>Scholar type
+            <select name="applicant_type" required>
+                <option value="new" @selected(old('applicant_type') === 'new')>New Applicant</option>
+                <option value="ongoing" @selected(old('applicant_type') === 'ongoing')>On-going (Old Scholar)</option>
+            </select>
+        </label>
+        <label>GWA (optional)
+            <input type="number" name="gwa" step="0.01" min="0" max="100" value="{{ old('gwa') }}" placeholder="e.g. 95.50">
+        </label>
+        <button class="primary-button" type="submit">Continue to document upload</button>
+    </form>
+
+@elseif(preg_match('#^scholarships/\d+#',$screen))
+    @php
+        $app = $data['item'];
+    @endphp
+    <a class="back-link" href="{{ $portal('scholarships') }}"><span class="material-symbols-rounded">arrow_back</span> Scholarships</a>
+    <article class="native-card detail-card">
+        <span class="header-icon blue material-symbols-rounded filled">school</span>
+        <span class="status-chip {{ $statusClass($app->status) }}">{{ $app->statusLabel() }}</span>
+        <h1>{{ $app->program?->name ?? 'Scholarship Application' }}</h1>
+        <p>{{ $app->reference_number }} · {{ $app->applicant_type === 'new' ? 'New Applicant' : 'On-going Scholar' }}</p>
+        @if($app->gwa)<small>GWA: {{ $app->gwa }}</small>@endif
+        @if($app->award_tier)<div class="response-box"><strong>{{ $app->awardTierLabel() }}</strong><p>{{ $app->awardTierBenefits() }}</p></div>@endif
+        @if($app->status === 'needs_resubmission' && $app->rejection_reason)
+            <div class="portal-alert warning"><span class="material-symbols-rounded filled">error</span><span><strong>Corrections needed:</strong> {{ $app->rejection_reason }}</span></div>
+        @endif
+        @if($app->status === 'rejected' && $app->rejection_reason)
+            <div class="portal-alert danger"><span class="material-symbols-rounded filled">cancel</span><span><strong>Rejected:</strong> {{ $app->rejection_reason }}</span></div>
+        @endif
+        @if($app->status === 'conditionally_approved')
+            <div class="response-box">
+                <strong>CONDITIONALLY APPROVED</strong>
+                <p>Please visit the office in person with hard copies of your documents for final verification.</p>
+                @if($app->program?->office_address)<p><span class="material-symbols-rounded">location_on</span> {{ $app->program->office_address }}</p>@endif
+                @if($app->program?->office_hours)<p><span class="material-symbols-rounded">schedule</span> {{ $app->program->office_hours }}</p>@endif
+                @if($app->program?->required_originals)
+                    <p><strong>Bring original certified copies:</strong></p>
+                    <ul>@foreach($app->program->required_originals as $original)<li>{{ $original }}</li>@endforeach</ul>
+                @endif
+            </div>
+        @endif
+        @if($app->status === 'awarded')
+            <div class="response-box"><strong>Full Scholarship Grant Awarded</strong><p>Congratulations! Your scholarship has been fully verified and awarded.</p></div>
+        @endif
+    </article>
+
+    <p class="section-header">Document checklist</p>
+    @foreach($data['checklist'] as $row)
+        <div class="native-card list-card">
+            <span class="list-icon {{ $row['uploaded'] ? 'green' : 'amber' }}"><span class="material-symbols-rounded filled">{{ $row['uploaded'] ? 'check_circle' : 'upload_file' }}</span></span>
+            <div>
+                <strong>{{ $row['label'] }}</strong>
+                <small>
+                    @if($row['document'])
+                        {{ $row['document']->original_name }} · {{ str($row['document']->status)->headline() }}
+                        @if($row['document']->rejection_reason) · {{ $row['document']->rejection_reason }}@endif
+                    @else
+                        {{ $row['is_required'] ? 'Required' : 'Optional' }} · Not uploaded
+                    @endif
+                </small>
+            </div>
+            @if($app->canResidentEditDocuments() && $row['document'])
+                <form method="POST" action="{{ route('resident-portal.scholarships.documents.destroy', [$app, $row['document']]) }}">@csrf @method('DELETE')<button class="text-button" type="submit">Remove</button></form>
+            @endif
+        </div>
+    @endforeach
+
+    @if($app->canResidentEditDocuments())
+        <p class="section-header">Upload document</p>
+        <form class="native-card form-stack" method="POST" action="{{ route('resident-portal.scholarships.documents.store', $app) }}" enctype="multipart/form-data">
+            @csrf
+            <label>Document type
+                <select name="document_type_id" required>
+                    @foreach($data['documentTypes'] as $type)
+                        <option value="{{ $type->id }}">{{ $type->label }}{{ $type->is_required ? '' : ' (optional)' }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label>File<input type="file" name="file" accept="image/*,application/pdf" required></label>
+            <button class="primary-button" type="submit">Upload</button>
+        </form>
+        <form method="POST" action="{{ route('resident-portal.scholarships.submit', $app) }}">@csrf<button class="primary-button" type="submit">{{ $app->status === 'needs_resubmission' ? 'Resubmit application' : 'Submit application' }}</button></form>
+    @endif
+
+    <p class="section-header">Timeline</p>
+    <div class="timeline">
+        @forelse($app->events as $event)
+            <div class="active"><b>{{ str($event->to_status)->headline() }}</b><small>{{ $event->created_at?->format('M d, Y g:i A') }}@if($event->note) · {{ $event->note }}@endif</small></div>
+        @empty
+            <div class="active"><b>Draft created</b><small>{{ $app->created_at?->format('M d, Y g:i A') }}</small></div>
+        @endforelse
+    </div>
 
 @elseif($screen === 'citizen-services/tracking')
     <a class="back-link" href="{{ $portal('citizen-services') }}"><span class="material-symbols-rounded">arrow_back</span> Services</a><x-resident-portal-page-header icon="track_changes" title="Track Services" subtitle="Follow every resident request in one place." />

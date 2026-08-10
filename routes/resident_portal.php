@@ -27,6 +27,10 @@ Route::prefix('resident-portal')->name('resident-portal.')->middleware('resident
         Route::post('/actions/notifications/read-all', [ResidentPortalController::class, 'readAllNotifications'])->name('notifications.read-all');
         Route::post('/actions/notifications/{notification}/read', [ResidentPortalController::class, 'readNotification'])->name('notifications.read');
         Route::post('/actions/services', [ResidentPortalController::class, 'storeService'])->name('services.store');
+        Route::post('/actions/scholarships', [ResidentPortalController::class, 'storeScholarship'])->name('scholarships.store');
+        Route::post('/actions/scholarships/{application}/documents', [ResidentPortalController::class, 'uploadScholarshipDocument'])->name('scholarships.documents.store');
+        Route::delete('/actions/scholarships/{application}/documents/{document}', [ResidentPortalController::class, 'deleteScholarshipDocument'])->name('scholarships.documents.destroy');
+        Route::post('/actions/scholarships/{application}/submit', [ResidentPortalController::class, 'submitScholarship'])->name('scholarships.submit');
         Route::post('/actions/grievances', [ResidentPortalController::class, 'storeGrievance'])->name('grievances.store');
         Route::post('/actions/sos', [ResidentPortalController::class, 'storeSos'])->name('sos.store');
         Route::post('/actions/complaints', [ResidentPortalController::class, 'storeComplaint'])->name('complaints.store');

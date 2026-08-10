@@ -25,10 +25,15 @@ use App\Models\SentimentPost;
 use App\Models\SentimentReaction;
 use App\Models\SosAlert;
 use App\Models\SosDepartment;
+use App\Models\ScholarshipApplication;
+use App\Models\ScholarshipApplicationDocument;
+use App\Models\ScholarshipDocumentType;
+use App\Models\ScholarshipProgram;
 use App\Models\SupportRequest;
 use App\Services\ModuleSettings;
 use App\Services\ResidentCitizenAccountService;
 use App\Services\ResidentIdentityChangeRequestService;
+use App\Services\ScholarshipApplicationService;
 use App\Services\SentimentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +51,7 @@ class ResidentPortalController extends Controller
         private ModuleSettings $modules,
         private SentimentService $sentiments,
         private ResidentIdentityChangeRequestService $identityChanges,
+        private ScholarshipApplicationService $scholarships,
     ) {}
 
     public function home(Request $request): View
@@ -147,6 +153,67 @@ class ResidentPortalController extends Controller
         ResidentNotification::where('resident_id', $this->resident()->id)->unread()->update(['read_at' => now()]);
 
         return back()->with('status', 'All notifications marked as read.');
+    }
+
+    public function storeScholarship(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'scholarship_program_id' => ['required', 'exists:scholarship_programs,id'],
+            'applicant_type' => ['required', Rule::in([
+                ScholarshipApplication::APPLICANT_NEW,
+                ScholarshipApplication::APPLICANT_ONGOING,
+            ])],
+            'gwa' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $program = ScholarshipProgram::findOrFail($validated['scholarship_program_id']);
+        $application = $this->scholarships->createDraft(
+            $this->resident(),
+            $program,
+            $validated['applicant_type'],
+            isset($validated['gwa']) ? (float) $validated['gwa'] : null,
+        );
+
+        return redirect('/resident-portal/scholarships/'.$application->id)
+            ->with('status', 'Application draft created. Upload the required documents next.');
+    }
+
+    public function uploadScholarshipDocument(Request $request, ScholarshipApplication $application): RedirectResponse
+    {
+        abort_unless($application->resident_id === $this->resident()->id, 404);
+
+        $validated = $request->validate([
+            'document_type_id' => ['required', 'exists:scholarship_document_types,id'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,webp'],
+        ]);
+
+        $this->scholarships->uploadDocument(
+            $application,
+            ScholarshipDocumentType::findOrFail($validated['document_type_id']),
+            $validated['file'],
+            $this->resident(),
+        );
+
+        return back()->with('status', 'Document uploaded.');
+    }
+
+    public function deleteScholarshipDocument(
+        ScholarshipApplication $application,
+        ScholarshipApplicationDocument $document,
+    ): RedirectResponse {
+        abort_unless($application->resident_id === $this->resident()->id, 404);
+        $this->scholarships->deleteDocument($application, $document, $this->resident());
+
+        return back()->with('status', 'Document removed.');
+    }
+
+    public function submitScholarship(ScholarshipApplication $application): RedirectResponse
+    {
+        abort_unless($application->resident_id === $this->resident()->id, 404);
+        $this->scholarships->submit($application, $this->resident());
+
+        return redirect('/resident-portal/scholarships/'.$application->id)
+            ->with('status', 'Application submitted for staff review.');
     }
 
     public function storeService(Request $request): RedirectResponse
@@ -432,6 +499,34 @@ class ResidentPortalController extends Controller
             return [
                 'identityRequests' => ResidentIdentityChangeRequest::where('resident_id', $resident->id)
                     ->latest()->take(10)->get(),
+            ];
+        }
+
+        if ($screen === 'scholarships') {
+            return [
+                'items' => ScholarshipApplication::with('program')
+                    ->where('resident_id', $resident->id)
+                    ->latest('updated_at')
+                    ->paginate(10),
+                'openPrograms' => ScholarshipProgram::open()->orderByDesc('open_at')->get(),
+            ];
+        }
+
+        if ($screen === 'scholarships/apply') {
+            return [
+                'programs' => ScholarshipProgram::open()->orderByDesc('open_at')->get(),
+            ];
+        }
+
+        if (preg_match('#^scholarships/(\d+)$#', $screen, $matches)) {
+            $application = ScholarshipApplication::with(['program', 'documents.documentType', 'events'])
+                ->where('resident_id', $resident->id)
+                ->findOrFail((int) $matches[1]);
+
+            return [
+                'item' => $application,
+                'checklist' => $this->scholarships->checklistFor($application),
+                'documentTypes' => ScholarshipDocumentType::forApplicantType($application->applicant_type)->get(),
             ];
         }
 

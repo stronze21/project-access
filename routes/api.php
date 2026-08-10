@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ResidentPortal\NotificationController as ResidentNo
 use App\Http\Controllers\Api\ResidentPortal\ProfileController as ResidentProfileController;
 use App\Http\Controllers\Api\ResidentPortal\ProgramController as ResidentProgramController;
 use App\Http\Controllers\Api\ResidentPortal\PublicServicePortalController as ResidentPublicServicePortalController;
+use App\Http\Controllers\Api\ResidentPortal\ScholarshipController as ResidentScholarshipController;
 use App\Http\Controllers\Api\ResidentPortal\ServiceTrackingController as ResidentServiceTrackingController;
 use App\Http\Controllers\Api\ResidentPortal\SupportRequestController as ResidentSupportRequestController;
 use App\Http\Controllers\Api\SystemSettingController;
@@ -262,6 +263,17 @@ Route::prefix('resident-portal')->name('api.resident-portal.')->middleware(['aut
     Route::get('/service-types', [ResidentServiceTrackingController::class, 'types'])->name('service-types.index');
     Route::post('/services', [ResidentServiceTrackingController::class, 'store'])->name('services.store');
     Route::get('/services/{id}', [ResidentServiceTrackingController::class, 'show'])->name('services.show');
+
+    // Scholarships (ACSP)
+    Route::get('/scholarships/programs', [ResidentScholarshipController::class, 'programs'])->name('scholarships.programs');
+    Route::get('/scholarships/document-types', [ResidentScholarshipController::class, 'documentTypes'])->name('scholarships.document-types');
+    Route::get('/scholarships/applications', [ResidentScholarshipController::class, 'index'])->name('scholarships.applications.index');
+    Route::post('/scholarships/applications', [ResidentScholarshipController::class, 'store'])->name('scholarships.applications.store');
+    Route::get('/scholarships/applications/{id}', [ResidentScholarshipController::class, 'show'])->name('scholarships.applications.show');
+    Route::post('/scholarships/applications/{id}/documents', [ResidentScholarshipController::class, 'uploadDocument'])->name('scholarships.applications.documents.store');
+    Route::delete('/scholarships/applications/{id}/documents/{documentId}', [ResidentScholarshipController::class, 'deleteDocument'])->name('scholarships.applications.documents.destroy');
+    Route::get('/scholarships/applications/{id}/documents/{documentId}/download', [ResidentScholarshipController::class, 'downloadDocument'])->name('scholarships.applications.documents.download');
+    Route::post('/scholarships/applications/{id}/submit', [ResidentScholarshipController::class, 'submit'])->name('scholarships.applications.submit');
 
     // Public Service Portal
     Route::get('/public-services', [ResidentPublicServicePortalController::class, 'index'])->name('public-services.index');

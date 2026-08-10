@@ -8,8 +8,10 @@ use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ResidentCsvController;
 use App\Http\Controllers\ResidentIdCardController;
 use App\Http\Controllers\ResidentIdentityChangeRequestMediaController;
+use App\Http\Controllers\ScholarshipApplicationDocumentMediaController;
 use App\Http\Controllers\SupportRequestController;
 use App\Livewire\Admin\CitizenServicesManager;
+use App\Livewire\Admin\ScholarshipApplicationsManager;
 use App\Livewire\Admin\RoleManagement;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\AyudaDistribution;
@@ -249,6 +251,12 @@ Route::middleware([
         Route::get('/support-requests', [SupportRequestController::class, 'index'])->name('support-requests.index');
         Route::patch('/support-requests/{supportRequest}', [SupportRequestController::class, 'update'])
             ->name('support-requests.update');
+    });
+
+    Route::middleware('permission:manage-scholarship-applications')->group(function () {
+        Route::get('/scholarships', ScholarshipApplicationsManager::class)->name('scholarships.index');
+        Route::get('/scholarships/documents/{document}/media', ScholarshipApplicationDocumentMediaController::class)
+            ->name('scholarships.documents.media');
     });
 
     // Reports

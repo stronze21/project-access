@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             DefaultAdminSeeder::class,
             FeedbackReferenceSeeder::class,
+            ScholarshipSeeder::class,
             ResidentThreeHouseholdMembersSeeder::class,
             ResidentThreeCitizenServicesSeeder::class,
             ResidentThreeAyudaSeeder::class,
