@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ResidentPinService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -146,18 +147,7 @@ class Resident extends Authenticatable
      */
     public static function generateResidentId(): string
     {
-        $prefix = 'R-'.date('Ym').'-';
-        $lastResident = self::where('resident_id', 'like', $prefix.'%')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $sequence = 1;
-        if ($lastResident) {
-            $parts = explode('-', $lastResident->resident_id);
-            $sequence = (int) end($parts) + 1;
-        }
-
-        return $prefix.str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return ResidentPinService::generate();
     }
 
     /**

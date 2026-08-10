@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Resident;
 use App\Services\ResidentMediaStagingService;
+use App\Services\ResidentPhotoProcessor;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
@@ -57,7 +58,7 @@ class ResidentPhotoSignatureManager extends Component
         $this->signatureResults = $this->analyzeFiles($this->signatureFiles, 'signature');
     }
 
-    public function importPhotos(ResidentMediaStagingService $mediaStagingService): void
+    public function importPhotos(ResidentMediaStagingService $mediaStagingService, ResidentPhotoProcessor $photoProcessor): void
     {
         $this->authorizeImport();
         if (! $this->validateBatchLimits($this->photoFiles, 'photoFiles', 'photo')) {
@@ -74,11 +75,7 @@ class ResidentPhotoSignatureManager extends Component
             try {
                 if ($result['resident_db_id']) {
                     $resident = Resident::findOrFail($result['resident_db_id']);
-                    $path = $this->photoFiles[$index]->storeAs(
-                        'resident-photos',
-                        $result['file_name'],
-                        'public'
-                    );
+                    $path = $photoProcessor->store($this->photoFiles[$index], 'resident-photos', $result['file_name']);
 
                     if ($resident->photo_path && $resident->photo_path !== $path) {
                         Storage::disk('public')->delete($resident->photo_path);
@@ -97,11 +94,11 @@ class ResidentPhotoSignatureManager extends Component
                 $imported++;
             } catch (Throwable $exception) {
                 report($exception);
-                $this->markFailed($this->photoResults, $index, 'The photo could not be saved.');
+                $this->markFailed($this->photoResults, $index, $this->failureMessage($exception, 'photo'));
             }
         }
 
-        $this->notifyImportResult($imported, 'photo');
+        $this->notifyImportResult($imported, 'photo', $this->photoResults);
     }
 
     public function importSignatures(ResidentMediaStagingService $mediaStagingService): void
@@ -142,11 +139,11 @@ class ResidentPhotoSignatureManager extends Component
                 $imported++;
             } catch (Throwable $exception) {
                 report($exception);
-                $this->markFailed($this->signatureResults, $index, 'The signature could not be saved.');
+                $this->markFailed($this->signatureResults, $index, $this->failureMessage($exception, 'signature'));
             }
         }
 
-        $this->notifyImportResult($imported, 'signature');
+        $this->notifyImportResult($imported, 'signature', $this->signatureResults);
     }
 
     public function clearPhotos(): void
@@ -223,6 +220,7 @@ class ResidentPhotoSignatureManager extends Component
                 'previewable' => str_starts_with((string) $file->getMimeType(), 'image/'),
                 'valid' => $valid,
                 'imported' => $wasImported,
+                'status' => $wasImported ? 'imported' : ($valid ? 'ready' : 'failed'),
                 'message' => $wasImported ? 'Imported successfully' : $message,
             ];
         }
@@ -233,24 +231,39 @@ class ResidentPhotoSignatureManager extends Component
     private function markImported(array &$results, int $index, string $message = 'Imported successfully'): void
     {
         $results[$index]['imported'] = true;
+        $results[$index]['status'] = str_starts_with($message, 'Staged') ? 'staged' : 'imported';
         $results[$index]['message'] = $message;
     }
 
     private function markFailed(array &$results, int $index, string $message): void
     {
         $results[$index]['valid'] = false;
+        $results[$index]['status'] = 'failed';
         $results[$index]['message'] = $message;
     }
 
-    private function notifyImportResult(int $imported, string $type): void
+    private function notifyImportResult(int $imported, string $type, array $results): void
     {
+        $staged = collect($results)->where('status', 'staged')->count();
+        $failed = collect($results)->where('status', 'failed')->count();
+        $saved = max(0, $imported - $staged);
+
         if ($imported > 0) {
-            $this->success("{$imported} resident {$type}".($imported === 1 ? ' was' : 's were').' imported or staged successfully.');
+            $this->success(ucfirst($type)." batch complete: {$saved} imported, {$staged} staged, {$failed} failed.");
 
             return;
         }
 
         $this->warning("No valid {$type} files were available to import.");
+    }
+
+    private function failureMessage(Throwable $exception, string $type): string
+    {
+        $message = trim($exception->getMessage());
+
+        return $message !== ''
+            ? ucfirst($type).' failed: '.$message
+            : ucfirst($type).' failed because the server could not save the file.';
     }
 
     private function validateBatchLimits(array $files, string $field, string $type): bool

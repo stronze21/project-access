@@ -85,6 +85,20 @@
                 <div>
                     <h3 class="mb-4 text-lg font-semibold">Personal Information</h3>
 
+                    @if (! $isEdit || auth()->user()?->can('manage-resident-pins'))
+                        <div class="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
+                            <x-mary-input label="Resident ID (PIN)" wire:model="residentPin"
+                                placeholder="Leave blank to generate, e.g. {{ now()->format('y') }}-00001"
+                                hint="Use YY-XXXXX. Blank values are generated automatically for new residents."
+                                error="{{ $errors->first('residentPin') }}" />
+                            @if ($isEdit)
+                                <x-mary-input label="Confirm Resident ID (PIN)" wire:model="residentPinConfirmation"
+                                    placeholder="Re-enter the new Resident ID"
+                                    error="{{ $errors->first('residentPinConfirmation') }}" />
+                            @endif
+                        </div>
+                    @endif
+
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <x-mary-input label="First Name" wire:model="firstName" required
                             error="{{ $errors->first('firstName') }}" />

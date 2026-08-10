@@ -95,7 +95,7 @@
 
 | Feature | Description |
 |---|---|
-| Resident registration | Complete demographic data entry with auto-generated Resident ID (`R-YYYYMM-XXXX`) |
+| Resident registration | Complete demographic data entry with an optional official PIN or an auto-generated Resident ID (`YY-XXXXX`) |
 | Profile fields | Name, suffix, birth date, birthplace, gender, civil status, contact, email, blood type, occupation, income, education, emergency contact |
 | Special sector flags | PWD, Senior Citizen (auto-detected age >= 60), Solo Parent, Pregnant, Lactating, Indigenous, 4Ps Beneficiary, Registered Voter |
 | Photo upload | Profile photo storage and management |

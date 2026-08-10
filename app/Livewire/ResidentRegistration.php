@@ -12,11 +12,13 @@ use App\Models\Resident;
 use App\Models\SourceIncomeType;
 use App\Models\SystemSetting;
 use App\Services\QrCodeService;
+use App\Services\ResidentPinService;
 use App\Services\RfidService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
@@ -163,6 +165,10 @@ class ResidentRegistration extends Component
     public $isEdit = false;
 
     public $residentId = null;
+
+    public $residentPin = '';
+
+    public $residentPinConfirmation = '';
 
     #[Url(as: 'household')]
     public $householdId = null;
@@ -398,6 +404,7 @@ class ResidentRegistration extends Component
         $resident = Resident::findOrFail($residentId);
         $this->residentId = $resident->id;
         $this->isEdit = true;
+        $this->residentPin = $resident->resident_id;
 
         // Personal information
         $this->firstName = $resident->first_name;
@@ -642,11 +649,32 @@ class ResidentRegistration extends Component
     /**
      * Save the resident.
      */
-    public function save()
+    public function save(ResidentPinService $pinService)
     {
         // Make sure all modals are closed before validating/submitting
         $this->showSignatureModal = false;
         $this->showWebcamModal = false;
+
+        $this->residentPin = ResidentPinService::normalize($this->residentPin) ?? '';
+        $pinChanged = $this->isEdit
+            && $this->residentPin !== Resident::findOrFail($this->residentId)->resident_id;
+
+        if (! $this->isEdit && $this->residentPin !== '') {
+            $this->validate([
+                'residentPin' => ['required', 'string', ResidentPinService::VALIDATION_REGEX, Rule::unique('residents', 'resident_id')],
+            ], ['residentPin.regex' => 'Resident ID must use the YY-XXXXX format.']);
+        }
+
+        if ($pinChanged) {
+            abort_unless(auth()->user()?->can('manage-resident-pins'), 403);
+            $this->validate([
+                'residentPin' => ['required', 'string', ResidentPinService::VALIDATION_REGEX, Rule::unique('residents', 'resident_id')->ignore($this->residentId)],
+                'residentPinConfirmation' => ['required', 'same:residentPin'],
+            ], [
+                'residentPin.regex' => 'Resident ID must use the YY-XXXXX format.',
+                'residentPinConfirmation.same' => 'The Resident ID confirmation does not match.',
+            ]);
+        }
 
         $this->validate();
 
@@ -747,9 +775,11 @@ class ResidentRegistration extends Component
             if ($this->isEdit) {
                 $resident = Resident::findOrFail($this->residentId);
                 $resident->update($residentData);
+                if ($pinChanged) {
+                    $resident = $pinService->change($resident, $this->residentPin, 'residentPin');
+                }
             } else {
-                $residentData['resident_id'] = Resident::generateResidentId();
-                $resident = Resident::create($residentData);
+                $resident = $pinService->create($residentData, $this->residentPin, 'residentPin');
             }
 
             // Handle photo upload
@@ -858,6 +888,8 @@ class ResidentRegistration extends Component
             'notes',
             'isEdit',
             'residentId',
+            'residentPin',
+            'residentPinConfirmation',
             'signature',
             'signatureFile',
             'tempSignature',

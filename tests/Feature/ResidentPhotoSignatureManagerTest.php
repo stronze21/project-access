@@ -138,6 +138,24 @@ class ResidentPhotoSignatureManagerTest extends TestCase
             ->assertSee('no more than 20 photo files');
     }
 
+    public function test_it_accepts_ten_megabyte_photos_and_resizes_large_dimensions(): void
+    {
+        $resident = $this->resident('26-00001', 'Large', 'Photo');
+        $photo = UploadedFile::fake()->image('26-00001.jpg', 2400, 1800)->size(10240);
+
+        Livewire::actingAs($this->authorizedUser())
+            ->test(ResidentPhotoSignatureManager::class)
+            ->set('photoFiles', [$photo])
+            ->assertSee('Ready to import')
+            ->call('importPhotos')
+            ->assertSee('Imported successfully')
+            ->assertHasNoErrors();
+
+        $storedPath = Storage::disk('public')->path($resident->fresh()->photo_path);
+        [$width, $height] = getimagesize($storedPath);
+        $this->assertLessThanOrEqual(1600, max($width, $height));
+    }
+
     private function authorizedUser(): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

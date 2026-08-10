@@ -9,6 +9,8 @@ use RuntimeException;
 
 class ResidentMediaStagingService
 {
+    public function __construct(private ResidentPhotoProcessor $photoProcessor) {}
+
     public const PHOTO_DIRECTORY = 'resident-media-staging/photos';
 
     public const SIGNATURE_DIRECTORY = 'resident-media-staging/signatures';
@@ -27,11 +29,7 @@ class ResidentMediaStagingService
             Storage::disk('public')->delete($existingPath);
         }
 
-        return $this->storeUploadedFile(
-            $file,
-            self::PHOTO_DIRECTORY,
-            "{$residentId}.{$extension}"
-        );
+        return $this->photoProcessor->store($file, self::PHOTO_DIRECTORY, "{$residentId}.{$extension}");
     }
 
     public function stageSignature(UploadedFile $file, string $residentId): string

@@ -1,0 +1,146 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\ActivityLog;
+use App\Models\Resident;
+use App\Models\User;
+use App\Services\ResidentPinService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
+use Tests\TestCase;
+
+class ResidentPinAndIdBatchTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_generated_pin_uses_current_year_and_global_sequence(): void
+    {
+        $this->resident('25-00124');
+        $this->resident('LEGACY-PIN');
+
+        $pin = Resident::generateResidentId();
+
+        $this->assertSame(now()->format('y').'-00125', $pin);
+    }
+
+    public function test_pin_service_normalizes_manual_pin_and_rejects_duplicates(): void
+    {
+        $service = app(ResidentPinService::class);
+        $first = $service->create($this->residentAttributes(), ' 26-00001 ');
+
+        $this->assertSame('26-00001', $first->resident_id);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $service->create($this->residentAttributes(['first_name' => 'Second']), '26-00001');
+    }
+
+    public function test_authorized_api_pin_change_is_confirmed_audited_and_regenerates_qr(): void
+    {
+        $resident = $this->resident('26-00001', ['photo_path' => 'resident-photos/original.jpg', 'qr_code' => 'AC-26-00001']);
+        $user = $this->staff(['edit-residents', 'manage-resident-pins']);
+        Sanctum::actingAs($user);
+
+        $this->putJson("/api/residents/{$resident->id}", [
+            'resident_id' => '26-00002',
+            'resident_id_confirmation' => '26-00002',
+        ])->assertOk()->assertJsonPath('data.resident_id', '26-00002');
+
+        $resident->refresh();
+        $this->assertSame('AC-26-00002', $resident->qr_code);
+        $this->assertSame('resident-photos/original.jpg', $resident->photo_path);
+        $this->assertDatabaseHas('activity_logs', [
+            'user_id' => $user->id,
+            'action' => 'resident_pin_changed',
+            'loggable_id' => $resident->id,
+        ]);
+        $this->assertSame(['resident_id' => '26-00001'], ActivityLog::latest('id')->first()->old_values);
+    }
+
+    public function test_general_resident_editor_cannot_change_pin_through_api(): void
+    {
+        $resident = $this->resident('26-00001');
+        Sanctum::actingAs($this->staff(['edit-residents']));
+
+        $this->putJson("/api/residents/{$resident->id}", [
+            'resident_id' => '26-00002',
+            'resident_id_confirmation' => '26-00002',
+        ])->assertForbidden();
+
+        $this->assertSame('26-00001', $resident->fresh()->resident_id);
+    }
+
+    public function test_id_card_api_rejects_more_than_one_hundred_or_duplicate_pins(): void
+    {
+        $user = $this->staff(['view-residents']);
+        Sanctum::actingAs($user);
+
+        $tooMany = collect(range(1, 101))->map(fn (int $number) => '26-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT))->all();
+        $this->postJson('/api/residents/id-card/batch', ['resident_ids' => $tooMany])
+            ->assertUnprocessable();
+
+        $this->postJson('/api/residents/id-card/batch', ['resident_ids' => ['26-00001', '26-00001']])
+            ->assertUnprocessable();
+    }
+
+    public function test_id_card_api_accepts_exactly_one_hundred_existing_unique_pins(): void
+    {
+        $pins = [];
+        foreach (range(1, 100) as $number) {
+            $pin = '26-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT);
+            $this->resident($pin);
+            $pins[] = $pin;
+        }
+        Sanctum::actingAs($this->staff(['view-residents']));
+
+        $this->postJson('/api/residents/id-card/batch', ['resident_ids' => $pins])
+            ->assertOk()
+            ->assertJsonPath('count', 100);
+    }
+
+    public function test_web_print_batch_rejects_more_than_one_hundred_residents(): void
+    {
+        $user = $this->staff(['view-residents']);
+        $ids = [];
+        foreach (range(1, 101) as $number) {
+            $ids[] = $this->resident('26-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT))->id;
+        }
+
+        $this->actingAs($user)
+            ->from(route('residents.id-cards.form'))
+            ->post(route('residents.id-cards.batch'), ['residents' => $ids])
+            ->assertRedirect(route('residents.id-cards.form'))
+            ->assertSessionHasErrors('residents');
+    }
+
+    private function staff(array $permissions): User
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        }
+        $user = User::factory()->create();
+        $user->givePermissionTo($permissions);
+
+        return $user;
+    }
+
+    private function resident(string $pin, array $overrides = []): Resident
+    {
+        return Resident::create($this->residentAttributes($overrides) + ['resident_id' => $pin]);
+    }
+
+    private function residentAttributes(array $overrides = []): array
+    {
+        return $overrides + [
+            'first_name' => 'Maria',
+            'last_name' => 'Santos',
+            'birth_date' => '1990-01-01',
+            'gender' => 'female',
+            'civil_status' => 'single',
+            'is_active' => true,
+        ];
+    }
+}

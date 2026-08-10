@@ -44,6 +44,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-rfid',
             'export-residents',
             'import-residents',
+            'manage-resident-pins',
             'manage-legacy-reference-data',
         ];
 

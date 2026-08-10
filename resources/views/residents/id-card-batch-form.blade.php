@@ -40,7 +40,7 @@
                                     class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 Select All
                             </label>
-                            <p class="text-sm text-gray-500"><span id="selected-count" class="font-semibold">0</span> selected</p>
+                            <p class="text-sm text-gray-500"><span id="selected-count" class="font-semibold">0</span> / {{ \App\Http\Controllers\ResidentIdCardController::MAX_BATCH_SIZE }} selected</p>
                         </div>
 
                         <div id="residents-loading" class="p-6 text-center text-gray-500">Loading residents...</div>
@@ -50,6 +50,12 @@
                     @error('residents')
                         <p class="text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                    @error('residents.*')
+                        <p class="text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    <p id="selection-limit-message" class="hidden text-sm text-amber-700" role="status">
+                        The 100-resident print limit has been reached. Print this group, then select the next group.
+                    </p>
 
                     <div class="flex justify-end pt-4 border-t">
                         <x-mary-button type="submit" class="tagged-color btn-primary" icon="o-printer">
@@ -69,11 +75,17 @@
             const list = document.getElementById('residents-list');
             const selectAll = document.getElementById('select-all');
             const selectedCount = document.getElementById('selected-count');
+            const limitMessage = document.getElementById('selection-limit-message');
+            const maxBatchSize = {{ \App\Http\Controllers\ResidentIdCardController::MAX_BATCH_SIZE }};
 
             const updateSelectedCount = () => {
                 const checkboxes = list.querySelectorAll('input[name="residents[]"]');
                 const checked = list.querySelectorAll('input[name="residents[]"]:checked');
                 selectedCount.textContent = checked.length;
+                checkboxes.forEach((checkbox) => {
+                    checkbox.disabled = checked.length >= maxBatchSize && !checkbox.checked;
+                });
+                limitMessage.classList.toggle('hidden', checked.length < maxBatchSize);
                 selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
                 selectAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
             };
@@ -132,8 +144,8 @@
             };
 
             selectAll.addEventListener('change', () => {
-                list.querySelectorAll('input[name="residents[]"]').forEach((checkbox) => {
-                    checkbox.checked = selectAll.checked;
+                list.querySelectorAll('input[name="residents[]"]').forEach((checkbox, index) => {
+                    checkbox.checked = selectAll.checked && index < maxBatchSize;
                 });
                 updateSelectedCount();
             });

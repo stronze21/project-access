@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Resident;
+use App\Services\ResidentPinService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ResidentController extends Controller
 {
+    public const MAX_ID_CARD_BATCH_SIZE = 100;
+
     /**
      * Display a listing of residents.
      */
@@ -76,7 +80,12 @@ class ResidentController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if ($request->has('resident_id')) {
+            $request->merge(['resident_id' => ResidentPinService::normalize($request->input('resident_id'))]);
+        }
+
         $validator = Validator::make($request->all(), [
+            'resident_id' => ['nullable', 'string', ResidentPinService::VALIDATION_REGEX, Rule::unique('residents', 'resident_id')],
             'first_name' => 'required|string|min:2|max:50',
             'last_name' => 'required|string|min:2|max:50',
             'middle_name' => 'nullable|string|max:50',
@@ -118,7 +127,10 @@ class ResidentController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $resident = Resident::create($validator->validated());
+        $validated = $validator->validated();
+        $requestedPin = $validated['resident_id'] ?? null;
+        unset($validated['resident_id']);
+        $resident = app(ResidentPinService::class)->create($validated, $requestedPin);
 
         return response()->json([
             'message' => 'Resident created successfully',
@@ -145,7 +157,19 @@ class ResidentController extends Controller
     {
         $resident = Resident::findOrFail($id);
 
+        if ($request->has('resident_id')) {
+            $request->merge(['resident_id' => ResidentPinService::normalize($request->input('resident_id'))]);
+        }
+        $pinChanged = $request->has('resident_id') && $request->input('resident_id') !== $resident->resident_id;
+        if ($pinChanged && ! $request->user()?->can('manage-resident-pins')) {
+            abort(403, 'You do not have permission to change Resident IDs.');
+        }
+
         $validator = Validator::make($request->all(), [
+            'resident_id' => $pinChanged
+                ? ['required', 'string', ResidentPinService::VALIDATION_REGEX, Rule::unique('residents', 'resident_id')->ignore($resident->id)]
+                : ['sometimes', 'string'],
+            'resident_id_confirmation' => $pinChanged ? ['required', 'same:resident_id'] : ['sometimes'],
             'first_name' => 'sometimes|required|string|min:2|max:50',
             'last_name' => 'sometimes|required|string|min:2|max:50',
             'middle_name' => 'nullable|string|max:50',
@@ -187,7 +211,12 @@ class ResidentController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $resident->update($validator->validated());
+        $validated = $validator->validated();
+        unset($validated['resident_id'], $validated['resident_id_confirmation']);
+        $resident->update($validated);
+        if ($pinChanged) {
+            $resident = app(ResidentPinService::class)->change($resident, $request->input('resident_id'));
+        }
 
         return response()->json([
             'message' => 'Resident updated successfully',
@@ -458,8 +487,8 @@ class ResidentController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'resident_ids' => 'required|array',
-                'resident_ids.*' => 'required|string',
+                'resident_ids' => ['required', 'array', 'max:'.self::MAX_ID_CARD_BATCH_SIZE],
+                'resident_ids.*' => ['required', 'string', 'distinct'],
             ]);
 
             if ($validator->fails()) {
@@ -480,6 +509,15 @@ class ResidentController extends Controller
                     'error' => 'No residents found',
                     'message' => 'None of the provided resident IDs were found',
                 ], 404);
+            }
+
+            $missingResidentIds = collect($residentIds)->diff($residents->pluck('resident_id'))->values();
+            if ($missingResidentIds->isNotEmpty()) {
+                return response()->json([
+                    'error' => 'Residents not found',
+                    'message' => 'Some provided Resident IDs were not found.',
+                    'missing_resident_ids' => $missingResidentIds,
+                ], 422);
             }
 
             $data = $residents->map(function ($resident) {

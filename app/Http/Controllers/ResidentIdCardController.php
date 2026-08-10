@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 class ResidentIdCardController extends Controller
 {
+    public const MAX_BATCH_SIZE = 100;
+
     /**
      * Display the ID card for the specified resident in landscape orientation.
      *
@@ -31,8 +33,12 @@ class ResidentIdCardController extends Controller
     public function generateBatch(Request $request)
     {
         $request->validate([
-            'residents' => 'required|array',
-            'residents.*' => 'exists:residents,id',
+            'residents' => ['required', 'array', 'max:'.self::MAX_BATCH_SIZE],
+            'residents.*' => ['required', 'integer', 'distinct', 'exists:residents,id'],
+        ], [
+            'residents.max' => 'Choose no more than '.self::MAX_BATCH_SIZE.' residents in one print batch.',
+            'residents.*.distinct' => 'Each resident may appear only once in a print batch.',
+            'residents.*.exists' => 'One or more selected residents no longer exist.',
         ]);
 
         $residentIds = $request->input('residents');
