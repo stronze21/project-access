@@ -144,6 +144,7 @@ class ResidentIdCardLayoutTest extends TestCase
         $this->assertStringNotContainsString('Portrait Format', $batchForm);
         $this->assertStringNotContainsString('name="orientation"', $batchForm);
         $this->assertStringContainsString('Landscape CR80 format', $batchForm);
+        $this->assertStringContainsString('const residents = Array.isArray(payload) ? payload : payload.data;', $batchForm);
     }
 
     private function createResident(array $overrides = []): Resident

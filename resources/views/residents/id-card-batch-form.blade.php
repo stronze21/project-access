@@ -58,7 +58,7 @@
                     </p>
 
                     <div class="flex justify-end pt-4 border-t">
-                        <x-mary-button type="submit" class="tagged-color btn-primary" icon="o-printer">
+                        <x-mary-button id="generate-id-cards" type="submit" class="tagged-color btn-primary" icon="o-printer" disabled>
                             Generate ID Cards
                         </x-mary-button>
                     </div>
@@ -76,12 +76,15 @@
             const selectAll = document.getElementById('select-all');
             const selectedCount = document.getElementById('selected-count');
             const limitMessage = document.getElementById('selection-limit-message');
+            const generateButton = document.getElementById('generate-id-cards');
             const maxBatchSize = {{ \App\Http\Controllers\ResidentIdCardController::MAX_BATCH_SIZE }};
+            const residentsEndpoint = @json(route('api.residents.index'));
 
             const updateSelectedCount = () => {
                 const checkboxes = list.querySelectorAll('input[name="residents[]"]');
                 const checked = list.querySelectorAll('input[name="residents[]"]:checked');
                 selectedCount.textContent = checked.length;
+                generateButton.disabled = checked.length === 0;
                 checkboxes.forEach((checkbox) => {
                     checkbox.disabled = checked.length >= maxBatchSize && !checkbox.checked;
                 });
@@ -99,13 +102,25 @@
                 const query = new URLSearchParams({
                     barangay: barangayFilter.value || '',
                     status: statusFilter.value || 'all',
+                    perPage: maxBatchSize,
+                    sortField: 'last_name',
+                    sortDirection: 'asc',
                 });
 
                 try {
-                    const response = await fetch(`/api/residents?${query.toString()}`);
-                    if (!response.ok) throw new Error('Unable to load residents.');
+                    const controller = new AbortController();
+                    const timeout = window.setTimeout(() => controller.abort(), 15000);
+                    const response = await fetch(`${residentsEndpoint}?${query.toString()}`, {
+                        headers: { Accept: 'application/json' },
+                        credentials: 'same-origin',
+                        signal: controller.signal,
+                    });
+                    window.clearTimeout(timeout);
+                    if (!response.ok) throw new Error(`Unable to load residents (${response.status}).`);
 
-                    const residents = await response.json();
+                    const payload = await response.json();
+                    const residents = Array.isArray(payload) ? payload : payload.data;
+                    if (!Array.isArray(residents)) throw new Error('The resident list response was invalid.');
                     list.replaceChildren();
 
                     if (!residents.length) {
@@ -135,7 +150,14 @@
                         list.appendChild(row);
                     });
                 } catch (error) {
-                    list.innerHTML = '<p class="text-red-600">Unable to load residents. Please try again.</p>';
+                    const message = error.name === 'AbortError'
+                        ? 'Loading residents timed out. Please check the connection and try again.'
+                        : error.message || 'Unable to load residents. Please try again.';
+                    list.replaceChildren();
+                    const failure = document.createElement('p');
+                    failure.className = 'text-red-600';
+                    failure.textContent = message;
+                    list.appendChild(failure);
                 } finally {
                     loading.classList.add('hidden');
                     list.classList.remove('hidden');

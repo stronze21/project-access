@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
+use App\Models\Household;
 use App\Models\Resident;
 use App\Models\User;
 use App\Services\ResidentPinService;
@@ -115,6 +116,21 @@ class ResidentPinAndIdBatchTest extends TestCase
             ->assertSessionHasErrors('residents');
     }
 
+    public function test_id_card_resident_list_applies_barangay_and_status_filters(): void
+    {
+        $targetHousehold = $this->household('Poblacion');
+        $otherHousehold = $this->household('San Roque');
+        $included = $this->resident('26-00001', ['household_id' => $targetHousehold->id, 'is_active' => true]);
+        $this->resident('26-00002', ['household_id' => $targetHousehold->id, 'is_active' => false]);
+        $this->resident('26-00003', ['household_id' => $otherHousehold->id, 'is_active' => true]);
+        Sanctum::actingAs($this->staff(['view-residents']));
+
+        $this->getJson('/api/residents?barangay=Poblacion&status=active&perPage=100&sortField=last_name&sortDirection=asc')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $included->id);
+    }
+
     private function staff(array $permissions): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -142,5 +158,17 @@ class ResidentPinAndIdBatchTest extends TestCase
             'civil_status' => 'single',
             'is_active' => true,
         ];
+    }
+
+    private function household(string $barangay): Household
+    {
+        return Household::create([
+            'household_id' => 'HH-'.str()->upper(str()->random(8)),
+            'address' => 'Sample Street',
+            'barangay' => $barangay,
+            'city_municipality' => 'Alaminos City',
+            'province' => 'Pangasinan',
+            'region' => 'Region I',
+        ]);
     }
 }

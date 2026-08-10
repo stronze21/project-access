@@ -57,11 +57,12 @@ class ResidentController extends Controller
         }
 
         // Apply sorting
-        $sortField = $request->sortField ?? 'created_at';
-        $sortDirection = $request->sortDirection ?? 'desc';
+        $allowedSortFields = ['created_at', 'resident_id', 'first_name', 'last_name'];
+        $sortField = in_array($request->sortField, $allowedSortFields, true) ? $request->sortField : 'created_at';
+        $sortDirection = $request->sortDirection === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortField, $sortDirection);
 
-        $perPage = $request->perPage ?? 10;
+        $perPage = min(100, max(1, $request->integer('perPage', 10)));
         $residents = $query->paginate($perPage);
 
         return response()->json([
