@@ -131,6 +131,34 @@ class ResidentPinAndIdBatchTest extends TestCase
             ->assertJsonPath('data.0.id', $included->id);
     }
 
+    public function test_barangay_printing_is_split_into_server_side_groups_of_one_hundred(): void
+    {
+        $household = $this->household('San Antonio');
+        foreach (range(1, 101) as $number) {
+            $this->resident('26-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT), [
+                'household_id' => $household->id,
+                'first_name' => 'Resident '.str_pad((string) $number, 3, '0', STR_PAD_LEFT),
+            ]);
+        }
+        $user = $this->staff(['view-residents']);
+
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'San Antonio',
+            'status' => 'active',
+            'batch_number' => 1,
+        ])->assertOk()
+            ->assertViewHas('residents', fn ($residents) => $residents->count() === 100)
+            ->assertViewHas('hasNextBatch', true);
+
+        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+            'barangay' => 'San Antonio',
+            'status' => 'active',
+            'batch_number' => 2,
+        ])->assertOk()
+            ->assertViewHas('residents', fn ($residents) => $residents->count() === 1)
+            ->assertViewHas('hasNextBatch', false);
+    }
+
     private function staff(array $permissions): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

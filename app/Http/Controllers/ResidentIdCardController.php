@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Resident;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ResidentIdCardController extends Controller
 {
@@ -32,21 +34,56 @@ class ResidentIdCardController extends Controller
      */
     public function generateBatch(Request $request)
     {
-        $request->validate([
-            'residents' => ['required', 'array', 'max:'.self::MAX_BATCH_SIZE],
+        $validated = $request->validate([
+            'residents' => ['nullable', 'array', 'max:'.self::MAX_BATCH_SIZE, 'required_without:barangay'],
             'residents.*' => ['required', 'integer', 'distinct', 'exists:residents,id'],
+            'barangay' => ['nullable', 'string', 'max:255', 'required_without:residents', Rule::exists('households', 'barangay')],
+            'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
+            'batch_number' => ['nullable', 'integer', 'min:1'],
         ], [
             'residents.max' => 'Choose no more than '.self::MAX_BATCH_SIZE.' residents in one print batch.',
             'residents.*.distinct' => 'Each resident may appear only once in a print batch.',
             'residents.*.exists' => 'One or more selected residents no longer exist.',
         ]);
 
-        $residentIds = $request->input('residents');
-        $residents = Resident::with('household')->whereIn('id', $residentIds)->get();
+        $barangay = $validated['barangay'] ?? null;
+        $status = $validated['status'] ?? 'all';
+        $batchNumber = (int) ($validated['batch_number'] ?? 1);
+        $totalResidents = null;
+
+        if ($barangay) {
+            $query = Resident::with('household')
+                ->whereHas('household', fn ($household) => $household->where('barangay', $barangay))
+                ->when($status === 'active', fn ($residents) => $residents->where('is_active', true))
+                ->when($status === 'inactive', fn ($residents) => $residents->where('is_active', false))
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->orderBy('id');
+
+            $totalResidents = (clone $query)->count();
+            $residents = $query
+                ->offset(($batchNumber - 1) * self::MAX_BATCH_SIZE)
+                ->limit(self::MAX_BATCH_SIZE)
+                ->get();
+
+            if ($residents->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'batch_number' => "No residents were found in batch {$batchNumber} for {$barangay}.",
+                ]);
+            }
+        } else {
+            $residentIds = $validated['residents'];
+            $residents = Resident::with('household')->whereIn('id', $residentIds)->get();
+        }
 
         return view('residents.id-card-batch-landscape', [
             'residents' => $residents,
             'orientation' => 'landscape',
+            'barangay' => $barangay,
+            'status' => $status,
+            'batchNumber' => $batchNumber,
+            'totalResidents' => $totalResidents,
+            'hasNextBatch' => $totalResidents !== null && $batchNumber * self::MAX_BATCH_SIZE < $totalResidents,
         ]);
     }
 
@@ -65,6 +102,9 @@ class ResidentIdCardController extends Controller
 
         return view('residents.id-card-batch-form', [
             'barangayList' => $barangayList,
+            'selectedBarangay' => request('barangay'),
+            'selectedStatus' => request('status', 'active'),
+            'selectedBatchNumber' => max(1, request()->integer('batch_number', 1)),
         ]);
     }
 
