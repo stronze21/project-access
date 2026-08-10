@@ -9,6 +9,7 @@ use App\Exceptions\ResidentIdentityMismatchException;
 use App\Models\Resident;
 use App\Services\Bhwis\ResidentActivationService;
 use App\Services\ResidentEmailVerificationService;
+use App\Services\ResidentLoginRateLimiter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -88,12 +89,21 @@ class ResidentPortalAuthController extends Controller
         return redirect()->route('resident-portal.login')->with('status', 'Your MPIN has been reset. You can now sign in.');
     }
 
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request, ResidentLoginRateLimiter $loginLimiter): RedirectResponse
     {
         $validated = $request->validate([
             'login' => ['required', 'string', 'max:255'],
             'mpin' => ['required', 'digits:6'],
         ]);
+
+        if ($loginLimiter->isLimited($request, $validated['login'])) {
+            $retryAfter = $loginLimiter->retryAfter($request, $validated['login']);
+
+            return back()->withInput($request->only('login'))
+                ->withErrors(['login' => 'Too many login attempts. Please wait before trying again.'])
+                ->setStatusCode(429)
+                ->header('Retry-After', (string) $retryAfter);
+        }
 
         $resident = Resident::query()
             ->where('resident_id', $validated['login'])
@@ -107,14 +117,20 @@ class ResidentPortalAuthController extends Controller
             && hash_equals($resident->birth_date->format('ymd'), $validated['mpin']);
 
         if (! $resident || (! $usesBirthdayFallback && (! $resident->mpin || ! Hash::check($validated['mpin'], $resident->mpin)))) {
+            $loginLimiter->hit($request, $validated['login']);
+
             return back()->withInput($request->only('login'))
                 ->withErrors(['login' => 'The provided credentials are incorrect.']);
         }
 
         if (! $resident->is_active) {
+            $loginLimiter->hit($request, $validated['login']);
+
             return back()->withInput($request->only('login'))
                 ->withErrors(['login' => 'Your account is inactive. Please contact your barangay office.']);
         }
+
+        $loginLimiter->clear($request, $validated['login']);
 
         Auth::guard('resident')->login($resident, true);
         $request->session()->regenerate();

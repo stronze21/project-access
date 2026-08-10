@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Resident;
 use App\Services\Bhwis\ResidentActivationService;
 use App\Services\ResidentEmailVerificationService;
+use App\Services\ResidentLoginRateLimiter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -70,7 +71,7 @@ class AuthController extends Controller
      *
      * Residents authenticate using their resident_id (or email/contact_number) + MPIN.
      */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, ResidentLoginRateLimiter $loginLimiter): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'login' => 'required|string',
@@ -84,6 +85,16 @@ class AuthController extends Controller
         }
 
         $login = $request->login;
+
+        if ($loginLimiter->isLimited($request, $login)) {
+            $retryAfter = $loginLimiter->retryAfter($request, $login);
+
+            return response()->json([
+                'message' => 'Too many login attempts. Please wait before trying again.',
+                'errors' => ['login' => ['Too many login attempts. Please wait before trying again.']],
+                'retry_after' => $retryAfter,
+            ], 429)->header('Retry-After', (string) $retryAfter);
+        }
 
         // Find resident by resident_id, email, or contact_number
         $resident = Resident::where('resident_id', $login)
@@ -100,6 +111,8 @@ class AuthController extends Controller
             && hash_equals($resident->birth_date->format('ymd'), $credential);
 
         if (! $resident || (! $usesBirthdayFallback && (! $credentialHash || ! Hash::check($credential, $credentialHash)))) {
+            $loginLimiter->hit($request, $login);
+
             return response()->json([
                 'message' => 'The provided credentials are incorrect.',
                 'errors' => ['login' => ['The provided credentials are incorrect.']],
@@ -107,11 +120,15 @@ class AuthController extends Controller
         }
 
         if (! $resident->is_active) {
+            $loginLimiter->hit($request, $login);
+
             return response()->json([
                 'message' => 'Your account has been deactivated. Please contact your barangay office.',
                 'errors' => ['login' => ['Account is deactivated.']],
             ], 403);
         }
+
+        $loginLimiter->clear($request, $login);
 
         $deviceName = $request->device_name ?? ($request->userAgent() ?? 'mobile-app');
 
