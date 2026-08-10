@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Resident;
 use App\Models\ResidentIdPrintBatch;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -115,16 +116,7 @@ class ResidentIdCardController extends Controller
             return $batch;
         });
 
-        return view('residents.id-card-batch-landscape', [
-            'residents' => $residents,
-            'orientation' => 'landscape',
-            'barangay' => $barangay,
-            'status' => $status,
-            'batchNumber' => $batchNumber,
-            'totalResidents' => $totalResidents,
-            'hasNextBatch' => $totalResidents !== null && $batchNumber * self::MAX_BATCH_SIZE < $totalResidents,
-            'printBatch' => $printBatch,
-        ]);
+        return redirect()->route('residents.id-cards.batches.print', $printBatch);
     }
 
     /**
@@ -164,7 +156,31 @@ class ResidentIdCardController extends Controller
         return view('residents.id-card-batch-show', compact('printBatch'));
     }
 
-    public function markBatchPrinted(Request $request, ResidentIdPrintBatch $printBatch): JsonResponse
+    public function printBatch(string $printBatch)
+    {
+        $printBatch = ResidentIdPrintBatch::findOrFail($printBatch);
+        $printBatch->load(['items.resident.household']);
+        $residents = $printBatch->items
+            ->pluck('resident')
+            ->filter()
+            ->values();
+
+        abort_if($residents->isEmpty(), 404, 'No current resident records remain in this print batch.');
+
+        return view('residents.id-card-batch-landscape', [
+            'residents' => $residents,
+            'orientation' => 'landscape',
+            'barangay' => $printBatch->barangay,
+            'status' => $printBatch->status_filter,
+            'batchNumber' => $printBatch->batch_number,
+            'totalResidents' => $printBatch->total_matching,
+            'hasNextBatch' => $printBatch->barangay !== null
+                && $printBatch->batch_number * self::MAX_BATCH_SIZE < $printBatch->total_matching,
+            'printBatch' => $printBatch,
+        ]);
+    }
+
+    public function markBatchPrinted(Request $request, ResidentIdPrintBatch $printBatch): JsonResponse|RedirectResponse
     {
         $printedAt = now();
 
@@ -177,10 +193,17 @@ class ResidentIdCardController extends Controller
             $printBatch->items()->update(['printed_at' => $printedAt]);
         });
 
-        return response()->json([
-            'message' => 'Print initiation recorded.',
-            'reference_number' => $printBatch->reference_number,
-            'printed_at' => $printedAt->toIso8601String(),
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Print initiation recorded.',
+                'reference_number' => $printBatch->reference_number,
+                'printed_at' => $printedAt->toIso8601String(),
+            ]);
+        }
+
+        return redirect()->route('residents.id-cards.batches.print', [
+            'printBatch' => $printBatch,
+            'print' => 1,
         ]);
     }
 

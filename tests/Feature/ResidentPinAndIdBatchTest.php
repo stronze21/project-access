@@ -143,19 +143,21 @@ class ResidentPinAndIdBatchTest extends TestCase
         }
         $user = $this->staff(['view-residents']);
 
-        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+        $firstBatch = $this->actingAs($user)->post(route('residents.id-cards.batch'), [
             'barangay' => 'San Antonio',
             'status' => 'active',
             'batch_number' => 1,
-        ])->assertOk()
+        ])->assertRedirect();
+        $this->actingAs($user)->get($firstBatch->headers->get('Location'))->assertOk()
             ->assertViewHas('residents', fn ($residents) => $residents->count() === 100)
             ->assertViewHas('hasNextBatch', true);
 
-        $this->actingAs($user)->post(route('residents.id-cards.batch'), [
+        $secondBatch = $this->actingAs($user)->post(route('residents.id-cards.batch'), [
             'barangay' => 'San Antonio',
             'status' => 'active',
             'batch_number' => 2,
-        ])->assertOk()
+        ])->assertRedirect();
+        $this->actingAs($user)->get($secondBatch->headers->get('Location'))->assertOk()
             ->assertViewHas('residents', fn ($residents) => $residents->count() === 1)
             ->assertViewHas('hasNextBatch', false);
     }
@@ -167,12 +169,14 @@ class ResidentPinAndIdBatchTest extends TestCase
         $this->resident('26-00001', ['household_id' => $firstHousehold->id]);
         $this->resident('26-00002', ['household_id' => $secondHousehold->id]);
 
-        $this->actingAs($this->staff(['view-residents']))
+        $user = $this->staff(['view-residents']);
+        $response = $this->actingAs($user)
             ->post(route('residents.id-cards.batch'), [
                 'barangay' => 'all',
                 'status' => 'active',
                 'batch_number' => 1,
-            ])->assertOk()
+            ])->assertRedirect();
+        $this->actingAs($user)->get($response->headers->get('Location'))->assertOk()
             ->assertViewHas('residents', fn ($residents) => $residents->count() === 2)
             ->assertViewHas('barangay', 'all');
     }
@@ -187,10 +191,10 @@ class ResidentPinAndIdBatchTest extends TestCase
             'barangay' => 'Poblacion',
             'status' => 'active',
             'batch_number' => 1,
-        ])->assertOk();
+        ])->assertRedirect();
 
         /** @var ResidentIdPrintBatch $batch */
-        $batch = $response->viewData('printBatch');
+        $batch = ResidentIdPrintBatch::latest('id')->firstOrFail();
         $this->assertSame('generated', $batch->status);
         $this->assertDatabaseHas('resident_id_print_batch_items', [
             'print_batch_id' => $batch->id,
@@ -206,6 +210,10 @@ class ResidentPinAndIdBatchTest extends TestCase
         $this->assertSame('print_initiated', $batch->fresh()->status);
         $this->assertNotNull($batch->fresh()->printed_at);
         $this->assertNotNull($batch->items()->firstOrFail()->printed_at);
+
+        $this->actingAs($user)
+            ->post(route('residents.id-cards.batches.printed', $batch))
+            ->assertRedirect(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'print' => 1]));
 
         $this->actingAs($user)
             ->get(route('residents.id-cards.batches.show', $batch))

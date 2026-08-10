@@ -122,6 +122,8 @@ class ResidentIdCardLayoutTest extends TestCase
             'residents' => [$first->id, $second->id],
         ]);
 
+        $response->assertRedirect();
+        $response = $this->withoutMiddleware()->get($response->headers->get('Location'));
         $response
             ->assertOk()
             ->assertSee('Print 2 ID Card(s)')

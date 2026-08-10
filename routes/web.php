@@ -151,6 +151,7 @@ Route::middleware([
         Route::get('/id-cards/form', [ResidentIdCardController::class, 'batchForm'])->name('residents.id-cards.form');
         Route::post('/id-cards/batch', [ResidentIdCardController::class, 'generateBatch'])->name('residents.id-cards.batch');
         Route::get('/id-cards/batches', [ResidentIdCardController::class, 'batchHistory'])->name('residents.id-cards.batches.index');
+        Route::get('/id-cards/batches/{printBatch}/print', [ResidentIdCardController::class, 'printBatch'])->name('residents.id-cards.batches.print');
         Route::get('/id-cards/batches/{printBatch}', [ResidentIdCardController::class, 'showBatch'])->name('residents.id-cards.batches.show');
         Route::post('/id-cards/batches/{printBatch}/printed', [ResidentIdCardController::class, 'markBatchPrinted'])->name('residents.id-cards.batches.printed');
 
