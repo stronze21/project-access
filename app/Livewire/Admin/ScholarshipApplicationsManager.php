@@ -3,7 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\ScholarshipApplication;
-use App\Models\ScholarshipApplicationDocument;
+use App\Models\ScholarshipDocumentType;
 use App\Models\ScholarshipProgram;
 use App\Services\ScholarshipApplicationService;
 use Livewire\Attributes\Url;
@@ -65,6 +65,18 @@ class ScholarshipApplicationsManager extends Component
     public bool $programIsActive = true;
 
     public ?int $editingProgramId = null;
+
+    public ?int $editingDocumentTypeId = null;
+
+    public string $documentTypeCode = '';
+
+    public string $documentTypeLabel = '';
+
+    public string $documentTypeApplicantType = ScholarshipDocumentType::APPLICANT_BOTH;
+
+    public string $documentTypeSortOrder = '0';
+
+    public bool $documentTypeIsRequired = true;
 
     public function mount(): void
     {
@@ -242,6 +254,72 @@ class ScholarshipApplicationsManager extends Component
         $this->programIsActive = true;
     }
 
+    public function editDocumentType(int $id): void
+    {
+        $this->authorizeManage();
+        $type = ScholarshipDocumentType::findOrFail($id);
+        $this->editingDocumentTypeId = $type->id;
+        $this->documentTypeCode = $type->code;
+        $this->documentTypeLabel = $type->label;
+        $this->documentTypeApplicantType = $type->applicant_type;
+        $this->documentTypeSortOrder = (string) $type->sort_order;
+        $this->documentTypeIsRequired = $type->is_required;
+        $this->activeTab = 'document-types';
+    }
+
+    public function saveDocumentType(): void
+    {
+        $this->authorizeManage();
+        $validated = $this->validate([
+            'documentTypeCode' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9_]+$/'],
+            'documentTypeLabel' => ['required', 'string', 'max:255'],
+            'documentTypeApplicantType' => ['required', 'in:new,ongoing,both'],
+            'documentTypeSortOrder' => ['required', 'integer', 'min:0', 'max:100000'],
+            'documentTypeIsRequired' => ['boolean'],
+        ]);
+
+        $duplicate = ScholarshipDocumentType::query()
+            ->where('code', $validated['documentTypeCode'])
+            ->where('applicant_type', $validated['documentTypeApplicantType'])
+            ->when($this->editingDocumentTypeId, fn ($query) => $query->where('id', '!=', $this->editingDocumentTypeId))
+            ->exists();
+
+        if ($duplicate) {
+            $this->addError('documentTypeCode', 'This code already exists for the selected applicant type.');
+
+            return;
+        }
+
+        $payload = [
+            'code' => $validated['documentTypeCode'],
+            'label' => $validated['documentTypeLabel'],
+            'applicant_type' => $validated['documentTypeApplicantType'],
+            'sort_order' => (int) $validated['documentTypeSortOrder'],
+            'is_required' => $validated['documentTypeIsRequired'],
+        ];
+
+        if ($this->editingDocumentTypeId) {
+            ScholarshipDocumentType::findOrFail($this->editingDocumentTypeId)->update($payload);
+            $this->success('Document type updated.');
+        } else {
+            ScholarshipDocumentType::create($payload);
+            $this->success('Document type added to the checklist.');
+        }
+
+        $this->resetDocumentTypeForm();
+    }
+
+    public function resetDocumentTypeForm(): void
+    {
+        $this->editingDocumentTypeId = null;
+        $this->documentTypeCode = '';
+        $this->documentTypeLabel = '';
+        $this->documentTypeApplicantType = ScholarshipDocumentType::APPLICANT_BOTH;
+        $this->documentTypeSortOrder = '0';
+        $this->documentTypeIsRequired = true;
+        $this->resetValidation();
+    }
+
     public function render()
     {
         $applications = ScholarshipApplication::query()
@@ -268,11 +346,13 @@ class ScholarshipApplicationsManager extends Component
             : null;
 
         $programs = ScholarshipProgram::orderByDesc('open_at')->get();
+        $documentTypes = ScholarshipDocumentType::orderBy('sort_order')->orderBy('label')->get();
 
         return view('livewire.admin.scholarship-applications-manager', [
             'applications' => $applications,
             'selected' => $selected,
             'programs' => $programs,
+            'documentTypes' => $documentTypes,
             'counts' => ScholarshipApplication::selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
             'statusOptions' => [
                 ['id' => 'all', 'name' => 'All statuses'],

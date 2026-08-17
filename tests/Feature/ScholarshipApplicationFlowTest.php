@@ -220,6 +220,25 @@ class ScholarshipApplicationFlowTest extends TestCase
             ->assertSee('New Applicant');
     }
 
+    public function test_application_cannot_be_submitted_when_document_checklist_is_not_configured(): void
+    {
+        ScholarshipDocumentType::query()->delete();
+        $resident = $this->resident();
+        $program = ScholarshipProgram::create([
+            'name' => 'Unconfigured scholarship',
+            'open_at' => now()->subDay(),
+            'close_at' => now()->addDay(),
+            'is_active' => true,
+        ]);
+        $application = app(ScholarshipApplicationService::class)
+            ->createDraft($resident, $program, ScholarshipApplication::APPLICANT_NEW);
+
+        $this->actingAs($resident)
+            ->postJson("/api/resident-portal/scholarships/applications/{$application->id}/submit")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['documents']);
+    }
+
     private function uploadAllRequired(
         ScholarshipApplicationService $service,
         ScholarshipApplication $application,
@@ -260,7 +279,10 @@ class ScholarshipApplicationFlowTest extends TestCase
         ];
 
         foreach ($types as $type) {
-            ScholarshipDocumentType::create($type + ['is_required' => true]);
+            ScholarshipDocumentType::query()->updateOrCreate(
+                ['code' => $type['code'], 'applicant_type' => $type['applicant_type']],
+                $type + ['is_required' => true],
+            );
         }
     }
 

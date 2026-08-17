@@ -392,6 +392,12 @@ class ScholarshipApplicationService
             ->where('is_required', true)
             ->get();
 
+        if ($types->isEmpty()) {
+            throw ValidationException::withMessages([
+                'documents' => 'The scholarship document checklist is not configured. Please contact the scholarship office.',
+            ]);
+        }
+
         $missing = [];
         foreach ($types as $type) {
             $doc = $application->documents->first(function (ScholarshipApplicationDocument $document) use ($type) {

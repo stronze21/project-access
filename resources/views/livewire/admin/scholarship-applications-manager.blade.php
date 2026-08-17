@@ -9,6 +9,7 @@
     <div class="flex flex-wrap gap-2">
         <x-mary-button wire:click="$set('activeTab', 'queue')" label="Review queue" class="{{ $activeTab === 'queue' ? 'btn-primary' : 'btn-outline' }}" />
         <x-mary-button wire:click="$set('activeTab', 'programs')" label="Programs & walk-in" class="{{ $activeTab === 'programs' ? 'btn-primary' : 'btn-outline' }}" />
+        <x-mary-button wire:click="$set('activeTab', 'document-types')" label="Document types" class="{{ $activeTab === 'document-types' ? 'btn-primary' : 'btn-outline' }}" />
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -18,7 +19,45 @@
         <x-mary-stat title="Awarded" value="{{ number_format($counts['awarded'] ?? 0) }}" icon="o-academic-cap" class="text-primary" />
     </div>
 
-    @if($activeTab === 'programs')
+    @if($activeTab === 'document-types')
+        <div class="grid gap-6 lg:grid-cols-2">
+            <x-mary-card title="{{ $editingDocumentTypeId ? 'Edit document type' : 'Add document type' }}">
+                <p class="mb-4 text-sm text-slate-600">These entries are the digital document checklist shown in both the mobile app and resident PWA.</p>
+                <div class="space-y-3">
+                    <x-mary-input wire:model="documentTypeLabel" label="Document label" placeholder="Birth certificate" />
+                    <x-mary-input wire:model="documentTypeCode" label="Code" placeholder="birth_certificate" hint="Lowercase letters, numbers, and underscores only." />
+                    <x-mary-select wire:model="documentTypeApplicantType" label="Applies to" :options="[
+                        ['id' => 'both', 'name' => 'Both applicant types'],
+                        ['id' => 'new', 'name' => 'New applicants'],
+                        ['id' => 'ongoing', 'name' => 'On-going scholars'],
+                    ]" />
+                    <x-mary-input wire:model="documentTypeSortOrder" type="number" min="0" label="Display order" />
+                    <x-mary-checkbox wire:model="documentTypeIsRequired" label="Required document" />
+                    <div class="flex gap-2">
+                        <x-mary-button wire:click="saveDocumentType" class="btn-primary" label="Save document type" />
+                        <x-mary-button wire:click="resetDocumentTypeForm" class="btn-ghost" label="Reset" />
+                    </div>
+                </div>
+            </x-mary-card>
+
+            <div class="space-y-3">
+                @forelse($documentTypes as $type)
+                    <x-mary-card wire:key="document-type-{{ $type->id }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="font-semibold text-slate-900">{{ $type->label }}</h3>
+                                <p class="text-sm text-slate-600">{{ $type->code }} · {{ str($type->applicant_type)->headline() }}</p>
+                                <p class="text-xs text-slate-500">Order {{ $type->sort_order }} · {{ $type->is_required ? 'Required' : 'Optional' }}</p>
+                            </div>
+                            <x-mary-button wire:click="editDocumentType({{ $type->id }})" class="btn-outline btn-sm" label="Edit" />
+                        </div>
+                    </x-mary-card>
+                @empty
+                    <x-mary-card><p class="text-sm text-warning">No document types are configured. Add one to enable document uploads.</p></x-mary-card>
+                @endforelse
+            </div>
+        </div>
+    @elseif($activeTab === 'programs')
         <div class="grid gap-6 lg:grid-cols-2">
             <x-mary-card title="{{ $editingProgramId ? 'Edit program' : 'Create / update walk-in settings' }}">
                 <div class="space-y-3">

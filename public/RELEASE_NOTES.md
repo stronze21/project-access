@@ -1,5 +1,11 @@
 # SmartCity ACCESS release notes
 
+## 1.0.7 (build 8)
+
+- Fixed scholarship document uploads when document requirements are unavailable.
+- Added clearer guidance when a scholarship checklist has not been configured.
+- Scholarship administrators can now manage the digital document checklist.
+
 ## 1.0.6 (build 7)
 
 - Added Alaminos City Scholarship Program (ACSP) applications for residents.

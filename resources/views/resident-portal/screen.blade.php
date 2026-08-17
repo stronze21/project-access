@@ -264,6 +264,9 @@
     </article>
 
     <p class="section-header">Document checklist</p>
+    @if(empty($data['checklist']))
+        <div class="portal-alert warning"><span class="material-symbols-rounded filled">warning</span><span>No document requirements are configured for this applicant type. Please contact the scholarship office.</span></div>
+    @endif
     @foreach($data['checklist'] as $row)
         <div class="native-card list-card">
             <span class="list-icon {{ $row['uploaded'] ? 'green' : 'amber' }}"><span class="material-symbols-rounded filled">{{ $row['uploaded'] ? 'check_circle' : 'upload_file' }}</span></span>
@@ -284,7 +287,7 @@
         </div>
     @endforeach
 
-    @if($app->canResidentEditDocuments())
+    @if($app->canResidentEditDocuments() && $data['documentTypes']->isNotEmpty())
         <p class="section-header">Upload document</p>
         <form class="native-card form-stack" method="POST" action="{{ route('resident-portal.scholarships.documents.store', $app) }}" enctype="multipart/form-data">
             @csrf
@@ -299,6 +302,8 @@
             <button class="primary-button" type="submit">Upload</button>
         </form>
         <form method="POST" action="{{ route('resident-portal.scholarships.submit', $app) }}">@csrf<button class="primary-button" type="submit">{{ $app->status === 'needs_resubmission' ? 'Resubmit application' : 'Submit application' }}</button></form>
+    @elseif($app->canResidentEditDocuments())
+        <div class="portal-alert warning"><span class="material-symbols-rounded filled">upload_file</span><span>Document upload is unavailable until the scholarship checklist is configured.</span></div>
     @endif
 
     <p class="section-header">Timeline</p>
