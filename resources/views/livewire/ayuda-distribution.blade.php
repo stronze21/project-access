@@ -1,4 +1,5 @@
-<div>
+<div x-data
+    x-on:focus-resident-search.window="$nextTick(() => document.getElementById('resident-search')?.focus())">
     <x-mary-card title="Ayuda Distribution">
         <x-slot:menu>
             <x-mary-button link="{{ route('distributions.index') }}" label="Distribution History"
@@ -95,19 +96,31 @@
             </div>
 
             <div class="p-4">
-                <div class="flex flex-col gap-4 mb-4 md:flex-row">
+                <div class="flex flex-col gap-4 mb-2 md:flex-row">
                     <div class="flex-1">
-                        <x-mary-input label="Search Resident" wire:model="searchQuery"
-                            placeholder="Enter name, ID or scan QR/RFID..." wire:keydown.enter="searchResident" />
+                        <x-mary-input id="resident-search" label="Search Resident" wire:model="searchQuery"
+                            placeholder="Enter name, ID or scan QR/RFID..." wire:keydown.enter="searchResident"
+                            :disabled="(bool) $selectedResident" />
                     </div>
                     <div class="flex items-end space-x-2">
-                        <x-mary-button wire:click="searchResident" icon="o-magnifying-glass">Search</x-mary-button>
+                        <x-mary-button wire:click="searchResident" icon="o-magnifying-glass"
+                            :disabled="(bool) $selectedResident">Search</x-mary-button>
                         <x-mary-button wire:click="$toggle('showScanner')"
-                            class="tagged-color btn-secondary btn-outline btn-secline" icon="o-qr-code">
+                            class="tagged-color btn-secondary btn-outline btn-secline" icon="o-qr-code"
+                            :disabled="(bool) $selectedResident">
                             {{ $showScanner ? 'Hide Scanner' : 'Scan QR/RFID' }}
                         </x-mary-button>
+                        <x-mary-button wire:click="distribute"
+                            label="{{ $isVerificationRequired ? 'Submit for Verification' : 'Complete Distribution' }}"
+                            icon="o-check-circle" :disabled="!$selectedResident || (!$isEligible && !$isVerificationRequired)"
+                            wire:loading.attr="disabled" wire:target="distribute" />
                     </div>
                 </div>
+                <label class="inline-flex items-center gap-2 mb-4 text-sm cursor-pointer">
+                    <input type="checkbox" wire:model.live="autoFocusSearch" class="checkbox checkbox-primary checkbox-sm"
+                        x-on:change="if ($event.target.checked) $nextTick(() => document.getElementById('resident-search')?.focus())">
+                    <span>Auto-focus resident search</span>
+                </label>
 
                 @if ($showScanner)
                     <div class="mb-4">
@@ -126,7 +139,7 @@
                                 loading="eager"></iframe>
                         </div>
                         <div class="flex justify-end mt-2">
-                            <x-mary-button wire:click="$set('selectedResident', null)" icon="o-x-circle"
+                            <x-mary-button wire:click="clearResident" icon="o-x-circle"
                                 class="tagged-color btn-secondary btn-outline btn-secline" size="sm"
                                 label="Clear resident" />
                         </div>

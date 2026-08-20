@@ -5,32 +5,36 @@ namespace App\Livewire;
 use App\Models\AyudaProgram;
 use App\Models\Distribution;
 use App\Models\DistributionBatch;
-use App\Models\Resident;
 use App\Models\Household;
-use App\Services\QrCodeService;
-use App\Services\RfidService;
+use App\Models\Resident;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
+use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Livewire\Attributes\Validate;
 use Mary\Traits\Toast;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class AyudaDistribution extends Component
 {
-    use WithFileUploads;
     use Toast;
+    use WithFileUploads;
 
     #[Url()]
     public $resident;
+
     // Scanner and search
     public $showScanner = false;
+
     public $scanResult = null;
+
     public $selectedResident = null;
+
     public $selectedHousehold = null;
+
     public $searchQuery = '';
+
+    public $autoFocusSearch = false;
 
     // Distribution data
     #[Validate('required|exists:ayuda_programs,id')]
@@ -59,16 +63,24 @@ class AyudaDistribution extends Component
 
     // Flags and states
     public $isHouseholdDistribution = false;
+
     public $programType = 'cash';
+
     public $isBatchMode = false;
+
     public $isVerificationRequired = false;
+
     public $verificationData = [];
 
     // Continuous distribution
     public $continuesDistribution = false;
+
     public $showSuccessModal = false;
+
     public $lastDistribution = null;
+
     public $distributionCount = 0;
+
     public $batchProgress = 0;
 
     // Stored program info
@@ -76,14 +88,16 @@ class AyudaDistribution extends Component
 
     // Eligibility check
     public $isEligible = false;
+
     public $eligibilityMessage = '';
 
     // Lists
     public $availablePrograms = [];
+
     public $availableBatches = [];
 
     protected $listeners = [
-        'scan-result' => 'handleScanResult'
+        'scan-result' => 'handleScanResult',
     ];
 
     /**
@@ -116,7 +130,6 @@ class AyudaDistribution extends Component
         $this->loadProgramDetails();
     }
 
-
     /**
      * Load available active ayuda programs.
      */
@@ -130,7 +143,7 @@ class AyudaDistribution extends Component
      */
     public function loadProgramDetails()
     {
-        if (!$this->selectedProgramId) {
+        if (! $this->selectedProgramId) {
             return;
         }
 
@@ -160,8 +173,9 @@ class AyudaDistribution extends Component
      */
     public function updateBatchProgress()
     {
-        if (!$this->selectedBatchId) {
+        if (! $this->selectedBatchId) {
             $this->batchProgress = 0;
+
             return;
         }
 
@@ -179,7 +193,7 @@ class AyudaDistribution extends Component
      */
     public function loadBatchDetails()
     {
-        if (!$this->selectedBatchId) {
+        if (! $this->selectedBatchId) {
             return;
         }
 
@@ -193,7 +207,7 @@ class AyudaDistribution extends Component
      */
     public function toggleContinuesDistribution()
     {
-        $this->continuesDistribution = !$this->continuesDistribution;
+        $this->continuesDistribution = ! $this->continuesDistribution;
     }
 
     /**
@@ -228,6 +242,8 @@ class AyudaDistribution extends Component
         if ($this->showScanner) {
             $this->dispatch('scanner-toggled');
         }
+
+        $this->focusSearchIfEnabled();
     }
 
     /**
@@ -235,7 +251,12 @@ class AyudaDistribution extends Component
      */
     public function handleScanResult($result)
     {
-        if (!$result['found']) {
+        // Keep the currently displayed ID selected until the operator completes or clears it.
+        if ($this->selectedResident) {
+            return;
+        }
+
+        if (! $result['found']) {
             return;
         }
 
@@ -270,8 +291,15 @@ class AyudaDistribution extends Component
      */
     public function searchResident()
     {
+        if ($this->selectedResident) {
+            $this->warning('Complete the current distribution or clear the resident before searching again.');
+
+            return;
+        }
+
         if (empty($this->searchQuery) || strlen($this->searchQuery) < 3) {
             $this->warning('Please enter at least 3 characters for search');
+
             return;
         }
 
@@ -285,7 +313,7 @@ class AyudaDistribution extends Component
             $this->selectedResident = $resident;
             $this->selectedHousehold = $resident->household;
 
-            $this->success('Resident found: ' . $resident->full_name);
+            $this->success('Resident found: '.$resident->full_name);
 
             if ($this->selectedProgramId) {
                 $this->checkEligibility();
@@ -300,7 +328,7 @@ class AyudaDistribution extends Component
      */
     public function checkEligibility()
     {
-        if (!$this->selectedProgramId || !$this->selectedResident) {
+        if (! $this->selectedProgramId || ! $this->selectedResident) {
             return;
         }
 
@@ -315,6 +343,7 @@ class AyudaDistribution extends Component
         if ($alreadyReceived) {
             $this->isEligible = false;
             $this->eligibilityMessage = 'This resident has already received aid from this program.';
+
             return;
         }
 
@@ -323,7 +352,7 @@ class AyudaDistribution extends Component
         $failedCriteria = [];
 
         foreach ($program->eligibilityCriteria as $criterion) {
-            if (!$criterion->checkEligibility($this->selectedResident)) {
+            if (! $criterion->checkEligibility($this->selectedResident)) {
                 $isEligible = false;
                 $failedCriteria[] = $criterion->criterion_name;
             }
@@ -334,7 +363,7 @@ class AyudaDistribution extends Component
         if ($isEligible) {
             $this->eligibilityMessage = 'Resident is eligible for this program.';
         } else {
-            $this->eligibilityMessage = 'Resident does not meet the following criteria: ' . implode(', ', $failedCriteria);
+            $this->eligibilityMessage = 'Resident does not meet the following criteria: '.implode(', ', $failedCriteria);
         }
     }
 
@@ -345,13 +374,15 @@ class AyudaDistribution extends Component
     {
         $this->validate();
 
-        if (!$this->selectedResident) {
+        if (! $this->selectedResident) {
             $this->warning('Please select a resident first');
+
             return;
         }
 
-        if (!$this->isEligible && !$this->isVerificationRequired) {
+        if (! $this->isEligible && ! $this->isVerificationRequired) {
             $this->warning('Resident is not eligible for this program');
+
             return;
         }
 
@@ -378,7 +409,7 @@ class AyudaDistribution extends Component
             ];
 
             // Save verification data if required
-            if ($this->isVerificationRequired && !empty($this->verificationData)) {
+            if ($this->isVerificationRequired && ! empty($this->verificationData)) {
                 $distributionData['verification_data'] = json_encode($this->verificationData);
             }
 
@@ -409,19 +440,21 @@ class AyudaDistribution extends Component
             // Store last distribution info for success modal
             $this->lastDistribution = $distribution;
             $this->distributionCount++;
+            $this->searchQuery = '';
 
             // If continues distribution is enabled, show success modal instead of redirecting
             if ($this->continuesDistribution) {
                 $this->showSuccessModal = true;
-                $this->success('Aid distribution complete for: ' . $this->selectedResident->full_name);
+                $this->success('Aid distribution complete for: '.$this->selectedResident->full_name);
             } else {
-                $this->success('Aid distribution ' . ($this->isVerificationRequired ? 'recorded and pending verification' : 'completed successfully'));
+                $this->success('Aid distribution '.($this->isVerificationRequired ? 'recorded and pending verification' : 'completed successfully'));
                 $this->resetDistribution();
+
                 return redirect()->route('distributions.show', $distribution->id);
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->error('Error: ' . $e->getMessage());
+            $this->error('Error: '.$e->getMessage());
         }
     }
 
@@ -452,6 +485,30 @@ class AyudaDistribution extends Component
 
         if ($this->selectedProgramId) {
             $this->amount = $this->programAmount;
+        }
+
+        $this->focusSearchIfEnabled();
+    }
+
+    public function clearResident()
+    {
+        $this->reset([
+            'selectedResident',
+            'selectedHousehold',
+            'searchQuery',
+            'scanResult',
+            'isHouseholdDistribution',
+            'isEligible',
+            'eligibilityMessage',
+        ]);
+
+        $this->focusSearchIfEnabled();
+    }
+
+    private function focusSearchIfEnabled(): void
+    {
+        if ($this->autoFocusSearch) {
+            $this->dispatch('focus-resident-search');
         }
     }
 
