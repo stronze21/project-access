@@ -38,6 +38,7 @@ class AyudaDistribution extends Component
 
     // Distribution data
     #[Validate('required|exists:ayuda_programs,id')]
+    #[Url(as: 'program')]
     public $selectedProgramId = null;
 
     #[Validate('nullable|exists:distribution_batches,id')]
@@ -111,6 +112,8 @@ class AyudaDistribution extends Component
 
         if ($programId) {
             $this->selectedProgramId = $programId;
+            $this->loadProgramDetails();
+        } elseif ($this->selectedProgramId) {
             $this->loadProgramDetails();
         }
 

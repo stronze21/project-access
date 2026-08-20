@@ -1,5 +1,19 @@
-<div x-data
-    x-on:focus-resident-search.window="setTimeout(() => document.getElementById('resident-search')?.focus(), 100)">
+<div
+    x-data="{
+        focusResidentSearch(attempt = 0) {
+            setTimeout(() => {
+                const field = this.$refs.residentSearch;
+                if (field && !field.disabled) {
+                    field.focus();
+                    return;
+                }
+
+                if (attempt < 10) this.focusResidentSearch(attempt + 1);
+            }, 100);
+        }
+    }"
+    x-effect="if ($wire.autoFocusSearch && !$wire.selectedResident) focusResidentSearch()"
+    x-on:focus-resident-search.window="focusResidentSearch()">
     <x-mary-card title="Ayuda Distribution">
         <x-slot:menu>
             <x-mary-button link="{{ route('distributions.index') }}" label="Distribution History"
@@ -98,7 +112,7 @@
             <div class="p-4">
                 <div class="flex flex-col gap-4 mb-2 md:flex-row">
                     <div class="flex-1">
-                        <x-mary-input id="resident-search" label="Search Resident" wire:model="searchQuery"
+                        <x-mary-input x-ref="residentSearch" label="Search Resident" wire:model="searchQuery"
                             placeholder="Enter name, ID or scan QR/RFID..." wire:keydown.enter="searchResident"
                             :disabled="(bool) $selectedResident" />
                     </div>
@@ -118,7 +132,7 @@
                 </div>
                 <label class="inline-flex items-center gap-2 mb-4 text-sm cursor-pointer">
                     <input type="checkbox" wire:model.live="autoFocusSearch" class="checkbox checkbox-primary checkbox-sm"
-                        x-on:change="if ($event.target.checked) $nextTick(() => document.getElementById('resident-search')?.focus())">
+                        x-on:change="if ($event.target.checked) focusResidentSearch()">
                     <span>Auto-focus resident search</span>
                 </label>
 
