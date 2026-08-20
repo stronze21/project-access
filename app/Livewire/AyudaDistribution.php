@@ -446,6 +446,10 @@ class AyudaDistribution extends Component
             if ($this->continuesDistribution) {
                 $this->showSuccessModal = true;
                 $this->success('Aid distribution complete for: '.$this->selectedResident->full_name);
+
+                if ($this->autoFocusSearch) {
+                    $this->continueToNextDistribution();
+                }
             } else {
                 $this->success('Aid distribution '.($this->isVerificationRequired ? 'recorded and pending verification' : 'completed successfully'));
                 $this->resetDistribution();

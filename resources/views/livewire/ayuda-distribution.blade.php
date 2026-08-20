@@ -1,5 +1,5 @@
 <div x-data
-    x-on:focus-resident-search.window="$nextTick(() => document.getElementById('resident-search')?.focus())">
+    x-on:focus-resident-search.window="setTimeout(() => document.getElementById('resident-search')?.focus(), 100)">
     <x-mary-card title="Ayuda Distribution">
         <x-slot:menu>
             <x-mary-button link="{{ route('distributions.index') }}" label="Distribution History"
