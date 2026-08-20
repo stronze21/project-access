@@ -37,20 +37,17 @@ class ResidentSeeder extends Seeder
             'Mendoza', 'Flores', 'Lopez', 'Perez', 'Rodriguez', 'Aquino', 'Castro', 'Domingo', 'Navarro', 'Salazar'
         ];
 
-        $relationships = ['head', 'spouse', 'child', 'sibling', 'parent', 'grandchild', 'grandparent', 'in-law', 'other_relative', 'non-relative'];
         $genders = ['male', 'female'];
         $civilStatuses = ['single', 'married', 'widowed', 'divorced', 'separated'];
         $educationalAttainments = ['elementary', 'high_school', 'vocational', 'college', 'graduate', 'none'];
         $occupations = ['teacher', 'farmer', 'laborer', 'driver', 'vendor', 'factory_worker', 'government_employee', 'private_employee', 'business_owner', 'unemployed', 'retired', 'student'];
 
-        // Create ~500 residents (~3-4 per household on average)
+        // Create one resident for each individual household.
         $residentCount = 0;
 
         foreach ($households as $household) {
-            // Each household will have 2-6 members
-            $memberCount = rand(2, 6);
+            $memberCount = 1;
 
-            // First member is the household head
             for ($i = 0; $i < $memberCount; $i++) {
                 $residentCount++;
 
@@ -74,10 +71,7 @@ class ResidentSeeder extends Seeder
                 // Age-appropriate civil status
                 $civilStatus = $this->getCivilStatusByAge($birthDate);
 
-                // Determine relationship to head
-                $relationship = ($i === 0)
-                    ? 'head'
-                    : $this->getRelationshipByAgeBucket($ageBucket);
+                $relationship = 'head';
 
                 // Set appropriate occupation based on age
                 $occupation = $this->getOccupationByAge($birthDate);
@@ -103,7 +97,7 @@ class ResidentSeeder extends Seeder
                 // Lactating status (only for females of reproductive age, slightly less common than pregnant)
                 $isLactating = ($gender === 'female' && Carbon::parse($birthDate)->age >= 18 && Carbon::parse($birthDate)->age <= 45 && !$isPregnant) ? (rand(0, 100) < 5) : false;
 
-                // Indigenous status (consistent across household members)
+                // Indigenous status
                 $isIndigenous = (rand(0, 100) < 15); // 15% chance
 
                 // Contact info (only for those 15+)
@@ -143,8 +137,9 @@ class ResidentSeeder extends Seeder
                 ]);
             }
 
-            // Update household member count
+            // Keep the household aggregate fields aligned to its sole resident.
             $household->member_count = $memberCount;
+            $household->monthly_income = $monthlyIncome;
             $household->save();
         }
 

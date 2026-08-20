@@ -29,6 +29,8 @@ class LegalPagesTest extends TestCase
             ->assertSee('The City Government of Alaminos, Pangasinan')
             ->assertSee('English')
             ->assertSee('Filipino')
+            ->assertSee('individual resident details')
+            ->assertDontSee('details about your family')
             ->assertSee('RA 7160')
             ->assertSee('Data Privacy Act of 2012')
             ->assertSee('Barangay Health Worker Information System (BHWIS)')

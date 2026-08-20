@@ -243,28 +243,9 @@ class ResidentController extends Controller
      */
     public function updateHousehold(Request $request, string $id): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'household_id' => 'required|exists:households,id',
-            'relationship_to_head' => 'nullable|string|max:50',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $resident = Resident::findOrFail($id);
-        $resident->household_id = $request->household_id;
-
-        if ($request->has('relationship_to_head')) {
-            $resident->relationship_to_head = $request->relationship_to_head;
-        }
-
-        $resident->save();
-
         return response()->json([
-            'message' => 'Resident\'s household updated successfully',
-            'data' => $resident->load(['household', 'sourceIncomeType']),
-        ]);
+            'message' => 'Household reassignment is disabled. Each household is limited to its individual resident.',
+        ], 409);
     }
 
     /**

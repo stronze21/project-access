@@ -12,6 +12,7 @@ use App\Models\LegacyImportRow;
 use App\Models\Resident;
 use App\Models\SourceIncomeType;
 use App\Services\Bhwis\BhwisResidentNormalizer;
+use App\Services\DedicatedHouseholdService;
 use Carbon\Carbon;
 use Database\Seeders\LocationsSeeder;
 use Illuminate\Support\Arr;
@@ -23,7 +24,10 @@ class LegacyDataPromoter
 {
     private ?array $psgcBarangayRecords = null;
 
-    public function __construct(private readonly BhwisResidentNormalizer $residentNormalizer) {}
+    public function __construct(
+        private readonly BhwisResidentNormalizer $residentNormalizer,
+        private readonly DedicatedHouseholdService $households,
+    ) {}
 
     public const CIVIL_STATUS_MAP = [
         '1' => 'single',
@@ -654,7 +658,7 @@ class LegacyDataPromoter
         array $context,
         bool $commit
     ): array {
-        $candidatePins = array_values(array_intersect($eligiblePins, array_keys($addresses)));
+        $candidatePins = array_values($eligiblePins);
         $stats = [
             'provisional_source_residents' => count($candidatePins),
             'provisional_created' => 0,
@@ -693,10 +697,25 @@ class LegacyDataPromoter
 
                 if ($resident?->household_id) {
                     $current = $currentHouseholds->get($resident->household_id);
-                    if ($current?->is_provisional && $current->provisional_for_pin === $pin) {
+                    $isDedicated = $current
+                        && ! $current->residents()->where('id', '!=', $resident->id)->exists();
+                    if ($isDedicated) {
                         $stats['provisional_matched']++;
                     } else {
-                        $stats['provisional_existing_household_preserved']++;
+                        $stats['provisional_created']++;
+                        $stats['provisional_members_linked']++;
+                        if ($commit) {
+                            $dedicated = $this->households->resolve($resident, $this->provisionalHouseholdAttributes(
+                                $pin,
+                                $addresses[$pin] ?? null,
+                                $context,
+                                $resident,
+                                $now,
+                            ), $this->provisionalHouseholdKey($pin));
+                            DB::table('residents')->where('id', $resident->id)->update([
+                                'household_id' => $dedicated->id,
+                            ]);
+                        }
                     }
 
                     continue;
@@ -724,30 +743,15 @@ class LegacyDataPromoter
                     $stats['provisional_created']++;
                     $createdPins[$pin] = true;
                     if ($commit) {
-                        [$barangay, $barangayCode] = $this->barangayFromAddress($addresses[$pin], $context['barangays']);
                         $householdRows[] = [
                             'household_id' => $householdKey,
-                            'building_registry_number' => null,
-                            'is_provisional' => true,
-                            'provisional_for_pin' => $pin,
-                            'address' => $addresses[$pin],
-                            'barangay' => $barangay ?? 'Unknown',
-                            'barangay_code' => $barangayCode,
-                            'city_municipality' => LocationsSeeder::CITY_NAME,
-                            'city_municipality_code' => LocationsSeeder::CITY_CODE,
-                            'province' => LocationsSeeder::PROVINCE_NAME,
-                            'province_code' => LocationsSeeder::PROVINCE_CODE,
-                            'postal_code' => LocationsSeeder::POSTAL_CODE,
-                            'region' => LocationsSeeder::REGION_NAME,
-                            'region_code' => LocationsSeeder::REGION_CODE,
-                            'monthly_income' => $resident?->monthly_income,
-                            'member_count' => 1,
-                            'has_electricity' => true,
-                            'has_water_supply' => true,
-                            'is_active' => true,
-                            'notes' => 'Provisional household created from legacy personal information.',
-                            'created_at' => $now,
-                            'updated_at' => $now,
+                            ...$this->provisionalHouseholdAttributes(
+                                $pin,
+                                $addresses[$pin] ?? null,
+                                $context,
+                                $resident,
+                                $now,
+                            ),
                         ];
                     }
                 }
@@ -844,6 +848,42 @@ class LegacyDataPromoter
         return 'LEGACY-PIN-'.$pin;
     }
 
+    private function provisionalHouseholdAttributes(
+        string $pin,
+        ?string $address,
+        array $context,
+        ?Resident $resident,
+        Carbon $now,
+    ): array {
+        [$barangay, $barangayCode] = $address
+            ? $this->barangayFromAddress($address, $context['barangays'])
+            : [null, null];
+
+        return [
+            'building_registry_number' => null,
+            'is_provisional' => true,
+            'provisional_for_pin' => $pin,
+            'address' => $address,
+            'barangay' => $barangay ?? 'Unknown',
+            'barangay_code' => $barangayCode,
+            'city_municipality' => LocationsSeeder::CITY_NAME,
+            'city_municipality_code' => LocationsSeeder::CITY_CODE,
+            'province' => LocationsSeeder::PROVINCE_NAME,
+            'province_code' => LocationsSeeder::PROVINCE_CODE,
+            'postal_code' => LocationsSeeder::POSTAL_CODE,
+            'region' => LocationsSeeder::REGION_NAME,
+            'region_code' => LocationsSeeder::REGION_CODE,
+            'monthly_income' => $resident?->monthly_income,
+            'member_count' => 1,
+            'has_electricity' => true,
+            'has_water_supply' => true,
+            'is_active' => true,
+            'notes' => 'Dedicated household created from legacy personal information.',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    }
+
     private function promoteHouseholds(
         LegacyImportBatch $batch,
         array $addresses,
@@ -935,56 +975,9 @@ class LegacyDataPromoter
                 $stats['address_variations']++;
             }
 
-            $address = $familyAddresses[0] ?? null;
-            if (! $address) {
-                $stats['incomplete']++;
-                if ($commit) {
-                    $this->upsertHouseholdLink($batch, $familyNumber, $buildingNumbers[0] ?? null, null, 'incomplete');
-                }
-
-                continue;
-            }
-
-            $household = Household::withTrashed()->where('household_id', $familyNumber)->first();
-            if (! $household) {
-                $stats['created']++;
-                if ($commit) {
-                    [$barangay, $barangayCode] = $this->barangayFromAddress($address, $context['barangays']);
-                    $householdId = DB::table('households')->insertGetId([
-                        'household_id' => $familyNumber,
-                        'building_registry_number' => $buildingNumbers[0] ?? null,
-                        'address' => $address,
-                        'barangay' => $barangay ?? 'Unknown',
-                        'barangay_code' => $barangayCode,
-                        'city_municipality' => LocationsSeeder::CITY_NAME,
-                        'city_municipality_code' => LocationsSeeder::CITY_CODE,
-                        'province' => LocationsSeeder::PROVINCE_NAME,
-                        'province_code' => LocationsSeeder::PROVINCE_CODE,
-                        'postal_code' => LocationsSeeder::POSTAL_CODE,
-                        'region' => LocationsSeeder::REGION_NAME,
-                        'region_code' => LocationsSeeder::REGION_CODE,
-                        'member_count' => 0,
-                        'has_electricity' => true,
-                        'has_water_supply' => true,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    $household = Household::findOrFail($householdId);
-                    $this->recordPromotionEvent(
-                        $batch,
-                        Household::class,
-                        $household->id,
-                        'create',
-                        null,
-                        $household->getAttributes()
-                    );
-                }
-            } else {
-                $stats['matched']++;
-            }
-
-            if (! $commit || ! $household) {
+            $residents = Resident::with('household')->whereIn('resident_id', $usablePins)->get();
+            $stats['matched'] += $residents->count();
+            if (! $commit) {
                 continue;
             }
 
@@ -992,50 +985,33 @@ class LegacyDataPromoter
                 $batch,
                 $familyNumber,
                 $buildingNumbers[0] ?? null,
-                $household->id,
-                'linked'
+                null,
+                'metadata_only'
             );
 
-            $residents = Resident::with('household')->whereIn('resident_id', $usablePins)->get();
             foreach ($residents as $resident) {
-                if ($resident->household_id && $resident->household_id !== $household->id) {
-                    $currentHousehold = $resident->household;
-                    $isOwnProvisionalHousehold = $currentHousehold?->is_provisional
-                        && $currentHousehold->provisional_for_pin === $resident->resident_id;
-
-                    if (! $isOwnProvisionalHousehold) {
-                        $stats['conflicts']++;
-
-                        continue;
-                    }
-
-                    $provisionalHouseholdIds[$currentHousehold->id] = true;
-                }
-
+                $address = $addresses[$resident->resident_id] ?? $familyAddresses[0] ?? null;
+                $household = $this->households->resolve(
+                    $resident,
+                    [
+                        ...$this->provisionalHouseholdAttributes(
+                            $resident->resident_id,
+                            $address,
+                            $context,
+                            $resident,
+                            now(),
+                        ),
+                        'building_registry_number' => $buildingNumbers[0] ?? null,
+                        'notes' => "Legacy family number: {$familyNumber}",
+                    ],
+                    $this->provisionalHouseholdKey($resident->resident_id),
+                );
                 if ($resident->household_id !== $household->id) {
-                    $oldHouseholdId = $resident->household_id;
                     DB::table('residents')->where('id', $resident->id)->update([
                         'household_id' => $household->id,
                     ]);
-                    $this->recordPromotionEvent(
-                        $batch,
-                        Resident::class,
-                        $resident->id,
-                        $oldHouseholdId ? 'replace_provisional_household' : 'link_household',
-                        ['household_id' => $oldHouseholdId],
-                        ['household_id' => $household->id]
-                    );
-                    $stats['members_linked']++;
                 }
             }
-
-            $memberCount = Resident::where('household_id', $household->id)->where('is_active', true)->count();
-            $income = Resident::where('household_id', $household->id)->where('is_active', true)->sum('monthly_income');
-            DB::table('households')->where('id', $household->id)->update([
-                'member_count' => $memberCount,
-                'monthly_income' => $income,
-                'updated_at' => now(),
-            ]);
         }
 
         $stats['provisional_archived'] = $this->archiveEmptyProvisionalHouseholds(

@@ -6,12 +6,12 @@ use App\Models\BarangayHealthWorkerAssignment;
 use App\Models\BarangayZone;
 use App\Models\CivilStatus;
 use App\Models\EducationalAttainment;
-use App\Models\Household;
 use App\Models\LegacyBarangayMapping;
 use App\Models\LegacyHouseholdLink;
 use App\Models\LegacyResidentLink;
 use App\Models\Resident;
 use App\Models\SourceIncomeType;
+use App\Services\DedicatedHouseholdService;
 use App\Services\Legacy\LegacyDataPromoter;
 use Database\Seeders\LocationsSeeder;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +20,10 @@ class BhwisResidentImporter
 {
     public const SOURCE_SYSTEM = 'bhwis';
 
-    public function __construct(private readonly BhwisResidentNormalizer $normalizer) {}
+    public function __construct(
+        private readonly BhwisResidentNormalizer $normalizer,
+        private readonly DedicatedHouseholdService $households,
+    ) {}
 
     public function import(array $records): Resident
     {
@@ -66,37 +69,29 @@ class BhwisResidentImporter
     private function importHousehold(Resident $resident, array $rows, array $barangays, array $personal): void
     {
         $own = collect($rows)->first(fn ($row) => trim((string) ($row['PIN'] ?? '')) === $resident->resident_id);
-        if (! $own || trim((string) ($own['FamilyNumber'] ?? '')) === '') {
-            return;
-        }
-        $familyNumber = trim((string) $own['FamilyNumber']);
+        $familyNumber = $this->nullable($own['FamilyNumber'] ?? null);
         $building = $this->nullable($own['Building_RegistryNumber'] ?? null);
-        $address = $this->nullable($personal['Address'] ?? null);
-        if (! $address) {
-            return;
-        }
-        $household = Household::firstOrCreate(
-            ['household_id' => 'LEGACY-FAMILY-'.$familyNumber],
-            [
-                'building_registry_number' => $building,
-                'address' => $address,
-                'barangay' => 'Unknown',
-                'city_municipality' => LocationsSeeder::CITY_NAME,
-                'province' => LocationsSeeder::PROVINCE_NAME,
-                'postal_code' => LocationsSeeder::POSTAL_CODE,
-                'region' => LocationsSeeder::REGION_NAME,
-                'is_active' => true,
-            ]
-        );
-        $pins = collect($rows)->where('FamilyNumber', $own['FamilyNumber'])->pluck('PIN')
-            ->map(fn ($pin) => trim((string) $pin))->filter()->unique()->all();
-        Resident::whereIn('resident_id', $pins)->where(fn ($q) => $q->whereNull('household_id')->orWhere('household_id', $household->id))
-            ->update(['household_id' => $household->id]);
+        $household = $this->households->resolve($resident, [
+            'building_registry_number' => $building,
+            'is_provisional' => true,
+            'provisional_for_pin' => $resident->resident_id,
+            'address' => $this->nullable($personal['Address'] ?? null),
+            'barangay' => 'Unknown',
+            'city_municipality' => LocationsSeeder::CITY_NAME,
+            'province' => LocationsSeeder::PROVINCE_NAME,
+            'postal_code' => LocationsSeeder::POSTAL_CODE,
+            'region' => LocationsSeeder::REGION_NAME,
+            'member_count' => 1,
+            'is_active' => true,
+            'notes' => $familyNumber ? "BHWIS family number: {$familyNumber}" : 'Dedicated household created from BHWIS.',
+        ], 'BHWIS-PIN-'.$resident->resident_id);
         $resident->forceFill(['household_id' => $household->id])->saveQuietly();
-        LegacyHouseholdLink::updateOrCreate(
-            ['source_system' => self::SOURCE_SYSTEM, 'legacy_family_number' => $familyNumber],
-            ['legacy_building_registry_number' => $building, 'household_id' => $household->id, 'status' => 'linked']
-        );
+        if ($familyNumber) {
+            LegacyHouseholdLink::updateOrCreate(
+                ['source_system' => self::SOURCE_SYSTEM, 'legacy_family_number' => $familyNumber],
+                ['legacy_building_registry_number' => $building, 'household_id' => null, 'status' => 'metadata_only']
+            );
+        }
     }
 
     private function importBhw(array $rows, array $barangays): void

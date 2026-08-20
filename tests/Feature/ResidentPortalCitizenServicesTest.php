@@ -95,11 +95,11 @@ class ResidentPortalCitizenServicesTest extends TestCase
         ]);
     }
 
-    public function test_authenticated_resident_can_only_view_members_of_their_household(): void
+    public function test_household_members_endpoint_returns_only_authenticated_resident(): void
     {
         $resident = $this->createResident();
         $member = Resident::create([
-            'household_id' => $resident->household_id,
+            'household_id' => null,
             'resident_id' => 'R-202604-HOUSEHOLD-MEMBER',
             'first_name' => 'Maria',
             'last_name' => 'Dela Cruz',
@@ -132,8 +132,9 @@ class ResidentPortalCitizenServicesTest extends TestCase
 
         $this->getJson('/api/resident-portal/household/members')
             ->assertOk()
-            ->assertJsonPath('member_count', 2)
-            ->assertJsonFragment(['resident_id' => $member->resident_id])
+            ->assertJsonPath('member_count', 1)
+            ->assertJsonFragment(['resident_id' => $resident->resident_id])
+            ->assertJsonMissing(['resident_id' => $member->resident_id])
             ->assertJsonMissing(['resident_id' => 'R-202604-OTHER-MEMBER']);
     }
 

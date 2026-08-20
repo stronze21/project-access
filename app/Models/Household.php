@@ -90,6 +90,19 @@ class Household extends Model
     }
 
     /**
+     * Get the resident when this household has exactly one active resident.
+     */
+    public function soleResident(): ?Resident
+    {
+        $residents = $this->residents()
+            ->where('is_active', true)
+            ->limit(2)
+            ->get();
+
+        return $residents->count() === 1 ? $residents->first() : null;
+    }
+
+    /**
      * Get all distributions for this household.
      */
     public function distributions(): HasMany

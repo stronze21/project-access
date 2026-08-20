@@ -364,38 +364,6 @@
                         </p>
                     </div>
 
-                    <div class="pt-4 mt-4 border-t border-gray-200">
-                        <h4 class="mb-2 text-sm font-medium">Other Household Members</h4>
-                        <ul class="space-y-2">
-                            @foreach ($resident->household->residents->where('id', '!=', $resident->id) as $member)
-                                <li>
-                                    <a href="{{ route('residents.show', $member->id) }}"
-                                        class="flex items-center p-2 text-sm rounded hover:bg-base-50">
-                                        @if ($member->photo_path)
-                                            <img src="{{ Storage::url($member->photo_path) }}"
-                                                alt="{{ $member->full_name }}"
-                                                class="object-cover w-6 h-6 mr-2 rounded-full">
-                                        @else
-                                            <div
-                                                class="flex items-center justify-center w-6 h-6 mr-2 rounded-full bg-base-200">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-400"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                </svg>
-                                            </div>
-                                        @endif
-                                        <span>{{ $member->full_name }}</span>
-                                        @if ($member->relationship_to_head === 'head')
-                                            <span
-                                                class="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Head</span>
-                                        @endif
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
                 @else
                     <div class="py-6 text-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-3 text-gray-400"

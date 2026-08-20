@@ -84,10 +84,10 @@ class EligibilityCriteria extends Model
                 return $resident->monthly_income;
 
             case 'household_income':
-                return $resident->household ? $resident->household->monthly_income : null;
+                return $resident->monthly_income;
 
             case 'household_size':
-                return $resident->household ? $resident->household->member_count : null;
+                return 1;
 
             case 'location':
             case 'barangay':

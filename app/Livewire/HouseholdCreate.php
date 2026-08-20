@@ -195,6 +195,17 @@ class HouseholdCreate extends Component
     {
         $this->validate();
 
+        if ($this->selectedResidentId) {
+            $selectedResident = Resident::find($this->selectedResidentId);
+
+            if ($selectedResident?->household_id
+                && (int) $selectedResident->household_id !== (int) $this->householdId) {
+                $this->addError('selectedResidentId', 'This resident already has a dedicated household.');
+
+                return;
+            }
+        }
+
         try {
             DB::beginTransaction();
 
@@ -234,12 +245,6 @@ class HouseholdCreate extends Component
             // Set household head if selected
             if ($this->selectedResidentId) {
                 $resident = Resident::find($this->selectedResidentId);
-
-                // Reset any existing household heads
-                Resident::where('household_id', $household->id)
-                    ->where('relationship_to_head', 'head')
-                    ->update(['relationship_to_head' => 'member']);
-                // Set new household head
                 $resident->household_id = $household->id;
                 $resident->relationship_to_head = 'head';
                 $resident->save();

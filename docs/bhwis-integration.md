@@ -2,6 +2,12 @@
 
 Project Access uses BHWIS as an on-demand registration authority. It does not bulk-sync or periodically synchronize BHWIS records. CSV exports remain a supported manual fallback and initial-load path.
 
+## Individual resident policy
+
+Interactive registration, portal, and assistance workflows treat each household record as belonging to one resident. Household-member enrollment, reassignment, and multi-member portal disclosure are disabled. Eligibility checks use the resident's own monthly income and a household size of one.
+
+BHWIS family data does not authorize a resident to view or manage another person's record. Related-record lookups remain best-effort reference lookups and must not expose family members through the resident portal.
+
 Both the ProjectAccessApp API and the PWA registration portal use this flow:
 
 1. The resident submits a PIN, last name, and birth date.
@@ -11,7 +17,7 @@ Both the ProjectAccessApp API and the PWA registration portal use this flow:
 5. A missing local resident is imported and linked by BHWIS PIN. An existing local resident is not overwritten.
 6. Project Access sets the resident's MPIN or password and completes registration.
 
-The verified personal record is required. Family, BHW, barangay, and reference lookups are best-effort: an unavailable optional table is logged and skipped rather than blocking activation of a resident whose identity was already verified.
+The verified personal record is required. Family, BHW, barangay, and reference lookups are best-effort: an unavailable optional table is logged and skipped rather than blocking activation of a resident whose identity was already verified. Any family data returned by BHWIS remains subject to the individual resident policy above.
 
 ## Production architecture
 

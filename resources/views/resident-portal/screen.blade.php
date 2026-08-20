@@ -60,12 +60,12 @@
         <a class="native-card household-summary-link" href="{{ $portal('household') }}">
             <div class="info-row"><span class="info-row-icon green"><span class="material-symbols-rounded filled">location_on</span></span><div><small>Address</small><strong>{{ $resident->household->full_address }}</strong></div></div>
             <div class="home-household-stats">
-                <div class="home-stat-item"><span class="home-stat-icon blue"><span class="material-symbols-rounded filled">groups</span></span><strong>{{ $resident->household->member_count ?? $resident->household->residents()->count() }}</strong><small>Members</small></div>
+                <div class="home-stat-item"><span class="home-stat-icon blue"><span class="material-symbols-rounded filled">person</span></span><strong>1</strong><small>Resident</small></div>
                 <div class="home-stat-item"><span class="home-stat-icon purple"><span class="material-symbols-rounded filled">home</span></span><strong>{{ $resident->household->dwelling_type ?: 'N/A' }}</strong><small>Dwelling</small></div>
                 <div class="home-stat-item"><span class="home-stat-icon green"><span class="material-symbols-rounded filled">bolt</span></span><strong>{{ $resident->household->has_electricity ? 'Yes' : 'No' }}</strong><small>Electric</small></div>
                 <div class="home-stat-item"><span class="home-stat-icon blue"><span class="material-symbols-rounded filled">water_drop</span></span><strong>{{ $resident->household->has_water_supply ? 'Yes' : 'No' }}</strong><small>Water</small></div>
             </div>
-            <span class="household-view-link">View household members <span class="material-symbols-rounded">chevron_right</span></span>
+            <span class="household-view-link">View household details <span class="material-symbols-rounded">chevron_right</span></span>
         </a>
     @endif
 
@@ -86,26 +86,17 @@
 
 @elseif($screen === 'household')
     <a class="back-link" href="{{ $portal() }}"><span class="material-symbols-rounded">arrow_back</span> Home</a>
-    <x-resident-portal-page-header icon="groups" title="My Household" subtitle="View the residents registered in your household." />
+    <x-resident-portal-page-header icon="home" title="My Household" subtitle="View your registered household details." />
     <div class="native-card">
         <div class="info-row"><span class="info-row-icon green"><span class="material-symbols-rounded filled">location_on</span></span><div><small>Household address</small><strong>{{ $data['household']->full_address }}</strong></div></div>
         <div class="info-row"><span class="info-row-icon blue"><span class="material-symbols-rounded filled">tag</span></span><div><small>Household ID</small><strong>{{ $data['household']->household_id }}</strong></div></div>
     </div>
-    <p class="section-header">Members ({{ $data['members']->count() }})</p>
-    @forelse($data['members'] as $member)
-        @php
-            $memberPhoto = $member->photo_path
-                ? '/storage/'.ltrim(preg_replace('#^/?storage/#', '', str_replace('\\', '/', $member->photo_path)), '/')
-                : null;
-        @endphp
-        <div class="native-card household-member-card">
-            @if($memberPhoto)<img src="{{ $memberPhoto }}" alt="">@else<span class="household-member-avatar material-symbols-rounded filled">person</span>@endif
-            <div><strong>{{ $member->full_name }}</strong><small>{{ str($member->relationship_to_head ?: 'member')->replace('_', ' ')->headline() }} · Age {{ $member->getAge() }}</small><span>{{ $member->resident_id }}</span></div>
-            @if($member->id === $resident->id)<span class="status-chip blue">You</span>@endif
-        </div>
-    @empty
-        <x-resident-portal-empty icon="group_off" title="No household members" message="No active residents are currently registered in this household." />
-    @endforelse
+    <p class="section-header">Registered Resident</p>
+    <div class="native-card household-member-card">
+        @if($photoUrl)<img src="{{ $photoUrl }}" alt="">@else<span class="household-member-avatar material-symbols-rounded filled">person</span>@endif
+        <div><strong>{{ $resident->full_name }}</strong><small>Individual household record · Age {{ $resident->getAge() }}</small><span>{{ $resident->resident_id }}</span></div>
+        <span class="status-chip blue">You</span>
+    </div>
 
 @elseif($screen === 'ayuda')
     <x-resident-portal-page-header icon="volunteer_activism" title="AyudaHub" subtitle="Your city assistance and distribution history." />

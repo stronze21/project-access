@@ -458,12 +458,6 @@ class ResidentPortalController extends Controller
 
             return [
                 'household' => $resident->household,
-                'members' => Resident::query()
-                    ->where('household_id', $resident->household_id)
-                    ->where('is_active', true)
-                    ->orderByRaw("CASE relationship_to_head WHEN 'head' THEN 0 WHEN 'spouse' THEN 1 ELSE 2 END")
-                    ->orderBy('first_name')
-                    ->get(),
             ];
         }
 

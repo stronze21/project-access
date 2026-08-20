@@ -10,7 +10,7 @@
                 <section lang="en" aria-labelledby="privacy-notice-en">
                     <h2 id="privacy-notice-en" class="text-xl font-bold text-slate-900">English</h2>
                     <div class="mt-5 space-y-5">
-                        <p>The City Government of Alaminos, Pangasinan is a branch of government that administers its jurisdiction and represents its community. As a government, we aim to serve our citizens through health, public safety, education, and other programs that fulfill and comply with the rules and standards of RA 7160, or the Local Government Code. For this purpose, we need to collect and record details about your family that contain personal and sensitive information so that we can better understand the circumstances of every family and of our beloved City.</p>
+                        <p>The City Government of Alaminos, Pangasinan is a branch of government that administers its jurisdiction and represents its community. As a government, we aim to serve our citizens through health, public safety, education, and other programs that fulfill and comply with the rules and standards of RA 7160, or the Local Government Code. For this purpose, we need to collect and record your individual resident details, including personal and sensitive information, so that we can better understand your circumstances and improve services in our beloved City.</p>
 
                         <p>As the <strong>personal information controller</strong>, we assure you that your data or information will be processed in accordance with the law and only for the following purposes:</p>
 
@@ -32,7 +32,7 @@
                 <section lang="fil" aria-labelledby="privacy-notice-fil">
                     <h2 id="privacy-notice-fil" class="text-xl font-bold text-slate-900">Filipino</h2>
                     <div class="mt-5 space-y-5">
-                <p>Ang Pamahalaang Lungsod ng Alaminos, Pangasinan ay isang sangay ng pamahalaan na tagapangasiwa sa kanyang nasasakupan at kumakatawan sa kanyang pamayanan. Bilang isang pamahalaan, adhikain naming mapaglingkuran ang aming mga mamamayan sa pamamagitan ng serbisyong pangkalusugan, pangkapayapaan, pang-edukasyon at iba pang programa na tumutupad at sumasang-ayon sa mga alituntunin at pamantayan ng RA 7160 o Local Government Code. Dahil dito, kinakailangan naming makuha at mai-rekord ang detalye ng inyong pamilya na naglalaman ng mga personal at sensitibong datos o impormasyon upang lalo naming maintindihan ang sitwasyon ng bawat pamilya at ng ating minamahal na Lungsod.</p>
+                <p>Ang Pamahalaang Lungsod ng Alaminos, Pangasinan ay isang sangay ng pamahalaan na tagapangasiwa sa kanyang nasasakupan at kumakatawan sa kanyang pamayanan. Bilang isang pamahalaan, adhikain naming mapaglingkuran ang aming mga mamamayan sa pamamagitan ng serbisyong pangkalusugan, pangkapayapaan, pang-edukasyon at iba pang programa na tumutupad at sumasang-ayon sa mga alituntunin at pamantayan ng RA 7160 o Local Government Code. Dahil dito, kinakailangan naming makuha at mai-rekord ang inyong indibidwal na resident record na naglalaman ng mga personal at sensitibong datos o impormasyon upang lalo naming maintindihan ang inyong kalagayan at mapabuti ang serbisyo sa ating minamahal na Lungsod.</p>
 
                 <p>Bilang <strong>personal information controller</strong>, sinisiguro namin na ang pagproseso ng inyong mga datos o impormasyon ay naaayon sa batas at sa mga sumusunod na kadahilanan lamang:</p>
 

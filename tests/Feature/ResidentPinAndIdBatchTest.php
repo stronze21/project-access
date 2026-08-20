@@ -295,6 +295,18 @@ class ResidentPinAndIdBatchTest extends TestCase
 
     private function resident(string $pin, array $overrides = []): Resident
     {
+        $householdId = $overrides['household_id'] ?? null;
+        if ($householdId && Resident::where('household_id', $householdId)->exists()) {
+            $household = Household::findOrFail($householdId)->replicate([
+                'household_id',
+                'qr_code',
+                'provisional_for_pin',
+            ]);
+            $household->household_id = 'HH-'.str()->upper(str()->random(8));
+            $household->save();
+            $overrides['household_id'] = $household->id;
+        }
+
         return Resident::create($this->residentAttributes($overrides) + ['resident_id' => $pin]);
     }
 

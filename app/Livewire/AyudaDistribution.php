@@ -277,14 +277,18 @@ class AyudaDistribution extends Component
             $this->selectedHousehold = Household::findOrFail($result['object']['id']);
             $this->isHouseholdDistribution = true;
 
-            // Set the first household member as the recipient
-            $headOfHousehold = $this->selectedHousehold->householdHead();
-            if ($headOfHousehold) {
-                $this->selectedResident = $headOfHousehold;
+            // Household QR codes are valid only when they identify one active resident.
+            $soleResident = $this->selectedHousehold->soleResident();
+            if ($soleResident) {
+                $this->selectedResident = $soleResident;
 
                 if ($this->selectedResident && $this->selectedProgramId) {
                     $this->checkEligibility();
                 }
+            } else {
+                $this->selectedHousehold = null;
+                $this->isHouseholdDistribution = false;
+                $this->warning('This household QR code does not resolve to exactly one active resident.');
             }
         }
     }

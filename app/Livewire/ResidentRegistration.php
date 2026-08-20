@@ -11,6 +11,7 @@ use App\Models\Region;
 use App\Models\Resident;
 use App\Models\SourceIncomeType;
 use App\Models\SystemSetting;
+use App\Services\DedicatedHouseholdService;
 use App\Services\QrCodeService;
 use App\Services\ResidentPinService;
 use App\Services\RfidService;
@@ -681,44 +682,26 @@ class ResidentRegistration extends Component
         try {
             DB::beginTransaction();
 
-            // Always create a new household for the resident
-            if ($this->householdId) {
-                // Scenario 1: Update existing household
-                $household = Household::findOrFail($this->householdId);
-                if ($this->isEdit) {
-                    $household->update([
-                        'address' => $this->address,
-                        'barangay' => $this->barangay,
-                        'barangay_code' => $this->barangayCode,
-                        'city_municipality' => $this->cityMunicipality,
-                        'city_municipality_code' => $this->cityMunicipalityCode,
-                        'province' => $this->province,
-                        'province_code' => $this->provinceCode,
-                        'region' => $this->region,
-                        'region_code' => $this->regionCode,
-                    ]);
-                }
+            $existingResident = $this->isEdit ? Resident::findOrFail($this->residentId) : null;
+            $household = app(DedicatedHouseholdService::class)->resolve($existingResident, [
+                'address' => $this->address,
+                'barangay' => $this->barangay,
+                'barangay_code' => $this->barangayCode,
+                'city_municipality' => $this->cityMunicipality,
+                'city_municipality_code' => $this->cityMunicipalityCode,
+                'province' => $this->province,
+                'province_code' => $this->provinceCode,
+                'region' => $this->region,
+                'region_code' => $this->regionCode,
+                'member_count' => 1,
+                'has_electricity' => true,
+                'has_water_supply' => true,
+                'is_active' => true,
+            ]);
+            $this->householdId = $household->id;
+            $this->relationshipToHead = 'head';
 
-            } else {
-                // Scenario 2 & 3: Create new household
-                $household = Household::create([
-                    'household_id' => Household::generateHouseholdId(),
-                    'address' => $this->address,
-                    'barangay' => $this->barangay,
-                    'barangay_code' => $this->barangayCode,
-                    'city_municipality' => $this->cityMunicipality,
-                    'city_municipality_code' => $this->cityMunicipalityCode,
-                    'province' => $this->province,
-                    'province_code' => $this->provinceCode,
-                    'region' => $this->region,
-                    'region_code' => $this->regionCode,
-                    'has_electricity' => true,
-                    'has_water_supply' => true,
-                ]);
-
-                $this->householdId = $household->id;
-
-                // Generate QR code for new household
+            if (! $household->qr_code) {
                 $this->qrCodeService->generateHouseholdQrCode($household);
             }
 

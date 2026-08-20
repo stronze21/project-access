@@ -98,7 +98,7 @@ class BhwisResidentActivationTest extends TestCase
         $this->assertDatabaseMissing('residents', ['resident_id' => 'PIN-MISSING']);
     }
 
-    public function test_bhwis_import_is_atomic_and_links_only_existing_family_members(): void
+    public function test_bhwis_import_is_atomic_and_keeps_family_members_in_dedicated_households(): void
     {
         $relative = Resident::create([
             'resident_id' => 'PIN-RELATIVE', 'first_name' => 'Ana', 'last_name' => 'Santos',
@@ -128,9 +128,21 @@ class BhwisResidentActivationTest extends TestCase
 
         $imported = Resident::where('resident_id', 'PIN-REMOTE')->firstOrFail();
         $this->assertTrue($imported->is_legacy_imported);
-        $this->assertSame($imported->household_id, $relative->fresh()->household_id);
+        $this->assertNotNull($imported->household_id);
+        $this->assertNotSame($imported->household_id, $relative->fresh()->household_id);
+        $this->assertSame('BHWIS-PIN-PIN-REMOTE', $imported->household->household_id);
+        $this->assertSame('B-1', $imported->household->building_registry_number);
+        $this->assertSame('BHWIS family number: F-100', $imported->household->notes);
+        $this->assertSame(1, $imported->household->residents()->count());
         $this->assertDatabaseMissing('residents', ['resident_id' => 'PIN-NOT-IMPORTED']);
         $this->assertDatabaseHas('legacy_resident_links', ['source_system' => 'bhwis', 'legacy_pin' => 'PIN-REMOTE']);
+        $this->assertDatabaseHas('legacy_household_links', [
+            'source_system' => 'bhwis',
+            'legacy_family_number' => 'F-100',
+            'legacy_building_registry_number' => 'B-1',
+            'household_id' => null,
+            'status' => 'metadata_only',
+        ]);
     }
 
     private function payload(string $pin): array

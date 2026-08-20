@@ -32,6 +32,26 @@ class ResidentCsvServiceTest extends TestCase
         $this->assertNull(Resident::firstOrFail()->monthly_income);
     }
 
+    public function test_import_never_merges_residents_with_the_same_address(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('same-address.csv', implode("\n", [
+            'resident_id,first_name,last_name,birth_date,gender,address,barangay',
+            '00-11001,First,Resident,2000-01-01,male,Same House,Same Barangay',
+            '00-11002,Second,Resident,2001-01-01,female,Same House,Same Barangay',
+        ]));
+
+        $result = app(ResidentCsvService::class)
+            ->importFromCsv(Storage::disk('local')->path('same-address.csv'));
+
+        $this->assertSame(2, $result['created']);
+        $this->assertDatabaseCount('households', 2);
+        $this->assertSame(2, Resident::pluck('household_id')->unique()->count());
+        $this->assertTrue(Resident::get()->every(
+            fn (Resident $resident) => $resident->household->residents()->count() === 1
+        ));
+    }
+
     public function test_preview_labels_new_updates_and_errors_without_writing_data(): void
     {
         Storage::fake('local');

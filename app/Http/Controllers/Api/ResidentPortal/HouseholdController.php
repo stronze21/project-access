@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\ResidentPortal;
 
 use App\Http\Controllers\Controller;
-use App\Models\Resident;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -42,26 +41,17 @@ class HouseholdController extends Controller
             ], 404);
         }
 
-        $members = Resident::where('household_id', $resident->household_id)
-            ->where('is_active', true)
-            ->select([
-                'id', 'resident_id', 'first_name', 'last_name', 'middle_name',
-                'suffix', 'birth_date', 'gender', 'relationship_to_head',
-                'contact_number', 'photo_path',
-            ])
-            ->orderByRaw("CASE relationship_to_head WHEN 'head' THEN 0 WHEN 'spouse' THEN 1 ELSE 2 END")
-            ->orderBy('first_name')
-            ->get()
-            ->map(function ($member) {
-                $member->age = $member->getAge();
-                $member->full_name = $member->full_name;
-
-                return $member;
-            });
+        $member = $resident->only([
+            'id', 'resident_id', 'first_name', 'last_name', 'middle_name',
+            'suffix', 'birth_date', 'gender', 'relationship_to_head',
+            'contact_number', 'photo_path',
+        ]);
+        $member['age'] = $resident->getAge();
+        $member['full_name'] = $resident->full_name;
 
         return response()->json([
-            'data' => $members,
-            'member_count' => $members->count(),
+            'data' => [$member],
+            'member_count' => 1,
         ]);
     }
 }

@@ -238,8 +238,9 @@ class ResidentCsvService
                         $existingResident = Resident::where('resident_id', $rowData['resident_id'])->first();
                     }
 
-                    // Process the household first
-                    $household = $this->processHousehold($rowData);
+                    // Every resident owns one household; existing residents reuse theirs
+                    // only while it remains dedicated to that resident.
+                    $household = $this->processHousehold($rowData, $existingResident);
 
                     // Process the resident
                     $residentData = $this->mapResidentData($rowData);
@@ -279,35 +280,19 @@ class ResidentCsvService
         return $stats;
     }
 
-    /**
-     * Process and find or create household
-     *
-     * @param  array  $data
-     * @return Household
-     */
-    private function processHousehold($data)
+    private function processHousehold(array $data, ?Resident $resident = null): Household
     {
-        // Try to find existing household with the same address and barangay
-        $household = Household::where('address', $data['address'])
-            ->where('barangay', $data['barangay'])
-            ->first();
-
-        if (! $household) {
-            // Create new household
-            $household = Household::create([
-                'household_id' => Household::generateHouseholdId(),
-                'address' => $data['address'],
-                'barangay' => $data['barangay'],
-                'city_municipality' => $data['city_municipality'] ?? '',
-                'province' => $data['province'] ?? '',
-                'region' => $data['region'] ?? '',
-                // Set default values for required fields
-                'has_electricity' => true,
-                'has_water_supply' => true,
-            ]);
-        }
-
-        return $household;
+        return app(DedicatedHouseholdService::class)->resolve($resident, [
+            'address' => $data['address'],
+            'barangay' => $data['barangay'],
+            'city_municipality' => $data['city_municipality'] ?? '',
+            'province' => $data['province'] ?? '',
+            'region' => $data['region'] ?? '',
+            'member_count' => 1,
+            'has_electricity' => true,
+            'has_water_supply' => true,
+            'is_active' => true,
+        ]);
     }
 
     /**
@@ -479,16 +464,23 @@ class ResidentCsvService
 
     private function residentImportChanges(Resident $resident, array $rowData): array
     {
-        $householdId = Household::where('address', $rowData['address'])
-            ->where('barangay', $rowData['barangay'])
-            ->value('id');
-
         $resident->fill([
             ...$this->mapResidentData($rowData),
-            'household_id' => $householdId,
         ]);
 
-        return $this->meaningfulDirtyFields($resident);
+        $changes = $this->meaningfulDirtyFields($resident);
+        $household = $resident->household;
+        if (! $household || $household->residents()->where('id', '!=', $resident->id)->exists()) {
+            $changes[] = 'household_id';
+        } else {
+            foreach (['address', 'barangay', 'city_municipality', 'province', 'region'] as $field) {
+                if ((string) $household->{$field} !== (string) ($rowData[$field] ?? '')) {
+                    $changes[] = 'household.'.$field;
+                }
+            }
+        }
+
+        return array_values(array_unique($changes));
     }
 
     private function meaningfulDirtyFields(Resident $resident): array

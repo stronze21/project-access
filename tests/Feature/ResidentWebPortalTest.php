@@ -216,7 +216,7 @@ class ResidentWebPortalTest extends TestCase
             ->assertDontSee('Scan to verify resident record');
     }
 
-    public function test_resident_can_view_members_of_their_household_in_the_pwa(): void
+    public function test_resident_portal_shows_only_the_authenticated_resident_household_record(): void
     {
         $household = Household::create([
             'household_id' => 'HH-PWA-001',
@@ -230,7 +230,7 @@ class ResidentWebPortalTest extends TestCase
             'relationship_to_head' => 'head',
         ]);
         $member = $this->resident([
-            'household_id' => $household->id,
+            'household_id' => null,
             'resident_id' => 'R-PWA-MEMBER-001',
             'first_name' => 'Ana',
             'last_name' => 'Santos',
@@ -243,14 +243,17 @@ class ResidentWebPortalTest extends TestCase
             ->get('/resident-portal')
             ->assertOk()
             ->assertSee('/resident-portal/household', false)
-            ->assertSee('View household members');
+            ->assertSee('View household details')
+            ->assertDontSee('View household members');
 
         $this->actingAs($resident, 'resident')->withSession($session)
             ->get('/resident-portal/household')
             ->assertOk()
             ->assertSee('My Household')
-            ->assertSee($member->full_name)
-            ->assertSee($member->resident_id);
+            ->assertSee($resident->full_name)
+            ->assertSee($resident->resident_id)
+            ->assertDontSee($member->full_name)
+            ->assertDontSee($member->resident_id);
     }
 
     public function test_city_portal_translates_legacy_icon_names_to_material_symbols(): void

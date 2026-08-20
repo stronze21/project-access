@@ -309,10 +309,10 @@ class AyudaProgramController extends Controller
                     $residentValue = $resident->monthly_income;
                     break;
                 case 'household_income':
-                    $residentValue = $resident->household ? $resident->household->monthly_income : null;
+                    $residentValue = $resident->monthly_income;
                     break;
                 case 'household_size':
-                    $residentValue = $resident->household ? $resident->household->member_count : null;
+                    $residentValue = 1;
                     break;
                 case 'location':
                 case 'barangay':

@@ -22,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -96,7 +97,7 @@ class LegacyCsvIntegrationTest extends TestCase
         );
     }
 
-    public function test_guarded_promotion_maps_identifiers_timestamp_household_and_bhw_assignment(): void
+    public function test_guarded_promotion_maps_identifiers_to_a_dedicated_household_and_bhw_assignment(): void
     {
         $files = [
             $this->writeCsv('personal.csv', $this->personalHeaders(), [
@@ -130,8 +131,8 @@ class LegacyCsvIntegrationTest extends TestCase
         $result = app(LegacyDataPromoter::class)->promote($batch, true);
 
         $this->assertSame(1, $result['residents']['created']);
-        $this->assertSame(1, $result['households']['created']);
-        $this->assertSame(1, $result['households']['members_linked']);
+        $this->assertSame(1, $result['households']['provisional_created']);
+        $this->assertSame(1, $result['households']['provisional_members_linked']);
         $this->assertSame(1, $result['bhw']['zones_created']);
         $this->assertSame(1, $result['bhw']['assignments_created']);
 
@@ -146,9 +147,17 @@ class LegacyCsvIntegrationTest extends TestCase
         $this->assertTrue($resident->is_legacy_imported);
 
         $this->assertDatabaseHas('households', [
-            'household_id' => '01-01-00001',
+            'household_id' => 'LEGACY-PIN-00-00002',
             'building_registry_number' => '1001',
             'barangay' => 'Poblacion',
+            'member_count' => 1,
+            'notes' => 'Legacy family number: 01-01-00001',
+        ]);
+        $this->assertDatabaseHas('legacy_household_links', [
+            'legacy_family_number' => '01-01-00001',
+            'legacy_building_registry_number' => '1001',
+            'household_id' => null,
+            'status' => 'metadata_only',
         ]);
         $this->assertDatabaseHas('legacy_resident_links', [
             'legacy_pin' => '00-00002',
@@ -272,7 +281,7 @@ class LegacyCsvIntegrationTest extends TestCase
         ]);
     }
 
-    public function test_family_only_batch_reuses_staged_addresses_and_links_members(): void
+    public function test_family_only_batch_preserves_metadata_without_merging_dedicated_households(): void
     {
         $personal = $this->writeCsv('personal.csv', $this->personalHeaders(), [
             $this->personalRow('00-01001', 'House 1, Barangay Poblacion, Alaminos City, Pangasinan'),
@@ -305,19 +314,27 @@ class LegacyCsvIntegrationTest extends TestCase
         $this->assertFalse($chunkPreview['has_more']);
         $result = $promoter->promote($familyBatch, true);
 
-        $this->assertSame(1, $result['households']['created']);
-        $this->assertSame(2, $result['households']['members_linked']);
+        $this->assertSame(0, $result['households']['created']);
+        $this->assertSame(0, $result['households']['members_linked']);
         $this->assertSame(1, $result['households']['address_variations']);
-        $this->assertSame(2, $result['households']['provisional_archived']);
+        $this->assertSame(0, $result['households']['provisional_archived']);
         $this->assertDatabaseHas('households', [
-            'household_id' => '01-01-01001',
+            'household_id' => 'LEGACY-PIN-00-01001',
             'building_registry_number' => '501',
             'address' => 'House 1, Barangay Poblacion, Alaminos City, Pangasinan',
-            'member_count' => 2,
+            'member_count' => 1,
+            'notes' => 'Legacy family number: 01-01-01001',
         ]);
+        $this->assertDatabaseHas('households', [
+            'household_id' => 'LEGACY-PIN-00-01002',
+            'building_registry_number' => '501',
+            'address' => 'House 2, Barangay Poblacion, Alaminos City, Pangasinan',
+            'member_count' => 1,
+            'notes' => 'Legacy family number: 01-01-01001',
+        ]);
+        $this->assertSame(2, Resident::pluck('household_id')->unique()->count());
         $this->assertSame(2, Resident::whereNotNull('household_id')->count());
-        $this->assertSame(0, Household::where('is_provisional', true)->count());
-        $this->assertSame(2, Household::withTrashed()->where('is_provisional', true)->count());
+        $this->assertSame(2, Household::where('is_provisional', true)->count());
     }
 
     public function test_personal_promotion_preserves_an_existing_non_provisional_household(): void
@@ -353,7 +370,7 @@ class LegacyCsvIntegrationTest extends TestCase
         $batch = LegacyImportBatch::findOrFail(app(LegacyCsvImporter::class)->import([$personal], false)['batch_id']);
         $result = app(LegacyDataPromoter::class)->promote($batch, true);
 
-        $this->assertSame(1, $result['households']['provisional_existing_household_preserved']);
+        $this->assertSame(1, $result['households']['provisional_matched']);
         $this->assertSame(0, $result['households']['provisional_created']);
         $this->assertSame($householdId, Resident::where('resident_id', '00-01003')->value('household_id'));
         $this->assertDatabaseCount('households', 1);
@@ -564,6 +581,50 @@ class LegacyCsvIntegrationTest extends TestCase
         Livewire::test(ResidentShow::class, ['residentId' => $resident->id])
             ->assertSee('Occupation / Income Source:')
             ->assertSee('Seasonal Farm Worker');
+    }
+
+    public function test_registration_ignores_a_supplied_household_and_creates_a_dedicated_one(): void
+    {
+        Schema::create('refregion', function ($table) {
+            $table->string('regCode')->primary();
+            $table->string('regDesc')->nullable();
+        });
+        Schema::create('refprovince', function ($table) {
+            $table->string('provCode')->primary();
+            $table->string('provDesc')->nullable();
+        });
+        Schema::create('refcitymun', function ($table) {
+            $table->string('citymunCode')->primary();
+            $table->string('citymunDesc')->nullable();
+        });
+        $existing = Household::create([
+            'household_id' => 'HH-EXISTING',
+            'address' => 'Existing Address',
+            'barangay' => 'Poblacion',
+            'city_municipality' => 'Alaminos City',
+            'province' => 'Pangasinan',
+        ]);
+
+        Livewire::test(ResidentRegistration::class)
+            ->set('householdId', $existing->id)
+            ->set('residentPin', '26-90001')
+            ->set('firstName', 'Dedicated')
+            ->set('lastName', 'Resident')
+            ->set('birthDate', '2000-01-01')
+            ->set('gender', 'female')
+            ->set('civilStatus', 'single')
+            ->set('address', 'Existing Address')
+            ->set('barangay', 'Poblacion')
+            ->set('cityMunicipality', 'Alaminos City')
+            ->set('province', 'Pangasinan')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $resident = Resident::where('resident_id', '26-90001')->firstOrFail();
+        $this->assertNotSame($existing->id, $resident->household_id);
+        $this->assertSame('head', $resident->relationship_to_head);
+        $this->assertSame(1, $resident->household->residents()->count());
+        $this->assertDatabaseCount('households', 2);
     }
 
     public function test_scholar_pin_workbook_marks_matches_without_clearing_existing_scholars(): void
