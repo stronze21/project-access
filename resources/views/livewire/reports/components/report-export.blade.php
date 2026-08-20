@@ -7,6 +7,7 @@
 
         <x-mary-button wire:click="export" class="tagged-color btn-secondary btn-outline btn-secline"
             icon="o-document-arrow-down" wire:loading.attr="disabled" wire:loading.class="opacity-75"
+            onclick="window.reportExportPreview = window.open('about:blank', '_blank')"
             class="whitespace-nowrap">
             <span wire:loading.remove wire:target="export">{{ $exportLabel }}</span>
             <span wire:loading wire:target="export">Exporting...</span>
@@ -44,10 +45,9 @@
                         ? route('report.export.downloads', ['file' => $exportedFilePath])
                         : '#' }}"
                         class="block w-full px-4 py-2 mt-4 font-medium text-center text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        onclick="document.getElementById('closeModalBtn').click();">
+                        wire:click="closeModal">
                         Download & Close
                     </a>
-                    <button id="closeModalBtn" wire:click="closeModal" class="hidden">Close</button>
                 @endif
             </div>
         </div>
@@ -70,18 +70,37 @@
                 });
 
                 // Listen for export completed event from the server
-                Livewire.on('exportCompleted', (data) => {
+                Livewire.on('exportCompleted', async (data) => {
                     // Set progress to 100% to indicate completion
                     @this.exportProgress = 100;
 
                     // Set the exported file path
                     @this.exportedFilePath = data.filePath;
+
+                    // Close the modal and immediately display the CSV in the tab
+                    // reserved by the user's Export click.
+                    const previewUrl = new URL(@js(route('report.export.downloads')));
+                    previewUrl.searchParams.set('file', data.filePath);
+                    previewUrl.searchParams.set('preview', '1');
+                    await @this.closeModal();
+
+                    if (window.reportExportPreview && !window.reportExportPreview.closed) {
+                        window.reportExportPreview.location.assign(previewUrl.toString());
+                        window.reportExportPreview = null;
+                    } else {
+                        window.location.assign(previewUrl.toString());
+                    }
                 });
 
                 // Listen for export failed event from the server
                 Livewire.on('exportFailed', () => {
                     // Reset the export modal state
                     @this.isExporting = false;
+
+                    if (window.reportExportPreview && !window.reportExportPreview.closed) {
+                        window.reportExportPreview.close();
+                        window.reportExportPreview = null;
+                    }
                 });
             });
         </script>

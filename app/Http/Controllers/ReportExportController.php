@@ -25,11 +25,21 @@ class ReportExportController extends Controller
     {
         $filePath = $request->input('file');
 
-        if (!$filePath || !Storage::exists($filePath)) {
+        if (! $filePath || ! Storage::exists($filePath)) {
             return back()->with('error', 'Export file not found or has expired.');
         }
 
         $filename = basename($filePath);
+
+        if ($request->boolean('preview')) {
+            return response()->file(
+                Storage::path($filePath),
+                [
+                    'Content-Type' => 'text/csv; charset=UTF-8',
+                    'Content-Disposition' => 'inline; filename="'.$filename.'"',
+                ]
+            );
+        }
 
         return response()->download(
             Storage::path($filePath),
