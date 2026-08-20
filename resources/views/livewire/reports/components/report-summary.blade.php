@@ -19,9 +19,25 @@
     @if ($showSummary)
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($summaryCards as $card)
-                <x-mary-stat title="{{ $card['title'] }}"
-                    value="{{ $this->formatValue($summaryData[$card['key']] ?? null, $card['formatter']) }}"
-                    icon="{{ $card['icon'] }}" class="{{ 'bg-' . $card['color'] }}" color="text-base-100" />
+                <div @class([
+                    'w-full px-5 py-4 rounded-lg shadow-sm',
+                    'bg-primary text-primary-content' => $card['color'] === 'primary',
+                    'bg-success text-success-content' => $card['color'] === 'success',
+                    'bg-info text-info-content' => $card['color'] === 'info',
+                    'bg-warning text-warning-content' => $card['color'] === 'warning',
+                ])>
+                    <div class="flex items-center gap-3">
+                        <x-mary-icon name="{{ $card['icon'] }}" class="w-9 h-9 shrink-0" />
+                        <div class="min-w-0 text-left">
+                            <div class="text-xs font-semibold opacity-90 whitespace-nowrap">
+                                {{ $card['title'] }}
+                            </div>
+                            <div class="text-xl font-black">
+                                {{ $this->formatValue($summaryData[$card['key']] ?? null, $card['formatter']) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endforeach
         </div>
 

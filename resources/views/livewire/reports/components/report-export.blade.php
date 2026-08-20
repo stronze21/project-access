@@ -7,7 +7,6 @@
 
         <x-mary-button wire:click="export" class="tagged-color btn-secondary btn-outline btn-secline"
             icon="o-document-arrow-down" wire:loading.attr="disabled" wire:loading.class="opacity-75"
-            onclick="window.reportExportPreview = window.open('about:blank', '_blank')"
             class="whitespace-nowrap">
             <span wire:loading.remove wire:target="export">{{ $exportLabel }}</span>
             <span wire:loading wire:target="export">Exporting...</span>
@@ -77,30 +76,17 @@
                     // Set the exported file path
                     @this.exportedFilePath = data.filePath;
 
-                    // Close the modal and immediately display the CSV in the tab
-                    // reserved by the user's Export click.
-                    const previewUrl = new URL(@js(route('report.export.downloads')));
-                    previewUrl.searchParams.set('file', data.filePath);
-                    previewUrl.searchParams.set('preview', '1');
+                    // Close the modal and immediately start the CSV download.
+                    const downloadUrl = new URL(@js(route('report.export.downloads')));
+                    downloadUrl.searchParams.set('file', data.filePath);
                     await @this.closeModal();
-
-                    if (window.reportExportPreview && !window.reportExportPreview.closed) {
-                        window.reportExportPreview.location.assign(previewUrl.toString());
-                        window.reportExportPreview = null;
-                    } else {
-                        window.location.assign(previewUrl.toString());
-                    }
+                    window.location.assign(downloadUrl.toString());
                 });
 
                 // Listen for export failed event from the server
                 Livewire.on('exportFailed', () => {
                     // Reset the export modal state
                     @this.isExporting = false;
-
-                    if (window.reportExportPreview && !window.reportExportPreview.closed) {
-                        window.reportExportPreview.close();
-                        window.reportExportPreview = null;
-                    }
                 });
             });
         </script>

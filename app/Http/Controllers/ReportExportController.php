@@ -31,16 +31,6 @@ class ReportExportController extends Controller
 
         $filename = basename($filePath);
 
-        if ($request->boolean('preview')) {
-            return response()->file(
-                Storage::path($filePath),
-                [
-                    'Content-Type' => 'text/csv; charset=UTF-8',
-                    'Content-Disposition' => 'inline; filename="'.$filename.'"',
-                ]
-            );
-        }
-
         return response()->download(
             Storage::path($filePath),
             $filename,
