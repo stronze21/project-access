@@ -1,5 +1,11 @@
 # SmartCity ACCESS release notes
 
+## 1.0.8 (build 9)
+
+- Added a download button for the scholarship form on the scholarship screen.
+- Scholarship shortcuts and scholarship pages are now hidden from non-scholars.
+- Published the scholarship form for in-app download.
+
 ## 1.0.7 (build 8)
 
 - Fixed scholarship document uploads when document requirements are unavailable.
