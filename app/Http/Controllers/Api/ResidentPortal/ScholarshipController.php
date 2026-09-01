@@ -83,6 +83,11 @@ class ScholarshipController extends Controller
                 ScholarshipApplication::APPLICANT_ONGOING,
             ])],
             'gwa' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'course' => ['nullable', 'string', 'max:255'],
+            'father_name' => ['nullable', 'string', 'max:255'],
+            'father_occupation' => ['nullable', 'string', 'max:255'],
+            'mother_name' => ['nullable', 'string', 'max:255'],
+            'mother_occupation' => ['nullable', 'string', 'max:255'],
         ]);
 
         $program = ScholarshipProgram::findOrFail($validated['scholarship_program_id']);
@@ -91,6 +96,7 @@ class ScholarshipController extends Controller
             $program,
             $validated['applicant_type'],
             isset($validated['gwa']) ? (float) $validated['gwa'] : null,
+            $validated,
         );
 
         return response()->json([
@@ -191,6 +197,11 @@ class ScholarshipController extends Controller
             'status' => $application->status,
             'status_label' => $application->statusLabel(),
             'gwa' => $application->gwa,
+            'course' => $application->course,
+            'father_name' => $application->father_name,
+            'father_occupation' => $application->father_occupation,
+            'mother_name' => $application->mother_name,
+            'mother_occupation' => $application->mother_occupation,
             'award_tier' => $application->award_tier,
             'award_tier_label' => $application->awardTierLabel(),
             'award_tier_benefits' => $application->awardTierBenefits(),

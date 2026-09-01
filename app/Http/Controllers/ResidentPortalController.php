@@ -20,15 +20,15 @@ use App\Models\PublicServiceLink;
 use App\Models\Resident;
 use App\Models\ResidentIdentityChangeRequest;
 use App\Models\ResidentNotification;
+use App\Models\ScholarshipApplication;
+use App\Models\ScholarshipApplicationDocument;
+use App\Models\ScholarshipDocumentType;
+use App\Models\ScholarshipProgram;
 use App\Models\SentimentComment;
 use App\Models\SentimentPost;
 use App\Models\SentimentReaction;
 use App\Models\SosAlert;
 use App\Models\SosDepartment;
-use App\Models\ScholarshipApplication;
-use App\Models\ScholarshipApplicationDocument;
-use App\Models\ScholarshipDocumentType;
-use App\Models\ScholarshipProgram;
 use App\Models\SupportRequest;
 use App\Services\ModuleSettings;
 use App\Services\ResidentCitizenAccountService;
@@ -164,6 +164,11 @@ class ResidentPortalController extends Controller
                 ScholarshipApplication::APPLICANT_ONGOING,
             ])],
             'gwa' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'course' => ['nullable', 'string', 'max:255'],
+            'father_name' => ['nullable', 'string', 'max:255'],
+            'father_occupation' => ['nullable', 'string', 'max:255'],
+            'mother_name' => ['nullable', 'string', 'max:255'],
+            'mother_occupation' => ['nullable', 'string', 'max:255'],
         ]);
 
         $program = ScholarshipProgram::findOrFail($validated['scholarship_program_id']);
@@ -172,6 +177,7 @@ class ResidentPortalController extends Controller
             $program,
             $validated['applicant_type'],
             isset($validated['gwa']) ? (float) $validated['gwa'] : null,
+            $validated,
         );
 
         return redirect('/resident-portal/scholarships/'.$application->id)

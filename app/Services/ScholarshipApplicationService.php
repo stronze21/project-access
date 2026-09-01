@@ -22,8 +22,13 @@ class ScholarshipApplicationService
         private UploadedDocumentOptimizer $documentOptimizer,
     ) {}
 
-    public function createDraft(Resident $resident, ScholarshipProgram $program, string $applicantType, ?float $gwa = null): ScholarshipApplication
-    {
+    public function createDraft(
+        Resident $resident,
+        ScholarshipProgram $program,
+        string $applicantType,
+        ?float $gwa = null,
+        array $profile = [],
+    ): ScholarshipApplication {
         if (! $program->isOpen()) {
             throw ValidationException::withMessages([
                 'scholarship_program_id' => 'This scholarship program is not open for applications.',
@@ -48,13 +53,18 @@ class ScholarshipApplicationService
             ]);
         }
 
-        return DB::transaction(function () use ($resident, $program, $applicantType, $gwa) {
+        return DB::transaction(function () use ($resident, $program, $applicantType, $gwa, $profile) {
             $application = ScholarshipApplication::create([
                 'resident_id' => $resident->id,
                 'scholarship_program_id' => $program->id,
                 'applicant_type' => $applicantType,
                 'status' => ScholarshipApplication::STATUS_DRAFT,
                 'gwa' => $gwa,
+                'course' => $profile['course'] ?? null,
+                'father_name' => $profile['father_name'] ?? null,
+                'father_occupation' => $profile['father_occupation'] ?? null,
+                'mother_name' => $profile['mother_name'] ?? null,
+                'mother_occupation' => $profile['mother_occupation'] ?? null,
             ]);
 
             $this->recordEvent(

@@ -216,6 +216,21 @@
         <label>GWA (optional)
             <input type="number" name="gwa" step="0.01" min="0" max="100" value="{{ old('gwa') }}" placeholder="e.g. 95.50">
         </label>
+        <label>Course
+            <input name="course" value="{{ old('course') }}" maxlength="255" required>
+        </label>
+        <label>Name of Father
+            <input name="father_name" value="{{ old('father_name') }}" maxlength="255" required>
+        </label>
+        <label>Father's Occupation
+            <input name="father_occupation" value="{{ old('father_occupation') }}" maxlength="255" required>
+        </label>
+        <label>Name of Mother
+            <input name="mother_name" value="{{ old('mother_name') }}" maxlength="255" required>
+        </label>
+        <label>Mother's Occupation
+            <input name="mother_occupation" value="{{ old('mother_occupation') }}" maxlength="255" required>
+        </label>
         <button class="primary-button" type="submit">Continue to document upload</button>
     </form>
 

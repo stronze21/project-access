@@ -4,6 +4,17 @@
             <h1 class="text-2xl font-semibold text-gray-900">Scholarship Applications</h1>
             <p class="mt-1 text-sm text-gray-600">Review ACSP digital submissions, request corrections, conditionally approve, and complete physical verification awards.</p>
         </div>
+        @if($activeTab === 'queue')
+            <a
+                class="btn btn-primary"
+                href="{{ route('scholarships.report', array_filter([
+                    'status' => $status,
+                    'applicant_type' => $applicantType,
+                    'program_id' => $programId === 'all' ? null : $programId,
+                    'search' => trim($search) !== '' ? $search : null,
+                ], fn ($value) => $value !== null)) }}"
+            >Download scholarship report</a>
+        @endif
     </div>
 
     <div class="flex flex-wrap gap-2">
@@ -143,6 +154,13 @@
                                 @if($selected->rejection_reason)
                                     <p class="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ $selected->rejection_reason }}</p>
                                 @endif
+                            </div>
+
+                            <div class="grid gap-3 rounded-xl bg-slate-50 p-3 text-sm md:grid-cols-2">
+                                <div><span class="text-slate-500">Course</span><p class="font-medium">{{ $selected->course ?: 'Not provided' }}</p></div>
+                                <div><span class="text-slate-500">Father</span><p class="font-medium">{{ $selected->father_name ?: 'Not provided' }}{{ $selected->father_occupation ? ' · '.$selected->father_occupation : '' }}</p></div>
+                                <div><span class="text-slate-500">Mother</span><p class="font-medium">{{ $selected->mother_name ?: 'Not provided' }}{{ $selected->mother_occupation ? ' · '.$selected->mother_occupation : '' }}</p></div>
+                                <div><span class="text-slate-500">Emergency contact</span><p class="font-medium">{{ $selected->resident?->emergency_contact_name ?: 'Not provided' }}{{ $selected->resident?->emergency_contact_number ? ' · '.$selected->resident->emergency_contact_number : '' }}</p></div>
                             </div>
 
                             <div class="grid gap-3 md:grid-cols-2">

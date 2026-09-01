@@ -41,6 +41,11 @@ class ScholarshipApplicationFlowTest extends TestCase
             'scholarship_program_id' => $program->id,
             'applicant_type' => 'new',
             'gwa' => 96.5,
+            'course' => 'BS Information Technology',
+            'father_name' => 'Ramon Santos',
+            'father_occupation' => 'Farmer',
+            'mother_name' => 'Elena Santos',
+            'mother_occupation' => 'Teacher',
         ])->assertCreated();
 
         $applicationId = $create->json('data.id');
@@ -60,7 +65,62 @@ class ScholarshipApplicationFlowTest extends TestCase
         $this->assertDatabaseHas('scholarship_applications', [
             'id' => $applicationId,
             'status' => ScholarshipApplication::STATUS_SUBMITTED,
+            'course' => 'BS Information Technology',
+            'father_name' => 'Ramon Santos',
+            'mother_name' => 'Elena Santos',
         ]);
+    }
+
+    public function test_staff_can_download_the_scholarship_report_in_the_requested_format(): void
+    {
+        $resident = $this->resident();
+        $resident->update([
+            'middle_name' => 'Reyes',
+            'birthplace' => 'Alaminos City',
+            'contact_number' => '09171234567',
+            'email' => 'ana@example.test',
+            'emergency_contact_name' => 'Liza Santos',
+            'emergency_contact_number' => '09981234567',
+        ]);
+
+        app(ScholarshipApplicationService::class)->createDraft(
+            $resident,
+            ScholarshipProgram::firstOrFail(),
+            ScholarshipApplication::APPLICANT_ONGOING,
+            profile: [
+                'course' => 'BS Information Technology',
+                'father_name' => 'Ramon Santos',
+                'father_occupation' => 'Farmer',
+                'mother_name' => 'Elena Santos',
+                'mother_occupation' => 'Teacher',
+            ],
+        );
+
+        $response = $this->actingAs($this->staff(['manage-scholarship-applications']))
+            ->get(route('scholarships.report', ['status' => 'draft', 'applicant_type' => 'ongoing']))
+            ->assertOk()
+            ->assertDownload();
+
+        $lines = preg_split('/\r\n|\r|\n/', trim($response->streamedContent()));
+        $headers = str_getcsv(ltrim($lines[0], "\xEF\xBB\xBF"));
+        $row = str_getcsv($lines[1]);
+
+        $this->assertSame([
+            'Applicant Type', 'Last name', 'First name', 'Middle name', 'Age',
+            'Civil Status', 'Gender', 'Date of Birth', 'Place of Birth', 'Address',
+            'Course', 'Contact Number', 'Email Address', 'Name of Father', 'Occupation',
+            'Name of Mother', 'Occupation', 'Emergency contact name', 'Emergency contact number',
+        ], $headers);
+        $this->assertSame('old', $row[0]);
+        $this->assertSame('Santos', $row[1]);
+        $this->assertSame('Ana', $row[2]);
+        $this->assertSame('BS Information Technology', $row[10]);
+        $this->assertSame('Ramon Santos', $row[13]);
+        $this->assertSame('Farmer', $row[14]);
+        $this->assertSame('Elena Santos', $row[15]);
+        $this->assertSame('Teacher', $row[16]);
+        $this->assertSame('Liza Santos', $row[17]);
+        $this->assertSame('09981234567', $row[18]);
     }
 
     public function test_uploaded_images_are_compressed_to_jpeg(): void

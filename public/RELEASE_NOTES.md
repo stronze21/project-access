@@ -1,5 +1,10 @@
 # SmartCity ACCESS release notes
 
+## 1.0.9 (build 10)
+
+- Scholarship applications now collect course and parent information for complete reporting.
+- Scholarship administrators can download a filtered applicant report with personal, contact, family, and emergency-contact details.
+
 ## 1.0.8 (build 9)
 
 - Added a download button for the scholarship form on the scholarship screen.
