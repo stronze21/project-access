@@ -2,25 +2,37 @@
 
 namespace App\Livewire\Reports\Components;
 
-use Livewire\Component;
 use App\Models\AyudaProgram;
+use App\Models\CitizenServiceType;
+use App\Models\ScholarshipApplication;
+use App\Models\ScholarshipProgram;
+use App\Services\Reports\SpecialSectorReportService;
 use Carbon\Carbon;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
 class ReportFilters extends Component
 {
-    // Date range
     public $dateFrom;
+
     public $dateTo;
 
-    // Filters
     public $program = '';
+
+    public $sector = '';
+
     public $status = 'distributed';
+
     public $expanded = true;
 
-    // Programs list
+    public $reportType = 'distributions';
+
     public $programs = [];
 
-    // Date range shortcuts
+    public $sectorOptions = [];
+
+    public $statusOptions = [];
+
     public $dateRangeOptions = [
         'today' => 'Today',
         'yesterday' => 'Yesterday',
@@ -32,34 +44,97 @@ class ReportFilters extends Component
         'last_quarter' => 'Last Quarter',
         'this_year' => 'This Year',
         'last_year' => 'Last Year',
-        'custom' => 'Custom Range'
+        'custom' => 'Custom Range',
     ];
 
     public $selectedDateRange = 'this_month';
 
-    /**
-     * Mount the component
-     */
-    public function mount()
+    public function mount($reportType = 'distributions', $dateFrom = null, $dateTo = null, $program = '', $status = null)
     {
-        // Set default date range to current month
-        $this->dateFrom = now()->startOfMonth()->format('Y-m-d');
-        $this->dateTo = now()->endOfMonth()->format('Y-m-d');
+        $this->reportType = $reportType;
+        $this->dateFrom = $dateFrom ?: now()->startOfMonth()->format('Y-m-d');
+        $this->dateTo = $dateTo ?: now()->endOfMonth()->format('Y-m-d');
+        $this->program = $program;
+        $this->status = $status ?? $this->defaultStatusFor($reportType);
+        $this->refreshFilterOptions();
+    }
 
-        $this->loadPrograms();
+    #[On('reportTypeChanged')]
+    public function onReportTypeChanged($type): void
+    {
+        $this->reportType = $type;
+        $this->program = '';
+        $this->sector = '';
+        $this->status = $this->defaultStatusFor($type);
+        $this->refreshFilterOptions();
+        $this->emitFilterChanged();
+    }
+
+    protected function refreshFilterOptions(): void
+    {
+        $this->programs = match ($this->reportType) {
+            'scholarships' => ScholarshipProgram::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($program) => ['id' => $program->id, 'name' => $program->name])
+                ->all(),
+            'citizen-services' => CitizenServiceType::query()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['code', 'name'])
+                ->map(fn ($type) => ['id' => $type->code, 'name' => $type->name])
+                ->all(),
+            default => AyudaProgram::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($program) => ['id' => $program->id, 'name' => $program->name])
+                ->all(),
+        };
+
+        $this->sectorOptions = SpecialSectorReportService::sectorOptions();
+
+        $this->statusOptions = $this->statusOptionsFor($this->reportType);
     }
 
     /**
-     * Load programs for filter
+     * @return list<array{key: string, id: string}>
      */
-    protected function loadPrograms()
+    protected function statusOptionsFor(string $type): array
     {
-        $this->programs = AyudaProgram::orderBy('name')->get();
+        return match ($type) {
+            'scholarships' => [
+                ['key' => 'all', 'id' => 'All Statuses'],
+                ['key' => ScholarshipApplication::STATUS_DRAFT, 'id' => 'Draft'],
+                ['key' => ScholarshipApplication::STATUS_SUBMITTED, 'id' => 'Submitted'],
+                ['key' => ScholarshipApplication::STATUS_UNDER_REVIEW, 'id' => 'Under Review'],
+                ['key' => ScholarshipApplication::STATUS_NEEDS_RESUBMISSION, 'id' => 'Needs Resubmission'],
+                ['key' => ScholarshipApplication::STATUS_CONDITIONALLY_APPROVED, 'id' => 'Conditionally Approved'],
+                ['key' => ScholarshipApplication::STATUS_AWARDED, 'id' => 'Awarded'],
+                ['key' => ScholarshipApplication::STATUS_REJECTED, 'id' => 'Rejected'],
+            ],
+            'citizen-services' => [
+                ['key' => 'all', 'id' => 'All Statuses'],
+                ['key' => 'submitted', 'id' => 'Submitted'],
+                ['key' => 'reviewing', 'id' => 'Reviewing'],
+                ['key' => 'processing', 'id' => 'Processing'],
+                ['key' => 'for-release', 'id' => 'For Release'],
+                ['key' => 'completed', 'id' => 'Completed'],
+                ['key' => 'released', 'id' => 'Released'],
+                ['key' => 'cancelled', 'id' => 'Cancelled'],
+                ['key' => 'rejected', 'id' => 'Rejected'],
+            ],
+            'sectors', 'residents-with-id' => [
+                ['key' => 'all', 'id' => 'All Statuses'],
+            ],
+            default => [
+                ['key' => 'distributed', 'id' => 'Distributed'],
+                ['key' => 'pending', 'id' => 'Pending'],
+                ['key' => 'verified', 'id' => 'Verified'],
+                ['key' => 'all', 'id' => 'All Statuses'],
+            ],
+        };
     }
 
-    /**
-     * Apply date range shortcut
-     */
     public function applyDateRange($range)
     {
         $this->selectedDateRange = $range;
@@ -116,23 +191,12 @@ class ReportFilters extends Component
                 break;
 
             case 'custom':
-                // Do nothing, keep the current values
                 break;
         }
 
-        // If the date has changed programmatically, we need to dispatch
-        // an event to notify the parent component
-        $this->dispatch('filtersChanged', [
-            'dateFrom' => $this->dateFrom,
-            'dateTo' => $this->dateTo,
-            'program' => $this->program,
-            'status' => $this->status
-        ]);
+        $this->emitFilterChanged();
     }
 
-    /**
-     * Update filter values when inputs change
-     */
     public function updatedDateFrom()
     {
         $this->selectedDateRange = 'custom';
@@ -150,49 +214,90 @@ class ReportFilters extends Component
         $this->emitFilterChanged();
     }
 
+    public function updatedSector()
+    {
+        $this->emitFilterChanged();
+    }
+
     public function updatedStatus()
     {
         $this->emitFilterChanged();
     }
 
-    /**
-     * Emit filter changed event to parent
-     */
     private function emitFilterChanged()
     {
         $this->dispatch('filtersChanged', [
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,
             'program' => $this->program,
-            'status' => $this->status
+            'sector' => $this->sector,
+            'status' => $this->status,
         ]);
     }
 
-    /**
-     * Toggle filter section expansion
-     */
     public function toggleExpanded()
     {
-        $this->expanded = !$this->expanded;
+        $this->expanded = ! $this->expanded;
     }
 
-    /**
-     * Reset filters to default values
-     */
     public function resetFilters()
     {
         $this->selectedDateRange = 'this_month';
         $this->dateFrom = now()->startOfMonth()->format('Y-m-d');
         $this->dateTo = now()->endOfMonth()->format('Y-m-d');
         $this->program = '';
-        $this->status = 'distributed';
+        $this->sector = '';
+        $this->status = $this->defaultStatusFor($this->reportType);
 
         $this->emitFilterChanged();
     }
 
-    /**
-     * Render the component
-     */
+    public function showsDateFilters(): bool
+    {
+        return $this->reportType !== 'sectors';
+    }
+
+    public function showsProgramFilter(): bool
+    {
+        return in_array($this->reportType, ['distributions', 'programs', 'residents', 'barangays', 'scholarships', 'citizen-services'], true);
+    }
+
+    public function showsSectorFilter(): bool
+    {
+        return $this->reportType === 'sectors';
+    }
+
+    public function showsStatusFilter(): bool
+    {
+        return ! in_array($this->reportType, ['sectors', 'residents-with-id'], true);
+    }
+
+    public function programFilterLabel(): string
+    {
+        return match ($this->reportType) {
+            'scholarships' => 'Scholarship Program',
+            'citizen-services' => 'Service Type',
+            default => 'Program',
+        };
+    }
+
+    public function programFilterPlaceholder(): string
+    {
+        return match ($this->reportType) {
+            'scholarships' => 'All programs',
+            'citizen-services' => 'All service types',
+            default => 'All programs',
+        };
+    }
+
+    protected function defaultStatusFor(string $type): string
+    {
+        return match ($type) {
+            'scholarships', 'sectors', 'citizen-services', 'residents-with-id' => 'all',
+            default => 'distributed',
+        };
+    }
+
     public function render()
     {
         return view('livewire.reports.components.report-filters');

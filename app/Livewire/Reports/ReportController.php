@@ -5,12 +5,15 @@ namespace App\Livewire\Reports;
 use App\Models\AyudaProgram;
 use App\Models\Household;
 use App\Services\ExportService;
+use App\Services\Reports\CitizenServiceRequestReportService;
 use App\Services\Reports\DistributionReportService;
 use App\Services\Reports\GeographicReportService;
 use App\Services\Reports\ProgramReportService;
 use App\Services\Reports\ResidentExportService;
 use App\Services\Reports\ResidentReportService;
 use App\Services\Reports\ResidentsWithIdReportService;
+use App\Services\Reports\ScholarshipApplicationReportService;
+use App\Services\Reports\SpecialSectorReportService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On;
@@ -34,6 +37,7 @@ class ReportController extends Component
     // Filters
     public $searchTerm = '';
     public $program = '';
+    public $sector = '';
     public $barangay = '';
     public $barangayCode = '';
     public $status = 'distributed';
@@ -58,6 +62,9 @@ class ReportController extends Component
     protected $geographicReportService;
     protected $residentExportService;
     protected $residentsWithIdReportService;
+    protected $scholarshipApplicationReportService;
+    protected $specialSectorReportService;
+    protected $citizenServiceRequestReportService;
 
     // Pagination
     public $perPage = 15;
@@ -75,7 +82,10 @@ class ReportController extends Component
         ResidentReportService $residentReportService,
         GeographicReportService $geographicReportService,
         ResidentExportService $residentExportService,
-        ResidentsWithIdReportService $residentsWithIdReportService
+        ResidentsWithIdReportService $residentsWithIdReportService,
+        ScholarshipApplicationReportService $scholarshipApplicationReportService,
+        SpecialSectorReportService $specialSectorReportService,
+        CitizenServiceRequestReportService $citizenServiceRequestReportService
     ) {
         $this->exportService = $exportService;
         $this->distributionReportService = $distributionReportService;
@@ -84,6 +94,9 @@ class ReportController extends Component
         $this->geographicReportService = $geographicReportService;
         $this->residentExportService = $residentExportService;
         $this->residentsWithIdReportService = $residentsWithIdReportService;
+        $this->scholarshipApplicationReportService = $scholarshipApplicationReportService;
+        $this->specialSectorReportService = $specialSectorReportService;
+        $this->citizenServiceRequestReportService = $citizenServiceRequestReportService;
     }
 
     /**
@@ -125,13 +138,11 @@ class ReportController extends Component
         // For debugging
         logger()->info('Report type changed to: ' . $type);
 
-        // Update the report type
         $this->reportType = $type;
-
-        // IMPORTANT: Reset report data when changing type
+        $this->program = '';
+        $this->sector = '';
+        $this->status = $this->defaultStatusFor($type);
         $this->resetReport();
-
-        // Notify the export component about the report type change
         $this->dispatch('reportTypeUpdated', $this->reportType);
     }
 
@@ -169,6 +180,9 @@ class ReportController extends Component
                 'residents' => $this->residentReportService->generatePaginatedReport($filters, $this->perPage),
                 'barangays' => $this->geographicReportService->generatePaginatedReport($filters, $this->perPage),
                 'residents-with-id' => $this->residentsWithIdReportService->generatePaginatedReport($filters, $this->perPage),
+                'scholarships' => $this->scholarshipApplicationReportService->generatePaginatedReport($filters, $this->perPage),
+                'sectors' => $this->specialSectorReportService->generatePaginatedReport($filters, $this->perPage),
+                'citizen-services' => $this->citizenServiceRequestReportService->generatePaginatedReport($filters, $this->perPage),
                 default => throw new \Exception('Invalid report type selected')
             };
 
@@ -263,6 +277,9 @@ class ReportController extends Component
                 'residents' => $this->residentReportService->getReportData($filters),
                 'barangays' => $this->geographicReportService->getReportData($filters),
                 'residents-with-id' => $this->residentsWithIdReportService->getReportData($filters),
+                'scholarships' => $this->scholarshipApplicationReportService->getReportData($filters),
+                'sectors' => $this->specialSectorReportService->getReportData($filters),
+                'citizen-services' => $this->citizenServiceRequestReportService->getReportData($filters),
                 default => collect([])
             };
 
@@ -273,6 +290,9 @@ class ReportController extends Component
                 'residents' => $this->formatResidentsForExport($fullData),
                 'barangays' => $this->formatBarangaysForExport($fullData),
                 'residents-with-id' => $this->formatResidentsWithIdForExport($fullData),
+                'scholarships' => $this->scholarshipApplicationReportService->formatForExport($fullData),
+                'sectors' => $this->specialSectorReportService->formatForExport($fullData),
+                'citizen-services' => $this->citizenServiceRequestReportService->formatForExport($fullData),
                 default => ['headers' => [], 'data' => []]
             };
 
@@ -694,6 +714,7 @@ class ReportController extends Component
             'dateFrom' => $start,
             'dateTo' => $end,
             'program' => $this->program,
+            'sector' => $this->sector,
             'barangay' => $this->barangay,
             'barangayCode' => $this->barangayCode,
             'status' => $this->status,
@@ -707,11 +728,20 @@ class ReportController extends Component
     {
         $this->dateFrom = $filters['dateFrom'];
         $this->dateTo = $filters['dateTo'];
-        $this->program = $filters['program'];
+        $this->program = $filters['program'] ?? '';
+        $this->sector = $filters['sector'] ?? '';
         $this->status = $filters['status'];
 
         // Reset to first page when filters change
         $this->currentPage = 1;
+    }
+
+    protected function defaultStatusFor(string $type): string
+    {
+        return match ($type) {
+            'scholarships', 'sectors', 'citizen-services', 'residents-with-id' => 'all',
+            default => 'distributed',
+        };
     }
 
     /**

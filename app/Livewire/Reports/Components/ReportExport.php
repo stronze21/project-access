@@ -150,6 +150,9 @@ class ReportExport extends Component
             'programs' => 'Export Programs',
             'residents' => 'Export Beneficiaries',
             'barangays' => 'Export Geographic Data',
+            'scholarships' => 'Export Scholarship Requests',
+            'sectors' => 'Export Special Sectors',
+            'citizen-services' => 'Export Service Requests',
             default => 'Export Report'
         };
     }

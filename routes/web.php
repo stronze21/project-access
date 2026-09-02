@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AccountDeletionRequestController;
 use App\Http\Controllers\BatchImageDownloadController;
+use App\Http\Controllers\DynamicFormExportController;
+use App\Http\Controllers\DynamicFormFileController;
 use App\Http\Controllers\MobileAppController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ReportExportController;
@@ -12,8 +14,13 @@ use App\Http\Controllers\ScholarshipApplicationDocumentMediaController;
 use App\Http\Controllers\ScholarshipApplicationReportController;
 use App\Http\Controllers\SupportRequestController;
 use App\Livewire\Admin\CitizenServicesManager;
-use App\Livewire\Admin\ScholarshipApplicationsManager;
+use App\Livewire\Admin\DynamicFormBuilder;
+use App\Livewire\Admin\DynamicFormFill;
+use App\Livewire\Admin\DynamicFormInbox;
+use App\Livewire\Admin\DynamicFormList;
+use App\Livewire\Admin\DynamicFormSubmissionShow;
 use App\Livewire\Admin\RoleManagement;
+use App\Livewire\Admin\ScholarshipApplicationsManager;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\AyudaDistribution;
 use App\Livewire\AyudaProgramCreate;
@@ -77,6 +84,7 @@ Route::post('/account-deletion', [AccountDeletionRequestController::class, 'stor
 Route::get('/mobile-app', [MobileAppController::class, 'index'])->name('mobile-app.index');
 Route::get('/mobile-app/release.json', [MobileAppController::class, 'release'])->name('mobile-app.release');
 Route::get('/mobile-app/download', [MobileAppController::class, 'download'])->name('mobile-app.download');
+Route::view('/brochure/1080p', 'brochure-1080p')->name('brochure.1080p');
 
 Route::middleware([
     'auth:sanctum',
@@ -260,6 +268,24 @@ Route::middleware([
             ->name('scholarships.report');
         Route::get('/scholarships/documents/{document}/media', ScholarshipApplicationDocumentMediaController::class)
             ->name('scholarships.documents.media');
+    });
+
+    Route::prefix('forms')->middleware('permission:view-forms|fill-forms|process-forms|manage-forms')->group(function () {
+        Route::get('/', DynamicFormList::class)->name('forms.index');
+        Route::get('/inbox', DynamicFormInbox::class)->name('forms.inbox');
+        Route::get('/{form}/edit', DynamicFormBuilder::class)
+            ->middleware('permission:manage-forms')
+            ->name('forms.edit');
+        Route::get('/{form}/fill', DynamicFormFill::class)
+            ->middleware('permission:fill-forms')
+            ->name('forms.fill');
+        Route::get('/{form}/export', DynamicFormExportController::class)
+            ->middleware('permission:view-forms|process-forms')
+            ->name('forms.export');
+        Route::get('/submissions/{submission}', DynamicFormSubmissionShow::class)
+            ->name('forms.submissions.show');
+        Route::get('/submissions/{submission}/files/{fieldKey}', DynamicFormFileController::class)
+            ->name('forms.submissions.file');
     });
 
     // Reports

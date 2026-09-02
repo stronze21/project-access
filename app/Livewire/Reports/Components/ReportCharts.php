@@ -112,6 +112,47 @@ class ReportCharts extends Component
                     'description' => 'Shows percentage of households reached in each barangay'
                 ]
             ],
+            'scholarships' => [
+                [
+                    'id' => 'scholarshipByStatusChart',
+                    'title' => 'Applications by Status',
+                    'type' => 'bar',
+                    'dataKey' => 'byStatus',
+                    'description' => 'Shows scholarship requests grouped by review status'
+                ],
+                [
+                    'id' => 'scholarshipByProgramChart',
+                    'title' => 'Applications by Program',
+                    'type' => 'doughnut',
+                    'dataKey' => 'byProgram',
+                    'description' => 'Shows scholarship requests grouped by program'
+                ]
+            ],
+            'sectors' => [
+                [
+                    'id' => 'residentsBySectorChart',
+                    'title' => 'Residents by Sector',
+                    'type' => 'bar',
+                    'dataKey' => 'bySector',
+                    'description' => 'Shows scholars and other special-sector membership'
+                ]
+            ],
+            'citizen-services' => [
+                [
+                    'id' => 'serviceRequestsByStatusChart',
+                    'title' => 'Requests by Status',
+                    'type' => 'bar',
+                    'dataKey' => 'byStatus',
+                    'description' => 'Shows citizen service requests grouped by status'
+                ],
+                [
+                    'id' => 'serviceRequestsByTypeChart',
+                    'title' => 'Requests by Service Type',
+                    'type' => 'doughnut',
+                    'dataKey' => 'byType',
+                    'description' => 'Shows citizen service requests grouped by sector'
+                ]
+            ],
             default => []
         };
     }

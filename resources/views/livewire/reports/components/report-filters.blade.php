@@ -18,43 +18,51 @@
 
     @if ($expanded)
         <div class="space-y-4">
-            <!-- Date Range Shortcuts -->
-            <div class="flex flex-wrap gap-2 mb-3">
-                @foreach ($dateRangeOptions as $key => $label)
-                    <button type="button"
-                        class="px-3 py-1 text-xs font-medium {{ $selectedDateRange === $key ? 'bg-blue-100 text-blue-700 dark:bg-cyan-900/60 dark:text-cyan-100' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-200' }} rounded-md hover:bg-blue-50 dark:hover:bg-cyan-950/45"
-                        wire:click="applyDateRange('{{ $key }}')">
-                        {{ $label }}
-                    </button>
-                @endforeach
-            </div>
+            @if ($this->showsDateFilters())
+                <div class="flex flex-wrap gap-2 mb-3">
+                    @foreach ($dateRangeOptions as $key => $label)
+                        <button type="button"
+                            class="px-3 py-1 text-xs font-medium {{ $selectedDateRange === $key ? 'bg-blue-100 text-blue-700 dark:bg-cyan-900/60 dark:text-cyan-100' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-200' }} rounded-md hover:bg-blue-50 dark:hover:bg-cyan-950/45"
+                            wire:click="applyDateRange('{{ $key }}')">
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+            @endif
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-mary-datetime label="From Date" wire:model.live="dateFrom" />
-                        <x-mary-datetime label="To Date" wire:model.live="dateTo" />
-                    </div>
+                    @if ($this->showsDateFilters())
+                        <div class="grid grid-cols-2 gap-4">
+                            <x-mary-datetime label="From Date" wire:model.live="dateFrom" />
+                            <x-mary-datetime label="To Date" wire:model.live="dateTo" />
+                        </div>
+                    @endif
 
-                    <div>
-                        <x-mary-select label="Program" wire:model.live="program" :options="$programs"
-                            placeholder="All programs" placeholder-value="" />
-                    </div>
+                    @if ($this->showsProgramFilter())
+                        <div>
+                            <x-mary-select :label="$this->programFilterLabel()" wire:model.live="program" :options="$programs"
+                                :placeholder="$this->programFilterPlaceholder()" placeholder-value="" />
+                        </div>
+                    @endif
+
+                    @if ($this->showsSectorFilter())
+                        <div>
+                            <x-mary-select label="Sector" wire:model.live="sector" :options="$sectorOptions"
+                                placeholder="All sectors" placeholder-value="" />
+                        </div>
+                    @endif
                 </div>
 
                 <div class="space-y-4">
-                    <!-- Location selector will be included here -->
                     <livewire:address-selector />
 
-                    <div>
-                        <x-mary-select label="Status" wire:model.live="status" :options="[
-                            ['key' => 'distributed', 'id' => 'Distributed'],
-                            ['key' => 'pending', 'id' => 'Pending'],
-                            ['key' => 'verified', 'id' => 'Verified'],
-                            ['key' => 'all', 'id' => 'All Statuses'],
-                        ]" option-value="key"
-                            option-label="id" />
-                    </div>
+                    @if ($this->showsStatusFilter())
+                        <div>
+                            <x-mary-select label="Status" wire:model.live="status" :options="$statusOptions" option-value="key"
+                                option-label="id" />
+                        </div>
+                    @endif
 
                     <div class="flex justify-end">
                         <x-mary-button class="tagged-color btn-secondary btn-outline btn-secline" size="sm"

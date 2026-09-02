@@ -86,6 +86,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-scholarship-applications',
         ];
 
+        $formPermissions = [
+            'manage-forms',
+            'fill-forms',
+            'process-forms',
+            'view-forms',
+        ];
+
         $bosesmotoPermissions = [
             'manage-complaints',
             'view-complaint-audit-logs',
@@ -102,7 +109,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $distributionPermissions,
             $reportPermissions,
             $residentPortalPermissions,
-            $bosesmotoPermissions
+            $bosesmotoPermissions,
+            $formPermissions
         );
 
         foreach ($allPermissions as $permission) {
@@ -166,6 +174,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-citizen-services',
             'manage-scholarship-applications',
             'view-scholarship-applications',
+
+            'manage-forms',
+            'fill-forms',
+            'process-forms',
+            'view-forms',
         ]);
 
         // 3. Registration Officer
@@ -188,6 +201,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-reports',
             'view-beneficiary-statistics',
 
+            'view-forms',
+            'fill-forms',
         ]);
 
         // 4. Distribution Officer
@@ -225,6 +240,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-program-statistics',
             'view-beneficiary-statistics',
             'view-distribution-statistics',
+            'view-forms',
         ]);
     }
 }

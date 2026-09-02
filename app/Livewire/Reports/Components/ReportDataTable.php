@@ -146,6 +146,32 @@ class ReportDataTable extends Component
                 ['key' => 'household.province', 'label' => 'Province', 'sortable' => false],
                 ['key' => 'updated_at', 'label' => 'Date Updated', 'sortable' => true],
             ],
+            'scholarships' => [
+                ['key' => 'reference_number', 'label' => 'Reference #', 'sortable' => true],
+                ['key' => 'resident.full_name', 'label' => 'Applicant', 'sortable' => true],
+                ['key' => 'program.name', 'label' => 'Program', 'sortable' => true],
+                ['key' => 'applicant_type', 'label' => 'Type', 'sortable' => true],
+                ['key' => 'status', 'label' => 'Status', 'sortable' => true],
+                ['key' => 'gwa', 'label' => 'GWA', 'sortable' => true],
+                ['key' => 'award_tier', 'label' => 'Award Tier', 'sortable' => false],
+                ['key' => 'submitted_at', 'label' => 'Submitted', 'sortable' => true],
+            ],
+            'sectors' => [
+                ['key' => 'full_name', 'label' => 'Resident', 'sortable' => true],
+                ['key' => 'resident_id', 'label' => 'Resident ID', 'sortable' => true],
+                ['key' => 'household.barangay', 'label' => 'Barangay', 'sortable' => true],
+                ['key' => 'scholar_status', 'label' => 'Scholar Status', 'sortable' => false],
+                ['key' => 'sectors_list', 'label' => 'Sectors', 'sortable' => false],
+                ['key' => 'special_sector', 'label' => 'Special Sector', 'sortable' => true],
+            ],
+            'citizen-services' => [
+                ['key' => 'reference_number', 'label' => 'Reference #', 'sortable' => true],
+                ['key' => 'resident.full_name', 'label' => 'Resident', 'sortable' => true],
+                ['key' => 'service_name', 'label' => 'Service', 'sortable' => true],
+                ['key' => 'status', 'label' => 'Status', 'sortable' => true],
+                ['key' => 'current_step', 'label' => 'Current Step', 'sortable' => false],
+                ['key' => 'submitted_at', 'label' => 'Submitted', 'sortable' => true],
+            ],
             default => []
         };
     }

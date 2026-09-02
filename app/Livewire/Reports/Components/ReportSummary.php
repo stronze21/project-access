@@ -187,6 +187,96 @@ class ReportSummary extends Component
                     'formatter' => 'percentage'
                 ]
             ],
+            'scholarships' => [
+                [
+                    'title' => 'Applications',
+                    'key' => 'total_applications',
+                    'icon' => 'o-academic-cap',
+                    'color' => 'primary',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Submitted',
+                    'key' => 'submitted_count',
+                    'icon' => 'o-inbox',
+                    'color' => 'warning',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Awarded',
+                    'key' => 'awarded_count',
+                    'icon' => 'o-check-badge',
+                    'color' => 'success',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Rejected',
+                    'key' => 'rejected_count',
+                    'icon' => 'o-x-circle',
+                    'color' => 'info',
+                    'formatter' => 'number'
+                ]
+            ],
+            'sectors' => [
+                [
+                    'title' => 'Residents in Sectors',
+                    'key' => 'total_in_sectors',
+                    'icon' => 'o-user-group',
+                    'color' => 'primary',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Scholars',
+                    'key' => 'scholar_count',
+                    'icon' => 'o-academic-cap',
+                    'color' => 'success',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'PWD',
+                    'key' => 'pwd_count',
+                    'icon' => 'o-user',
+                    'color' => 'info',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Senior Citizens',
+                    'key' => 'senior_count',
+                    'icon' => 'o-user',
+                    'color' => 'warning',
+                    'formatter' => 'number'
+                ]
+            ],
+            'citizen-services' => [
+                [
+                    'title' => 'Total Requests',
+                    'key' => 'total_requests',
+                    'icon' => 'o-clipboard-document-check',
+                    'color' => 'primary',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Open',
+                    'key' => 'open_count',
+                    'icon' => 'o-clock',
+                    'color' => 'warning',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Completed',
+                    'key' => 'completed_count',
+                    'icon' => 'o-check-circle',
+                    'color' => 'success',
+                    'formatter' => 'number'
+                ],
+                [
+                    'title' => 'Rejected / Cancelled',
+                    'key' => 'rejected_count',
+                    'icon' => 'o-x-circle',
+                    'color' => 'info',
+                    'formatter' => 'number'
+                ]
+            ],
             default => []
         };
     }
@@ -250,6 +340,56 @@ class ReportSummary extends Component
                                 : 'N/A',
                             'icon' => 'o-home',
                             'color' => 'blue'
+                        ]
+                    ]
+                ]
+            ],
+            'scholarships' => [
+                [
+                    'title' => 'Application Status',
+                    'metrics' => [
+                        [
+                            'label' => 'Under Review',
+                            'key' => 'under_review_count',
+                            'icon' => 'o-eye',
+                            'color' => 'blue'
+                        ],
+                        [
+                            'label' => 'Conditionally Approved',
+                            'key' => 'conditionally_approved_count',
+                            'icon' => 'o-check-badge',
+                            'color' => 'amber'
+                        ],
+                        [
+                            'label' => 'Needs Resubmission',
+                            'key' => 'needs_resubmission_count',
+                            'icon' => 'o-arrow-path',
+                            'color' => 'purple'
+                        ]
+                    ]
+                ]
+            ],
+            'sectors' => [
+                [
+                    'title' => 'Other Sectors',
+                    'metrics' => [
+                        [
+                            'label' => 'Solo Parents',
+                            'key' => 'solo_parent_count',
+                            'icon' => 'o-user',
+                            'color' => 'blue'
+                        ],
+                        [
+                            'label' => '4Ps',
+                            'key' => '4ps_count',
+                            'icon' => 'o-user',
+                            'color' => 'amber'
+                        ],
+                        [
+                            'label' => 'Custom Special Sector',
+                            'key' => 'custom_sector_count',
+                            'icon' => 'o-tag',
+                            'color' => 'purple'
                         ]
                     ]
                 ]

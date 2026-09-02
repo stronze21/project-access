@@ -199,6 +199,33 @@ class ResidentList extends Component
     }
 
     /**
+     * Toggle selection for all residents shown on the current page.
+     */
+    public function toggleSelectAll(array $residentIds)
+    {
+        $residentIds = array_values(array_unique($residentIds));
+
+        if ($residentIds === []) {
+            return;
+        }
+
+        $allSelected = empty(array_diff($residentIds, $this->selectedResidents));
+
+        if ($allSelected) {
+            $this->selectedResidents = array_values(
+                array_diff($this->selectedResidents, $residentIds)
+            );
+
+            return;
+        }
+
+        $this->selectedResidents = array_values(array_unique([
+            ...$this->selectedResidents,
+            ...$residentIds,
+        ]));
+    }
+
+    /**
      * Toggle batch image modal
      */
     public function toggleBatchImageModal()

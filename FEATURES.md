@@ -29,6 +29,7 @@
 18. [Resident Profile & Self-Service (Mobile)](#18-resident-profile--self-service-mobile)
 19. [Address / Location System](#19-address--location-system)
 20. [API Endpoints Summary](#20-api-endpoints-summary)
+21. [Staff Forms](#21-staff-forms)
 
 ---
 
@@ -480,6 +481,26 @@
 | Distributions | 5 endpoints — ayuda (undistributed first), list, summary, upcoming, details |
 | Announcements | 2 endpoints — list, details |
 | Notifications | 6 endpoints — list, unread-count, mark read, mark all read, register device, unregister device |
+
+---
+
+## 21. Staff Forms
+
+### Web Admin Only
+
+Google Forms–style builder for internal staff intake. Form definitions and answers are stored as JSON. The system does **not** create or alter a database table per form. Fields marked filterable are copied into a projection table for inbox filters and CSV export.
+
+| Feature | Description |
+|---|---|
+| Form builder | Admins add, reorder, and disable questions (short text, long text, number, date, dropdown, radio, checkboxes, yes/no, file, resident lookup) |
+| Status workflow | Per-form pipeline with an initial status, terminal statuses, and allowed transitions |
+| Tags | Per-form colored labels applied while processing a submission |
+| Staff fill | Save a draft or submit; drafts stay in the initial status until moved |
+| Inbox | Table and status-board views, filters (form, status, tag, filterable fields), CSV export |
+| Answer history | Each submission stores a schema snapshot so later form edits do not break old answers |
+| Permissions | `manage-forms`, `fill-forms`, `process-forms`, `view-forms` |
+
+Out of this version: resident portal / mobile submit, public links, and replacing existing citizen-service or scholarship forms.
 
 ---
 

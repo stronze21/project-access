@@ -21,7 +21,7 @@
             </div>
         </div>
 
-        <livewire:reports.components.report-filters :dateFrom="$dateFrom" :dateTo="$dateTo" :program="$program"
+        <livewire:reports.components.report-filters :reportType="$reportType" :dateFrom="$dateFrom" :dateTo="$dateTo" :program="$program"
             :status="$status" />
 
         <div class="flex justify-end mt-6 space-x-3">
@@ -103,6 +103,7 @@
                 @this.dateFrom = event.dateFrom;
                 @this.dateTo = event.dateTo;
                 @this.program = event.program;
+                @this.sector = event.sector;
                 @this.status = event.status;
             });
 

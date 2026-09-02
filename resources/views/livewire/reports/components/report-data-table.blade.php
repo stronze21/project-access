@@ -320,6 +320,162 @@
                                 </td>
                             </tr>
                         @endforeach
+                    @elseif($reportType === 'scholarships')
+                        @foreach ($reportData as $application)
+                            @php
+                                $isObject = is_object($application);
+                                $resident = $isObject ? $application->resident : ($application['resident'] ?? []);
+                                $program = $isObject ? $application->program : ($application['program'] ?? []);
+                                $status = $isObject ? $application->status : ($application['status'] ?? '');
+                                $applicantType = $isObject ? $application->applicant_type : ($application['applicant_type'] ?? '');
+                                $awardTier = $isObject ? $application->award_tier : ($application['award_tier'] ?? null);
+                                $submittedAt = $isObject ? $application->submitted_at : ($application['submitted_at'] ?? null);
+                                $statusClass = match ($status) {
+                                    'awarded' => 'bg-green-100 text-green-800',
+                                    'conditionally_approved' => 'bg-emerald-100 text-emerald-800',
+                                    'rejected' => 'bg-red-100 text-red-800',
+                                    'needs_resubmission' => 'bg-amber-100 text-amber-800',
+                                    'under_review' => 'bg-blue-100 text-blue-800',
+                                    'submitted' => 'bg-indigo-100 text-indigo-800',
+                                    default => 'bg-gray-100 text-gray-800',
+                                };
+                            @endphp
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="px-4 py-3 font-medium text-gray-900">
+                                    {{ $isObject ? $application->reference_number : ($application['reference_number'] ?? 'N/A') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if ($isObject && $resident)
+                                        {{ $resident->full_name }}
+                                    @elseif(isset($resident['full_name']))
+                                        {{ $resident['full_name'] }}
+                                    @elseif(isset($resident['last_name']))
+                                        {{ $resident['last_name'] }}, {{ $resident['first_name'] ?? '' }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($program?->name ?? 'N/A') : ($program['name'] ?? 'N/A') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? $application->applicantTypeLabel() : ucfirst(str_replace('_', ' ', (string) $applicantType)) }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
+                                        {{ $isObject ? $application->statusLabel() : ucfirst(str_replace('_', ' ', (string) $status)) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($application->gwa ?? '—') : ($application['gwa'] ?? '—') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($application->awardTierLabel() ?? '—') : (\App\Models\ScholarshipApplication::TIER_LABELS[$awardTier] ?? '—') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if ($submittedAt)
+                                        {{ \Carbon\Carbon::parse($submittedAt)->timezone('Asia/Manila')->format('M d, Y g:i A') }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    @elseif($reportType === 'sectors')
+                        @foreach ($reportData as $resident)
+                            @php
+                                $isObject = is_object($resident);
+                                $household = $isObject ? $resident->household : ($resident['household'] ?? []);
+                                $sectors = $isObject ? ($resident->sectors_list ?? []) : ($resident['sectors_list'] ?? []);
+                                $isScholar = $isObject ? (bool) $resident->is_scholar : !empty($resident['is_scholar']);
+                            @endphp
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="px-4 py-3 font-medium text-gray-900">
+                                    @if ($isObject)
+                                        {{ $resident->full_name ?? 'N/A' }}
+                                    @elseif(isset($resident['full_name']))
+                                        {{ $resident['full_name'] }}
+                                    @elseif(isset($resident['last_name']))
+                                        {{ $resident['last_name'] }}, {{ $resident['first_name'] ?? '' }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($resident->resident_id ?? 'N/A') : ($resident['resident_id'] ?? 'N/A') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($household?->barangay ?? 'N/A') : ($household['barangay'] ?? 'N/A') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $isScholar ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }}">
+                                        {{ $isScholar ? 'Scholar' : 'Not a scholar' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex flex-wrap gap-1">
+                                        @forelse ((array) $sectors as $sector)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">{{ $sector }}</span>
+                                        @empty
+                                            <span class="text-gray-400">None</span>
+                                        @endforelse
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($resident->special_sector ?: '—') : ($resident['special_sector'] ?? '—') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    @elseif($reportType === 'citizen-services')
+                        @foreach ($reportData as $request)
+                            @php
+                                $isObject = is_object($request);
+                                $resident = $isObject ? $request->resident : ($request['resident'] ?? []);
+                                $status = $isObject ? $request->status : ($request['status'] ?? '');
+                                $submittedAt = $isObject ? $request->submitted_at : ($request['submitted_at'] ?? null);
+                                $statusClass = match ($status) {
+                                    'completed', 'released' => 'bg-green-100 text-green-800',
+                                    'rejected', 'cancelled' => 'bg-red-100 text-red-800',
+                                    'processing', 'reviewing' => 'bg-blue-100 text-blue-800',
+                                    'for-release' => 'bg-emerald-100 text-emerald-800',
+                                    default => 'bg-amber-100 text-amber-800',
+                                };
+                            @endphp
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="px-4 py-3 font-medium text-gray-900">
+                                    {{ $isObject ? $request->reference_number : ($request['reference_number'] ?? 'N/A') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if ($isObject && $resident)
+                                        {{ $resident->full_name }}
+                                    @elseif(isset($resident['full_name']))
+                                        {{ $resident['full_name'] }}
+                                    @elseif(isset($resident['last_name']))
+                                        {{ $resident['last_name'] }}, {{ $resident['first_name'] ?? '' }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($request->service_name ?: $request->service_type) : ($request['service_name'] ?? $request['service_type'] ?? 'N/A') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
+                                        {{ ucwords(str_replace('-', ' ', (string) $status)) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ $isObject ? ($request->current_step ?? '—') : ($request['current_step'] ?? '—') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if ($submittedAt)
+                                        {{ \Carbon\Carbon::parse($submittedAt)->timezone('Asia/Manila')->format('M d, Y g:i A') }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
                     @endif
 
                     @if (count($reportData) === 0)

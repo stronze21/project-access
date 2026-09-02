@@ -40,6 +40,24 @@ class ReportTypeSelector extends Component
             'label' => 'Residents With ID Report',
             'hint' => 'List of residents with signed ID',
             'icon' => 'o-identification'
+        ],
+        'scholarships' => [
+            'id' => 'report-scholarships',
+            'label' => 'Scholarship Requests',
+            'hint' => 'ACSP applications and review status',
+            'icon' => 'o-academic-cap'
+        ],
+        'sectors' => [
+            'id' => 'report-sectors',
+            'label' => 'Special Sectors',
+            'hint' => 'Scholars, PWD, seniors, and other sectors',
+            'icon' => 'o-user-group'
+        ],
+        'citizen-services' => [
+            'id' => 'report-citizen-services',
+            'label' => 'Citizen Service Requests',
+            'hint' => 'Requests by service type and status',
+            'icon' => 'o-clipboard-document-check'
         ]
     ];
 

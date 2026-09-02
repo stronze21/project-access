@@ -185,7 +185,7 @@
                         <th scope="col" class="px-2 py-3">
                             <x-mary-checkbox
                                 wire:click="toggleSelectAll({{ json_encode($residents->pluck('id')->toArray()) }})"
-                                :checked="count($selectedResidents) === $residents->count() && $residents->count() > 0" />
+                                :checked="$residents->isNotEmpty() && empty(array_diff($residents->pluck('id')->toArray(), $selectedResidents))" />
                         </th>
                         <th scope="col" class="px-4 py-3">
                             <div class="flex items-center">

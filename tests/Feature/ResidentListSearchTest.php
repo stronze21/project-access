@@ -34,6 +34,24 @@ class ResidentListSearchTest extends TestCase
             ->assertDontSee($otherResident->resident_id);
     }
 
+    public function test_select_all_adds_every_resident_on_the_current_page(): void
+    {
+        Livewire::actingAs($this->authorizedUser())
+            ->test(ResidentList::class)
+            ->set('selectedResidents', [99])
+            ->call('toggleSelectAll', [1, 2, 3])
+            ->assertSet('selectedResidents', [99, 1, 2, 3]);
+    }
+
+    public function test_select_all_clears_only_the_current_page_when_it_is_already_selected(): void
+    {
+        Livewire::actingAs($this->authorizedUser())
+            ->test(ResidentList::class)
+            ->set('selectedResidents', [99, 1, 2, 3])
+            ->call('toggleSelectAll', [1, 2, 3])
+            ->assertSet('selectedResidents', [99]);
+    }
+
     private function authorizedUser(): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

@@ -165,6 +165,15 @@ class ScholarshipApplication extends Model
         return self::TIER_BENEFITS[$this->award_tier] ?? null;
     }
 
+    public function applicantTypeLabel(): string
+    {
+        return match ($this->applicant_type) {
+            self::APPLICANT_NEW => 'New Applicant',
+            self::APPLICANT_ONGOING => 'Ongoing Scholar',
+            default => ucfirst((string) $this->applicant_type),
+        };
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {

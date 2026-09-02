@@ -39,6 +39,7 @@
         'account-deletion-requests.*',
         'announcements.*',
         'scholarships.*',
+        'forms.*',
         'bosesmoto.*',
         'complaints.*',
         'sentiments.*',
@@ -507,7 +508,7 @@
                                         </div>
                                         @endif
 
-                                        @if (auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements') || auth()->user()->can('manage-scholarship-applications'))
+                                        @if (auth()->user()->can('manage-citizen-services') || auth()->user()->can('manage-announcements') || auth()->user()->can('manage-scholarship-applications') || auth()->user()->can('view-forms') || auth()->user()->can('fill-forms') || auth()->user()->can('process-forms') || auth()->user()->can('manage-forms'))
                                             <div class="my-1 border-t border-slate-100"></div>
                                         @endif
 
@@ -516,6 +517,14 @@
                                                 Announcements
                                             </a>
                                         @endcan
+                                        @if (auth()->user()->can('view-forms') || auth()->user()->can('fill-forms') || auth()->user()->can('process-forms') || auth()->user()->can('manage-forms'))
+                                            <a href="{{ route('forms.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Forms
+                                            </a>
+                                            <a href="{{ route('forms.inbox') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Form Inbox
+                                            </a>
+                                        @endif
                                         @can('manage-scholarship-applications')
                                             <a href="{{ route('scholarships.index') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 Scholarships
@@ -933,6 +942,14 @@
                                         Announcements
                                     </x-responsive-nav-link>
                                 @endcan
+                                @if (auth()->user()->can('view-forms') || auth()->user()->can('fill-forms') || auth()->user()->can('process-forms') || auth()->user()->can('manage-forms'))
+                                    <x-responsive-nav-link href="{{ route('forms.index') }}" :active="request()->routeIs('forms.index', 'forms.edit', 'forms.fill')">
+                                        Forms
+                                    </x-responsive-nav-link>
+                                    <x-responsive-nav-link href="{{ route('forms.inbox') }}" :active="request()->routeIs('forms.inbox', 'forms.submissions.*')">
+                                        Form Inbox
+                                    </x-responsive-nav-link>
+                                @endif
                                 @can('manage-scholarship-applications')
                                     <x-responsive-nav-link href="{{ route('scholarships.index') }}" :active="request()->routeIs('scholarships.*')">
                                         Scholarships

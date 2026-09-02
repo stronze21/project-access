@@ -284,6 +284,11 @@ class Resident extends Authenticatable
     /**
      * Get tracked service requests for this resident.
      */
+    public function scholarshipApplications(): HasMany
+    {
+        return $this->hasMany(ScholarshipApplication::class);
+    }
+
     public function serviceRequests(): HasMany
     {
         return $this->hasMany(CitizenServiceRequest::class);
