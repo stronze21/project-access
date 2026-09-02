@@ -81,6 +81,9 @@ class MobileAppPageTest extends TestCase
             ->assertJsonPath('version_name', '2.1.0')
             ->assertJsonPath('version_code', '21')
             ->assertJsonPath('has_apk', true)
+            ->assertJsonPath('apk_size', 9)
+            ->assertJsonPath('apk_sha256', hash('sha256', 'apk-bytes'))
+            ->assertJsonPath('download_url', route('mobile-app.download'))
             ->assertJsonPath('download_page_url', route('mobile-app.index'))
             ->assertJsonMissingPath('apk_path');
 

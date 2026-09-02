@@ -1,5 +1,11 @@
 # SmartCity ACCESS release notes
 
+## 1.1.0 (build 11)
+
+- App updates now download directly inside SmartCity ACCESS with visible progress.
+- Downloaded updates are checked for integrity before Android opens the installer.
+- The app now guides residents through Android's one-time install permission when needed.
+
 ## 1.0.9 (build 10)
 
 - Scholarship applications now collect course and parent information for complete reporting.

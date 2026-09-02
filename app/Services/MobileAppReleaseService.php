@@ -24,6 +24,12 @@ class MobileAppReleaseService
         $versionCode = SystemSetting::get('mobile_app.version_code', '1');
         $apkPath = SystemSetting::get('mobile_app.apk_path');
         $apkSize = (int) SystemSetting::get('mobile_app.apk_size', 0);
+        $hasApk = filled($apkPath) && Storage::disk('public')->exists($apkPath);
+        $apkSha256 = SystemSetting::get('mobile_app.apk_sha256');
+
+        if ($hasApk && ! filled($apkSha256)) {
+            $apkSha256 = hash_file('sha256', Storage::disk('public')->path($apkPath)) ?: null;
+        }
 
         return [
             'name' => SystemSetting::get('mobile_app.name', 'ProjectAccess Mobile'),
@@ -39,9 +45,10 @@ class MobileAppReleaseService
             'apk_path' => $apkPath,
             'apk_original_name' => SystemSetting::get('mobile_app.apk_original_name'),
             'apk_size' => $apkSize,
+            'apk_sha256' => $apkSha256,
             'apk_size_label' => $apkSize > 0 ? $this->formatBytes($apkSize) : null,
             'apk_uploaded_at' => SystemSetting::get('mobile_app.apk_uploaded_at'),
-            'has_apk' => filled($apkPath) && Storage::disk('public')->exists($apkPath),
+            'has_apk' => $hasApk,
             'download_name' => $this->downloadName($versionName),
         ];
     }
@@ -64,6 +71,13 @@ class MobileAppReleaseService
         $this->put('mobile_app.apk_path', $path, 'mobile_app', 'file', true);
         $this->put('mobile_app.apk_original_name', $originalName, 'mobile_app', 'text', true);
         $this->put('mobile_app.apk_size', (string) $size, 'mobile_app', 'number', true);
+        $this->put(
+            'mobile_app.apk_sha256',
+            hash_file('sha256', Storage::disk('public')->path($path)) ?: '',
+            'mobile_app',
+            'text',
+            true
+        );
         $this->put('mobile_app.apk_uploaded_at', now()->toDateTimeString(), 'mobile_app', 'datetime', true);
 
         SystemSetting::clearCache();
@@ -75,6 +89,7 @@ class MobileAppReleaseService
             'mobile_app.apk_path',
             'mobile_app.apk_original_name',
             'mobile_app.apk_size',
+            'mobile_app.apk_sha256',
             'mobile_app.apk_uploaded_at',
         ] as $key) {
             $this->put($key, '', 'mobile_app', 'text', true);

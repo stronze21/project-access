@@ -52,6 +52,9 @@ class MobileAppController extends Controller
             'release_notes' => $release['release_notes'],
             'apk_uploaded_at' => $release['apk_uploaded_at'],
             'has_apk' => $release['has_apk'],
+            'apk_size' => $release['apk_size'],
+            'apk_sha256' => $release['apk_sha256'],
+            'download_url' => route('mobile-app.download'),
             'download_page_url' => route('mobile-app.index'),
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
