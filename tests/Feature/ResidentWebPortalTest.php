@@ -169,6 +169,7 @@ class ResidentWebPortalTest extends TestCase
             ->assertSee('City of Alaminos')
             ->assertSee('resident-portal/images/alaminos-seal.jpg', false)
             ->assertSee('resident-portal/images/access-logo.png', false)
+            ->assertSeeInOrder(['Quick Access', 'Emergency SOS', 'Emergency Alerts', 'Scholarships'])
             ->assertSee('Your Digital ID')
             ->assertSee('data-flip-card', false)
             ->assertSee('portal-id-last-name', false)

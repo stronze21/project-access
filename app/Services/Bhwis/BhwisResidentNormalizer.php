@@ -3,6 +3,7 @@
 namespace App\Services\Bhwis;
 
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Throwable;
 
 class BhwisResidentNormalizer
@@ -77,15 +78,35 @@ class BhwisResidentNormalizer
 
     private function parse(mixed $value): ?CarbonImmutable
     {
+        if ($value instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($value);
+        }
+
         $value = $this->string($value);
         if ($value === null) {
             return null;
         }
-        try {
-            return CarbonImmutable::parse($value);
-        } catch (Throwable) {
-            return null;
+
+        foreach (['Y-m-d H:i:s', 'Y-m-d', 'n/j/Y H:i:s', 'n/j/Y', 'm/d/Y H:i:s', 'm/d/Y'] as $format) {
+            try {
+                $date = CarbonImmutable::createFromFormat('!'.$format, $value);
+                if ($date !== false && $this->hasNoDateErrors()) {
+                    return $date;
+                }
+            } catch (Throwable) {
+                // Try the next known BHWIS source format.
+            }
         }
+
+        return null;
+    }
+
+    private function hasNoDateErrors(): bool
+    {
+        $errors = CarbonImmutable::getLastErrors();
+
+        return $errors === false
+            || ((int) $errors['warning_count'] === 0 && (int) $errors['error_count'] === 0);
     }
 
     private function gender(mixed $value): ?string

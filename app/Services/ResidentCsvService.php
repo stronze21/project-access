@@ -308,7 +308,9 @@ class ResidentCsvService
             'last_name' => $data['last_name'],
             'middle_name' => $this->nullableCsvValue($data['middle_name'] ?? null),
             'suffix' => $this->nullableCsvValue($data['suffix'] ?? null),
-            'birth_date' => ! empty($data['birth_date']) ? Carbon::parse($data['birth_date']) : null,
+            'birth_date' => ! empty($data['birth_date'])
+                ? $this->parseRequiredCsvDate($data['birth_date'], 'Birth date')
+                : null,
             'birthplace' => $this->nullableCsvValue($data['birthplace'] ?? null),
             'gender' => $data['gender'] ?? 'other',
             'civil_status' => $data['civil_status'] ?? 'single',
@@ -341,7 +343,7 @@ class ResidentCsvService
 
         // Handle date_issue
         if (! empty($data['date_issue'])) {
-            $residentData['date_issue'] = Carbon::parse($data['date_issue']);
+            $residentData['date_issue'] = $this->parseRequiredCsvDate($data['date_issue'], 'Date issue');
         }
 
         // If resident_id is provided, include it
@@ -431,9 +433,7 @@ class ResidentCsvService
                 continue;
             }
 
-            try {
-                Carbon::parse($data[$field]);
-            } catch (\Throwable) {
+            if (! $this->parseCsvDate($data[$field])) {
                 $errors[] = Str::headline($field).' is not a valid date.';
             }
         }
@@ -460,6 +460,45 @@ class ResidentCsvService
         $data['address'] = $cleanAddress !== '' ? $cleanAddress : ',';
 
         return $data;
+    }
+
+    private function parseCsvDate(mixed $value): ?Carbon
+    {
+        $value = trim((string) $value);
+        if ($value === '' || strtoupper($value) === 'NULL') {
+            return null;
+        }
+
+        foreach (['Y-m-d H:i:s', 'Y-m-d', 'n/j/Y H:i:s', 'n/j/Y', 'm/d/Y H:i:s', 'm/d/Y'] as $format) {
+            try {
+                $date = Carbon::createFromFormat('!'.$format, $value);
+                if ($date !== false && $this->hasNoDateErrors()) {
+                    return $date;
+                }
+            } catch (\Throwable) {
+                // Try the next supported CSV date format.
+            }
+        }
+
+        return null;
+    }
+
+    private function parseRequiredCsvDate(mixed $value, string $label): Carbon
+    {
+        $date = $this->parseCsvDate($value);
+        if ($date === null) {
+            throw new \InvalidArgumentException("{$label} is not a valid date.");
+        }
+
+        return $date;
+    }
+
+    private function hasNoDateErrors(): bool
+    {
+        $errors = Carbon::getLastErrors();
+
+        return $errors === false
+            || ((int) $errors['warning_count'] === 0 && (int) $errors['error_count'] === 0);
     }
 
     private function residentImportChanges(Resident $resident, array $rowData): array

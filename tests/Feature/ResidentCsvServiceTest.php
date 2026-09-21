@@ -32,6 +32,28 @@ class ResidentCsvServiceTest extends TestCase
         $this->assertNull(Resident::firstOrFail()->monthly_income);
     }
 
+    public function test_import_reads_slash_birth_dates_as_month_day_year(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('bhwis-residents.csv', implode("\n", [
+            'resident_id,last_name,first_name,birth_date,gender,civil_status,address,barangay',
+            '06-26220,Agra,Merly,5/23/1963,Female,Married,Zone I,Landoc',
+            '23-27180,Aquino,Nelia,2/12/1957,Female,Married,Zone I,Landoc',
+        ]));
+
+        $path = Storage::disk('local')->path('bhwis-residents.csv');
+        $preview = app(ResidentCsvService::class)->previewFromCsv($path);
+
+        $this->assertSame(0, $preview['failed'], implode(', ', $preview['errors']));
+
+        $result = app(ResidentCsvService::class)->importFromCsv($path);
+
+        $this->assertSame(2, $result['created']);
+        $this->assertSame(0, $result['failed']);
+        $this->assertSame('1963-05-23', Resident::where('resident_id', '06-26220')->firstOrFail()->birth_date->format('Y-m-d'));
+        $this->assertSame('1957-02-12', Resident::where('resident_id', '23-27180')->firstOrFail()->birth_date->format('Y-m-d'));
+    }
+
     public function test_import_never_merges_residents_with_the_same_address(): void
     {
         Storage::fake('local');

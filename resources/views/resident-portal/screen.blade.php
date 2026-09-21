@@ -33,15 +33,16 @@
 
 @if($screen === 'home')
     <div class="home-app-title"><span class="home-app-name-primary">SmartCity</span><span class="home-app-name-secondary">ACCESS</span></div>
-    <div class="home-services-rail" aria-label="Resident services">
+    <p class="section-header">Quick Access</p>
+    <div class="home-services-rail" aria-label="Quick access services">
         @foreach([
+            ['citizen-services/sos','emergency_share','Emergency SOS','red'],
+            ['citizen-services/alerts','warning','Emergency Alerts','amber'],
             ['scholarships','school','Scholarships','blue'],
             ['ayuda','volunteer_activism','AyudaHub','ayuda'],
             ['citizen-services/tracking','track_changes','Track','blue'],
             ['citizen-services/public-services','account_balance','Portals','green'],
             ['bosesmoto','record_voice_over','BosesMoTo','blue'],
-            ['citizen-services/sos','emergency_share','SOS','red'],
-            ['citizen-services/alerts','warning','Alerts','amber'],
         ] as [$href,$icon,$label,$tone])
             <a class="home-service-item" href="{{ $portal($href) }}"><span class="home-service-icon {{ $tone }}"><span class="material-symbols-rounded filled">{{ $icon }}</span></span><span>{{ $label }}</span></a>
         @endforeach

@@ -1,5 +1,9 @@
 # SmartCity ACCESS release notes
 
+## 1.1.1 (build 12)
+
+- Emergency SOS and emergency alerts now appear first in Home quick access for faster response.
+
 ## 1.1.0 (build 11)
 
 - App updates now download directly inside SmartCity ACCESS with visible progress.
