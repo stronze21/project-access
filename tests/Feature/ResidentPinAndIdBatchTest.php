@@ -203,7 +203,7 @@ class ResidentPinAndIdBatchTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->postJson(route('residents.id-cards.batches.printed', $batch))
+            ->postJson(route('residents.id-cards.batches.printed', $batch), ['selected_residents' => [$resident->id]])
             ->assertOk()
             ->assertJsonPath('reference_number', $batch->reference_number);
 
@@ -212,8 +212,8 @@ class ResidentPinAndIdBatchTest extends TestCase
         $this->assertNotNull($batch->items()->firstOrFail()->printed_at);
 
         $this->actingAs($user)
-            ->post(route('residents.id-cards.batches.printed', $batch))
-            ->assertRedirect(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'print' => 1]));
+            ->post(route('residents.id-cards.batches.printed', $batch), ['selected_residents' => [$resident->id]])
+            ->assertRedirect(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'print' => 1, 'selected_residents' => [$resident->id]]));
 
         $this->actingAs($user)
             ->get(route('residents.id-cards.batches.show', $batch))
@@ -241,7 +241,7 @@ class ResidentPinAndIdBatchTest extends TestCase
         $this->assertSame(1, ResidentIdPrintBatch::count());
         $this->assertSame([$first->id, $second->id], $batchOne->items()->orderBy('id')->pluck('resident_id')->all());
 
-        $this->actingAs($user)->postJson(route('residents.id-cards.batches.printed', $batchOne))->assertOk();
+        $this->actingAs($user)->postJson(route('residents.id-cards.batches.printed', $batchOne), ['selected_residents' => $batchOne->items()->pluck('resident_id')->all()])->assertOk();
         $third = $this->resident('26-00003', ['household_id' => $household->id]);
         $this->actingAs($user)->post(route('residents.id-cards.batch'), [
             'barangay' => 'Poblacion', 'status' => 'active',
@@ -264,7 +264,7 @@ class ResidentPinAndIdBatchTest extends TestCase
             'barangay' => 'Poblacion', 'status' => 'active', 'exclude_printed' => 1,
         ])->assertRedirect();
         $originalBatch = ResidentIdPrintBatch::latest('id')->firstOrFail();
-        $this->actingAs($user)->postJson(route('residents.id-cards.batches.printed', $originalBatch))->assertOk();
+        $this->actingAs($user)->postJson(route('residents.id-cards.batches.printed', $originalBatch), ['selected_residents' => $originalBatch->items()->pluck('resident_id')->all()])->assertOk();
 
         $this->actingAs($user)->from(route('residents.id-cards.form'))->post(route('residents.id-cards.batch'), [
             'barangay' => 'Poblacion', 'status' => 'active', 'exclude_printed' => 1,

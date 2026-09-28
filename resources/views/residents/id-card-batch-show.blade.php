@@ -21,6 +21,7 @@
                 </dl>
             </x-mary-card>
 
+            <x-mary-button link="{{ route('residents.id-cards.batches.print', $printBatch) }}" icon="o-printer" class="btn-primary">Select IDs to Print</x-mary-button>
             <x-mary-card title="Residents in this batch">
                 <div class="overflow-x-auto"><table class="table"><thead><tr><th>#</th><th>Resident ID</th><th>Name at generation</th><th>Print status</th></tr></thead><tbody>
                     @foreach ($printBatch->items as $item)

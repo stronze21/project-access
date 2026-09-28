@@ -58,7 +58,16 @@
         background: #475569;
     }
 
-    body.batch-print-preview { padding-top: 10rem; }
+    body.batch-print-preview { padding-top: 1rem; }
+    body.batch-print-preview .batch-toolbar { position: sticky; top: 1rem; margin-bottom: 1.5rem; }
+    .resident-print-group { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+    .resident-print-selection { display: flex; align-items: center; gap: .75rem; width: var(--card-width); max-width: 100%; padding: .75rem; background: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; cursor: pointer; font-size: .875rem; line-height: 1.5; }
+    .resident-print-selection input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: #23699d; }
+    .resident-print-selection small { display: block; color: #475569; }
+    .print-excluded .print-page { opacity: .4; }
+    .selection-summary { margin: 0; font-size: .875rem; line-height: 1.5; }
+    .print-controls button:disabled { opacity: .5; cursor: not-allowed; }
+    .print-controls [data-select-all] { background: #475569; }
 
     .print-controls.batch-toolbar {
         right: 1rem;
@@ -96,7 +105,7 @@
     .batch-toolbar-warning { background: #fff7ed; color: #9a3412; }
 
     @media (max-width: 760px) {
-        body.batch-print-preview { padding-top: 14rem; }
+        body.batch-print-preview { padding-top: 1rem; }
         .batch-toolbar-row { align-items: stretch; flex-direction: column; }
         .batch-toolbar-actions > *, .batch-toolbar-actions form { flex: 1 1 auto; }
     }
@@ -450,6 +459,11 @@
     }
 
     @media print {
+        body.batch-print-preview { padding: 0; }
+        .resident-print-selection, .resident-print-group.print-excluded { display: none !important; }
+        .resident-print-group { display: contents; }
+        .resident-print-group .print-page { break-after: page; page-break-after: always; }
+        .resident-print-group.last-print-group .card-back { break-after: auto; page-break-after: auto; }
         html,
         body {
             width: var(--card-width);

@@ -75,7 +75,7 @@ class ResidentIdCardController extends Controller
                 ->whereNotNull('resident_id')
                 ->when(
                     ! $excludePrinted,
-                    fn ($items) => $items->whereHas('batch', fn ($batch) => $batch->where('status', 'generated'))
+                    fn ($items) => $items->whereNull('printed_at')
                 )
                 ->select('resident_id');
             $unassigned = (clone $scope)->whereNotIn('id', $excludedResidentIds);
@@ -171,6 +171,7 @@ class ResidentIdCardController extends Controller
     public function batchHistory()
     {
         $printBatches = ResidentIdPrintBatch::with('user')
+            ->withCount(['items as initiated_count' => fn ($items) => $items->whereNotNull('printed_at')])
             ->latest()
             ->paginate(25);
 
@@ -195,6 +196,13 @@ class ResidentIdCardController extends Controller
 
         abort_if($residents->isEmpty(), 404, 'No current resident records remain in this print batch.');
 
+        $selectedResidentIds = request()->has('selected_residents')
+            ? array_map('intval', request()->validate([
+                'selected_residents' => ['required', 'array', 'min:1', 'max:'.self::MAX_BATCH_SIZE],
+                'selected_residents.*' => ['integer', 'distinct', Rule::in($residents->pluck('id')->all())],
+            ])['selected_residents'])
+            : $residents->pluck('id')->all();
+
         $hasNextBatch = false;
         if ($printBatch->barangay !== null && $printBatch->exclude_printed) {
             $excludedResidentIds = ResidentIdPrintBatchItem::query()
@@ -218,20 +226,29 @@ class ResidentIdCardController extends Controller
             'totalResidents' => $printBatch->total_matching,
             'hasNextBatch' => $hasNextBatch,
             'printBatch' => $printBatch,
+            'selectedResidentIds' => $selectedResidentIds,
         ]);
     }
 
     public function markBatchPrinted(Request $request, ResidentIdPrintBatch $printBatch): JsonResponse|RedirectResponse
     {
+        $validated = $request->validate([
+            'selected_residents' => ['required', 'array', 'min:1', 'max:'.self::MAX_BATCH_SIZE],
+            'selected_residents.*' => ['required', 'integer', 'distinct',
+                Rule::exists('resident_id_print_batch_items', 'resident_id')->where('print_batch_id', $printBatch->id),
+                Rule::exists('residents', 'id'),
+            ],
+        ], ['selected_residents.required' => 'Select at least one resident to print.']);
+        $selectedResidentIds = array_map('intval', $validated['selected_residents']);
         $printedAt = now();
 
-        DB::transaction(function () use ($request, $printBatch, $printedAt) {
+        DB::transaction(function () use ($request, $printBatch, $printedAt, $selectedResidentIds) {
             $printBatch->update([
                 'user_id' => $request->user()?->id,
                 'status' => 'print_initiated',
                 'printed_at' => $printedAt,
             ]);
-            $printBatch->items()->update(['printed_at' => $printedAt]);
+            $printBatch->items()->whereIn('resident_id', $selectedResidentIds)->update(['printed_at' => $printedAt]);
         });
 
         if ($request->expectsJson()) {
@@ -245,6 +262,7 @@ class ResidentIdCardController extends Controller
         return redirect()->route('residents.id-cards.batches.print', [
             'printBatch' => $printBatch,
             'print' => 1,
+            'selected_residents' => $selectedResidentIds,
         ]);
     }
 

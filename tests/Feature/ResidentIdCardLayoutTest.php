@@ -126,7 +126,7 @@ class ResidentIdCardLayoutTest extends TestCase
         $response = $this->withoutMiddleware()->get($response->headers->get('Location'));
         $response
             ->assertOk()
-            ->assertSee('Print 2 ID Card(s)')
+            ->assertSee('Print 2 Selected ID(s)')
             ->assertSee('R-202607-0001')
             ->assertSee('R-202607-0002')
             ->assertSee('data-side="front"', false)
@@ -134,6 +134,62 @@ class ResidentIdCardLayoutTest extends TestCase
 
         $this->assertSame(2, substr_count($response->getContent(), 'data-side="front"'));
         $this->assertSame(2, substr_count($response->getContent(), 'data-side="back"'));
+    }
+
+    public function test_partial_print_tracks_only_selected_residents_and_preserves_selection(): void
+    {
+        $first = $this->createResident();
+        $second = $this->createResident(['resident_id' => 'R-SECOND']);
+        $this->withoutMiddleware()->post(route('residents.id-cards.batch'), [
+            'residents' => [$first->id, $second->id],
+        ])->assertRedirect();
+        $batch = \App\Models\ResidentIdPrintBatch::firstOrFail();
+        $this->withMiddleware();
+        \Spatie\Permission\Models\Permission::findOrCreate('view-residents', 'web');
+        $user = \App\Models\User::factory()->create();
+        $user->givePermissionTo('view-residents');
+        $this->actingAs($user);
+        $response = $this->post(route('residents.id-cards.batches.printed', $batch), [
+            'selected_residents' => [$second->id],
+        ])->assertRedirect();
+        $this->assertNull($batch->items()->where('resident_id', $first->id)->first()->printed_at);
+        $this->assertNotNull($batch->items()->where('resident_id', $second->id)->first()->printed_at);
+        $this->assertSame(2, $batch->items()->count());
+        $this->get($response->headers->get('Location'))->assertOk()
+            ->assertViewHas('selectedResidentIds', [$second->id])
+            ->assertSee('Print 1 Selected ID(s)');
+        $this->get(route('residents.id-cards.batches.print', $batch))->assertOk()
+            ->assertViewHas('selectedResidentIds', [$first->id, $second->id]);
+        $this->post(route('residents.id-cards.batch'), [
+            'barangay' => 'all', 'status' => 'active', 'exclude_printed' => 0,
+        ])->assertRedirect();
+        $reprintBatch = \App\Models\ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertSame([$second->id], $reprintBatch->items()->pluck('resident_id')->all());
+        $this->postJson(route('residents.id-cards.batches.printed', $batch), [
+            'selected_residents' => [$first->id],
+        ])->assertOk();
+        $this->assertSame(2, $batch->items()->whereNotNull('printed_at')->count());
+    }
+
+    public function test_print_selection_rejects_empty_duplicate_and_out_of_batch_ids(): void
+    {
+        $resident = $this->createResident();
+        $outsider = $this->createResident(['resident_id' => 'OUTSIDE']);
+        $this->withoutMiddleware()->post(route('residents.id-cards.batch'), ['residents' => [$resident->id]]);
+        $batch = \App\Models\ResidentIdPrintBatch::firstOrFail();
+        $this->withMiddleware();
+        \Spatie\Permission\Models\Permission::findOrCreate('view-residents', 'web');
+        $user = \App\Models\User::factory()->create();
+        $user->givePermissionTo('view-residents');
+        $this->actingAs($user);
+        foreach ([[], [$outsider->id], [$resident->id, $resident->id]] as $selection) {
+            $this->postJson(route('residents.id-cards.batches.printed', $batch), [
+                'selected_residents' => $selection,
+            ])->assertUnprocessable();
+        }
+        $this->postJson(route('residents.id-cards.batches.printed', $batch))->assertUnprocessable();
+        $this->assertNull($batch->fresh()->printed_at);
+        $this->assertNull($batch->items()->first()->printed_at);
     }
 
     public function test_portrait_id_card_support_is_removed(): void
