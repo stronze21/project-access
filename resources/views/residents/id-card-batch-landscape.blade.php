@@ -10,10 +10,12 @@
     <nav class="print-controls batch-toolbar" aria-label="Batch ID card actions">
         <div class="batch-toolbar-row">
             <div class="batch-toolbar-actions">
-                <form action="{{ route('residents.id-cards.batches.printed', $printBatch) }}" method="POST">
+                <form id="batch-print-form" action="{{ route('residents.id-cards.batches.printed', $printBatch) }}" method="POST">
                     @csrf
-                    <button type="submit">Print {{ $residents->count() }} ID Card(s)</button>
+                    <button id="print-selected" type="submit">Print {{ count($selectedResidentIds) }} Selected ID(s)</button>
                 </form>
+                <button type="button" data-select-all="true">Select All</button>
+                <button type="button" data-select-all="false">Deselect All</button>
                 <a href="{{ route('residents.id-cards.form', array_filter(['barangay' => $barangay ?? null, 'status' => $status ?? null])) }}">Back to Selection</a>
             </div>
             @if ($hasNextBatch ?? false)
@@ -37,15 +39,58 @@
                 <span class="batch-toolbar-chip batch-toolbar-warning">Reprint mode enabled</span>
             @endunless
         </div>
+        <p class="selection-summary" id="selection-summary" aria-live="polite">Uncheck any resident to exclude both sides from printing.</p>
+        @if (isset($errors) && $errors->any())
+            <p role="alert">{{ $errors->first() }}</p>
+        @endif
     </nav>
 
     <main class="card-sheet batch-sheet" aria-label="Batch ACCESS identification cards">
         @foreach ($residents as $resident)
-            @include('residents.partials.access-id-card', ['resident' => $resident])
+            <div class="resident-print-group {{ in_array($resident->id, $selectedResidentIds) ? '' : 'print-excluded' }}">
+                <label class="resident-print-selection">
+                    <input type="checkbox" name="selected_residents[]" value="{{ $resident->id }}"
+                        form="batch-print-form" @checked(in_array($resident->id, $selectedResidentIds))>
+                    <span><strong>Include in printing</strong><br>{{ $resident->full_name }} &middot; {{ $resident->resident_id }}
+                        <small>{{ $printBatch->items->firstWhere('resident_id', $resident->id)?->printed_at ? 'Print previously initiated' : 'Not yet printed' }}</small>
+                    </span>
+                </label>
+                @include('residents.partials.access-id-card', ['resident' => $resident])
+            </div>
         @endforeach
     </main>
-    @if (request()->boolean('print'))
-        <script>window.addEventListener('load', () => window.print());</script>
-    @endif
+    <script>
+        const choices = [...document.querySelectorAll('[name="selected_residents[]"]')];
+        const printButton = document.getElementById('print-selected');
+        function updateSelection() {
+            const selected = choices.filter(choice => choice.checked);
+            choices.forEach(choice => {
+                const group = choice.closest('.resident-print-group');
+                group.classList.toggle('print-excluded', !choice.checked);
+                group.classList.remove('last-print-group');
+            });
+            selected.at(-1)?.closest('.resident-print-group').classList.add('last-print-group');
+            printButton.disabled = selected.length === 0;
+            printButton.textContent = `Print ${selected.length} Selected ID(s)`;
+            document.getElementById('selection-summary').textContent =
+                `${selected.length} of ${choices.length} selected. Unchecked residents will not print (front and back).`;
+        }
+        choices.forEach(choice => choice.addEventListener('change', updateSelection));
+        document.querySelectorAll('[data-select-all]').forEach(button => {
+            button.addEventListener('click', () => {
+                choices.forEach(choice => { choice.checked = button.dataset.selectAll === 'true'; });
+                updateSelection();
+            });
+        });
+        document.getElementById('batch-print-form').addEventListener('submit', event => {
+            if (!choices.some(choice => choice.checked)) event.preventDefault();
+        });
+        window.addEventListener('beforeprint', updateSelection);
+        window.addEventListener('pageshow', updateSelection);
+        updateSelection();
+        @if (request()->boolean('print'))
+            window.addEventListener('load', () => window.print());
+        @endif
+    </script>
 </body>
 </html>
