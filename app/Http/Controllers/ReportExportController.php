@@ -34,7 +34,9 @@ class ReportExportController extends Controller
         return response()->download(
             Storage::path($filePath),
             $filename,
-            ['Content-Type' => 'text/csv; charset=UTF-8']
+            ['Content-Type' => str_ends_with($filename, '.xlsx')
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : 'text/csv; charset=UTF-8']
         )->deleteFileAfterSend(true);
     }
 }

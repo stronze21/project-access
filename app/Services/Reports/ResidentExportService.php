@@ -47,10 +47,11 @@ class ResidentExportService
         }
 
         // Generate CSV file
-        return $this->exportService->generateCsv(
+        return $this->exportService->generateResidentExcel(
             $exportData['data'],
             $exportData['headers'],
-            $filename
+            $filename,
+            $residents
         );
     }
 

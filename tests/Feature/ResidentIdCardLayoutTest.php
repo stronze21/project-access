@@ -43,6 +43,27 @@ class ResidentIdCardLayoutTest extends TestCase
         $this->assertFileExists(public_path('images/id-cards/access-id-back.jpg'));
     }
 
+    public function test_editor_layout_identity_stays_with_the_record_when_its_pin_changes(): void
+    {
+        $resident = $this->createResident([
+            'resident_id' => '07-04255',
+            'photo_path' => 'resident-photos/test-photo.jpg',
+        ]);
+
+        foreach (['07-04255', '07-04256', '07-04255'] as $pin) {
+            $resident->update(['resident_id' => $pin]);
+
+            $this->withoutMiddleware()
+                ->get(route('residents.id-card.landscape', $resident))
+                ->assertOk()
+                ->assertSee('data-resident-record-id="'.$resident->id.'"', false)
+                ->assertSee('access-id-card-editor:v2:record:', false)
+                ->assertDontSee('access-id-card-editor:${panel.dataset.residentId}', false)
+                ->assertSee('resident-photos/test-photo.jpg', false)
+                ->assertSee('data-editor-key="photo"', false);
+        }
+    }
+
     public function test_id_card_birth_date_is_not_shifted_by_the_application_timezone(): void
     {
         $originalTimezone = date_default_timezone_get();

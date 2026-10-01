@@ -7,6 +7,57 @@ use Illuminate\Support\Facades\Storage;
 
 class ExportService
 {
+    public function generateResidentExcel(iterable $rows, array $headers, string $filename, iterable $residents): string
+    {
+        $book = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $book->getActiveSheet();
+        $sheet->setTitle('Residents');
+        $signatureColumn = array_search('SIGNATURE', array_map('strtoupper', $headers), true);
+        if ($signatureColumn === false) {
+            $signatureColumn = count($headers);
+            $headers[] = 'Signature';
+        }
+        $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($signatureColumn + 1);
+        $sheet->fromArray($headers, null, 'A1');
+        foreach ($rows as $index => $row) {
+            foreach (array_values($row) as $offset => $value) {
+                if ($offset !== $signatureColumn) {
+                    $sheet->setCellValueExplicit([$offset + 1, $index + 2], (string) $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                }
+            }
+        }
+        $rowNumber = 2;
+        foreach ($residents as $resident) {
+            $image = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature'));
+            if ($image) {
+                $drawing = \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::fromString(base64_decode(explode(',', $image, 2)[1]));
+                $drawing->setName('Resident signature');
+                $drawing->setCoordinates($column.$rowNumber);
+                $drawing->setOffsetX(5)->setOffsetY(5);
+                $drawing->setWidthAndHeight(160, 55);
+                $drawing->setWorksheet($sheet);
+                $sheet->getRowDimension($rowNumber)->setRowHeight(50);
+            } else {
+                $sheet->setCellValue($column.$rowNumber, 'No signature');
+            }
+            $rowNumber++;
+        }
+        foreach (range(1, count($headers)) as $index) {
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index))->setWidth(24);
+        }
+        $sheet->getStyle('A1:'.$sheet->getHighestColumn().'1')->getFont()->setBold(true);
+        $sheet->freezePane('A2');
+        $sheet->setAutoFilter('A1:'.$sheet->getHighestColumn().max(1, $rowNumber - 1));
+        $this->ensureDirectoryExists('exports');
+        $path = 'exports/'.pathinfo($filename, PATHINFO_FILENAME).'_'.Str::uuid().'.xlsx';
+        try {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save(Storage::path($path));
+        } finally {
+            $book->disconnectWorksheets();
+        }
+        return $path;
+    }
+
     /**
      * Generate a CSV file from data
      *

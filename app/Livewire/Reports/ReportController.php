@@ -297,7 +297,9 @@ class ReportController extends Component
             };
 
             // Generate CSV file using the export service
-            $filePath = $this->exportService->generateCsv(
+            $filePath = in_array($this->reportType, ['residents', 'residents-with-id'], true)
+                ? $this->exportService->generateResidentExcel($exportData['data'], $exportData['headers'], $filename, $fullData)
+                : $this->exportService->generateCsv(
                 $exportData['data'],
                 $exportData['headers'],
                 $filename

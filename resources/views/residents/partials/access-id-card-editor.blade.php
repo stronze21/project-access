@@ -12,7 +12,9 @@
             height: document.getElementById('editor-height'),
             fontSize: document.getElementById('editor-font-size'),
         };
-        const storageKey = `access-id-card-editor:${panel.dataset.residentId}`;
+        // PINs can change or be reused. Do not restore legacy PIN-based layouts,
+        // which may belong to another record or place its photo outside the card.
+        const storageKey = `access-id-card-editor:v2:record:${panel.dataset.residentRecordId}`;
         const originalStyles = new Map(elements.map((element) => [element.dataset.editorKey, element.getAttribute('style')]));
         const transforms = new Map(elements.map((element) => [element.dataset.editorKey, {
             rotation: 0,

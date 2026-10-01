@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\DB;
 
 class ResidentReportService extends ReportService
 {
+    public function getReportData(array $filters)
+    {
+        return $this->generateReport($filters)['reportData'];
+    }
+
     /**
      * Generate residents report
      *

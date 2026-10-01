@@ -129,6 +129,7 @@ class ReportDataTable extends Component
                 ['key' => 'total_received', 'label' => 'Total Received', 'sortable' => true],
                 ['key' => 'programs_list', 'label' => 'Programs', 'sortable' => false],
                 ['key' => 'demographics', 'label' => 'Demographics', 'sortable' => false],
+                ['key' => 'signature', 'label' => 'Signature', 'sortable' => false],
             ],
             'barangays' => [
                 ['key' => 'barangay', 'label' => 'Barangay', 'sortable' => true],
@@ -145,6 +146,7 @@ class ReportDataTable extends Component
                 ['key' => 'household.city_municipality', 'label' => 'Municipality', 'sortable' => false],
                 ['key' => 'household.province', 'label' => 'Province', 'sortable' => false],
                 ['key' => 'updated_at', 'label' => 'Date Updated', 'sortable' => true],
+                ['key' => 'signature', 'label' => 'Signature', 'sortable' => false],
             ],
             'scholarships' => [
                 ['key' => 'reference_number', 'label' => 'Reference #', 'sortable' => true],

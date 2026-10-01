@@ -54,7 +54,7 @@
         <a href="{{ route('residents.show', $resident->id) }}">Back to Resident</a>
     </nav>
 
-    <aside class="editor-panel" data-resident-id="{{ $resident->resident_id }}" aria-label="ID Card Editor">
+    <aside class="editor-panel" data-resident-id="{{ $resident->resident_id }}" data-resident-record-id="{{ $resident->id }}" aria-label="ID Card Editor">
         <div class="editor-heading">
             <div>
                 <strong>ID Card Editor</strong>

@@ -220,6 +220,14 @@
                                         @endif
                                     </div>
                                 </td>
+                                <td class="px-4 py-3">
+                                    @php($signatureImage = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature')))
+                                    @if ($signatureImage)
+                                        <img src="{{ $signatureImage }}" alt="Resident signature" class="h-14 w-40 object-contain bg-white" loading="lazy" />
+                                    @else
+                                        <span class="text-gray-500">No signature</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     @elseif($reportType === 'barangays')
@@ -316,6 +324,14 @@
                                         {{ \Carbon\Carbon::parse($resident['updated_at'])->timezone('Asia/Manila')->format('M d, Y g:i A') }}
                                     @else
                                         N/A
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    @php($signatureImage = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature')))
+                                    @if ($signatureImage)
+                                        <img src="{{ $signatureImage }}" alt="Resident signature" class="h-14 w-40 object-contain bg-white" loading="lazy" />
+                                    @else
+                                        <span class="text-gray-500">No signature</span>
                                     @endif
                                 </td>
                             </tr>
