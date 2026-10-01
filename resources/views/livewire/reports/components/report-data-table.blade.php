@@ -221,7 +221,9 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    @php($signatureImage = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature')))
+                                    @php
+                                        $signatureImage = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature'));
+                                    @endphp
                                     @if ($signatureImage)
                                         <img src="{{ $signatureImage }}" alt="Resident signature" class="h-14 w-40 object-contain bg-white" loading="lazy" />
                                     @else
@@ -327,7 +329,9 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">
-                                    @php($signatureImage = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature')))
+                                    @php
+                                        $signatureImage = \App\Services\Reports\ResidentSignature::image(data_get($resident, 'signature'));
+                                    @endphp
                                     @if ($signatureImage)
                                         <img src="{{ $signatureImage }}" alt="Resident signature" class="h-14 w-40 object-contain bg-white" loading="lazy" />
                                     @else
