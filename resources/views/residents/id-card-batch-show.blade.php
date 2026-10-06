@@ -22,10 +22,12 @@
             </x-mary-card>
 
             <x-mary-button link="{{ route('residents.id-cards.batches.print', $printBatch) }}" icon="o-printer" class="btn-primary">Select IDs to Print</x-mary-button>
+            <x-mary-button link="{{ route('residents.id-cards.batches.print', ['printBatch' => $printBatch, 'remaining' => 1]) }}" icon="o-printer" class="btn-outline">Print Remaining ({{ $printBatch->items->whereNull('printed_at')->whereNotNull('resident')->count() }})</x-mary-button>
+            <p class="text-sm text-gray-500">{{ $printBatch->resident_count }} assigned; {{ $printBatch->items->whereNotNull('printed_at')->count() }} print initiated. Print initiation does not confirm physical printing. Remaining counts exclude unavailable resident records.</p>
             <x-mary-card title="Residents in this batch">
                 <div class="overflow-x-auto"><table class="table"><thead><tr><th>#</th><th>Resident ID</th><th>Name at generation</th><th>Print status</th></tr></thead><tbody>
                     @foreach ($printBatch->items as $item)
-                        <tr><td>{{ $loop->iteration }}</td><td class="font-mono">{{ $item->resident_pin }}</td><td>{{ $item->resident_name }}</td><td>{{ $item->printed_at ? 'Print initiated '.$item->printed_at->format('M d, Y h:i A') : 'Not printed' }}</td></tr>
+                        <tr><td>{{ $loop->iteration }}</td><td class="font-mono">{{ $item->resident_pin }}</td><td>{{ $item->resident_name }}</td><td>{{ $item->printed_at ? 'Print initiated '.$item->printed_at->format('M d, Y h:i A') : ($item->resident ? 'Not yet initiated' : 'Resident unavailable') }}</td></tr>
                     @endforeach
                 </tbody></table></div>
             </x-mary-card>

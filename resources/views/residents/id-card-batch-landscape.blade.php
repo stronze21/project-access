@@ -12,8 +12,13 @@
             <div class="batch-toolbar-actions">
                 <form id="batch-print-form" action="{{ route('residents.id-cards.batches.printed', $printBatch) }}" method="POST">
                     @csrf
+                    @unless ($printBatch->exclude_printed)
+                        <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
+                    @endunless
                     <button id="print-selected" type="submit">Print {{ count($selectedResidentIds) }} Selected ID(s)</button>
                 </form>
+                <a href="{{ route('residents.id-cards.batches.print', ['printBatch' => $printBatch, 'remaining' => 1, 'reprint_start' => $printBatch->exclude_printed ? null : $reprintStart]) }}">Print Remaining</a>
+                <a href="{{ route('residents.id-cards.batches.index') }}">Print History / Pending IDs</a>
                 <button type="button" data-select-all="true">Select All</button>
                 <button type="button" data-select-all="false">Deselect All</button>
                 <a href="{{ route('residents.id-cards.form', array_filter(['barangay' => $barangay ?? null, 'status' => $status ?? null])) }}">Back to Selection</a>
@@ -24,7 +29,10 @@
                     <input type="hidden" name="barangay" value="{{ $barangay }}">
                     <input type="hidden" name="status" value="{{ $status }}">
                     <input type="hidden" name="exclude_printed" value="{{ $printBatch->exclude_printed ? 1 : 0 }}">
-                    <button type="submit">Generate Next Unassigned Batch</button>
+                    @unless ($printBatch->exclude_printed)
+                        <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
+                    @endunless
+                    <button type="submit">{{ $printBatch->exclude_printed ? 'Generate Next Unassigned Batch' : 'Generate Next Reprint Batch' }}</button>
                 </form>
             @endif
         </div>
@@ -39,6 +47,7 @@
                 <span class="batch-toolbar-chip batch-toolbar-warning">Reprint mode enabled</span>
             @endunless
         </div>
+        <p class="selection-summary">{{ $printBatch->items->whereNotNull('printed_at')->count() }} print initiated; {{ $printBatch->items->whereNull('printed_at')->whereNotNull('resident')->count() }} remaining available in this batch. Print initiation does not confirm physical printing. Pending IDs stay in their original batches; open Print History to resume them.</p>
         <p class="selection-summary" id="selection-summary" aria-live="polite">Uncheck any resident to exclude both sides from printing.</p>
         @if (isset($errors) && $errors->any())
             <p role="alert">{{ $errors->first() }}</p>
@@ -52,7 +61,7 @@
                     <input type="checkbox" name="selected_residents[]" value="{{ $resident->id }}"
                         form="batch-print-form" @checked(in_array($resident->id, $selectedResidentIds))>
                     <span><strong>Include in printing</strong><br>{{ $resident->full_name }} &middot; {{ $resident->resident_id }}
-                        <small>{{ $printBatch->items->firstWhere('resident_id', $resident->id)?->printed_at ? 'Print previously initiated' : 'Not yet printed' }}</small>
+                        <small>{{ $printBatch->items->firstWhere('resident_id', $resident->id)?->printed_at ? 'Print previously initiated' : 'Not yet initiated' }}</small>
                     </span>
                 </label>
                 @include('residents.partials.access-id-card', ['resident' => $resident])

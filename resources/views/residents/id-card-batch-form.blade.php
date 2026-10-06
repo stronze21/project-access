@@ -58,7 +58,7 @@
                     @endif
 
                     <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                        With duplicate protection enabled, residents already assigned to a tracked batch remain there. New residents are added to the latest unprinted batch when space is available, or placed in a new batch automatically. Printed batches are never changed.
+                        With duplicate protection enabled, residents already assigned to a tracked batch remain there. New residents are added to the latest unprinted batch when space is available, or placed in a new batch automatically. Batches with print initiation are never extended. To resume pending IDs, open Print History and choose Print Remaining. Print initiation does not confirm physical printing.
                     </div>
 
                     <div class="flex justify-end pt-4 border-t">

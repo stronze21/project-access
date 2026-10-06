@@ -281,6 +281,73 @@ class ResidentPinAndIdBatchTest extends TestCase
         $this->assertSame([$resident->id], $reprintBatch->items()->pluck('resident_id')->all());
     }
 
+    public function test_255_residents_progress_through_normal_and_reprint_batches_without_repeating_ids(): void
+    {
+        $household = $this->household('San Jose');
+        foreach (range(1, 255) as $number) {
+            $this->resident('TEST-'.$number, ['household_id' => $household->id]);
+        }
+        $this->actingAs($this->staff(['view-residents']));
+        foreach ([true, false] as $excludePrinted) {
+            $seen = [];
+            $start = null;
+            foreach ([100, 100, 55] as $index => $expected) {
+                $payload = ['barangay' => 'San Jose', 'status' => 'active', 'exclude_printed' => (int) $excludePrinted];
+                if ($start !== null) {
+                    $payload['reprint_start'] = $start;
+                }
+                $response = $this->post(route('residents.id-cards.batch'), $payload)->assertRedirect();
+                $batch = ResidentIdPrintBatch::latest('id')->firstOrFail();
+                if (! $excludePrinted) {
+                    $start ??= $batch->id;
+                }
+                $ids = $batch->items()->pluck('resident_id')->all();
+                $this->assertCount($expected, $ids);
+                if (! $excludePrinted) {
+                    $this->get(route('residents.id-cards.batches.print', $batch))->assertOk()
+                        ->assertViewHas('reprintStart', $start)
+                        ->assertViewHas('hasNextBatch', $index < 2);
+                }
+                $this->assertSame([], array_values(array_intersect($seen, $ids)));
+                $seen = array_merge($seen, $ids);
+                $this->get($response->headers->get('Location'))->assertOk()
+                    ->assertViewHas('hasNextBatch', $index < 2);
+                $printPayload = ['selected_residents' => $ids];
+                if ($start !== null) {
+                    $printPayload['reprint_start'] = $start;
+                }
+                $printed = $this->post(route('residents.id-cards.batches.printed', $batch), $printPayload)->assertRedirect();
+                $this->get($printed->headers->get('Location'))->assertOk()
+                    ->assertViewHas('hasNextBatch', $index < 2);
+            }
+            $this->assertCount(255, array_unique($seen));
+        }
+    }
+
+    public function test_print_remaining_resumes_40_pending_ids_without_assigning_them_again(): void
+    {
+        $household = $this->household('San Jose');
+        foreach (range(1, 100) as $number) {
+            $this->resident('PENDING-'.$number, ['household_id' => $household->id]);
+        }
+        $this->actingAs($this->staff(['view-residents']));
+        $this->post(route('residents.id-cards.batch'), ['barangay' => 'San Jose', 'status' => 'active'])->assertRedirect();
+        $batch = ResidentIdPrintBatch::firstOrFail();
+        $ids = $batch->items()->pluck('resident_id')->all();
+        $this->postJson(route('residents.id-cards.batches.printed', $batch), ['selected_residents' => array_slice($ids, 0, 60)])->assertOk();
+        $remaining = array_slice($ids, 60);
+        $this->get(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'remaining' => 1]))->assertOk()
+            ->assertViewHas('selectedResidentIds', $remaining)->assertViewHas('hasNextBatch', false)
+            ->assertSee('Print 40 Selected ID(s)');
+        $this->get(route('residents.id-cards.batches.index'))->assertOk()->assertSee('Print Remaining (40)');
+        $this->get(route('residents.id-cards.batches.show', $batch))->assertOk()->assertSee('Print Remaining (40)');
+        $this->post(route('residents.id-cards.batch'), ['barangay' => 'San Jose', 'status' => 'active'])->assertSessionHasErrors('barangay');
+        $this->assertSame(1, ResidentIdPrintBatch::count());
+        $this->postJson(route('residents.id-cards.batches.printed', $batch), ['selected_residents' => $remaining])->assertOk();
+        $this->get(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'remaining' => 1]))->assertOk()
+            ->assertViewHas('selectedResidentIds', [])->assertSee('Print 0 Selected ID(s)');
+    }
+
     private function staff(array $permissions): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

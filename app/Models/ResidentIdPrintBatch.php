@@ -22,11 +22,13 @@ class ResidentIdPrintBatch extends Model
         'resident_count',
         'status',
         'printed_at',
+        'reprint_start_batch_id',
     ];
 
     protected $casts = [
         'exclude_printed' => 'boolean',
         'printed_at' => 'datetime',
+        'reprint_start_batch_id' => 'integer',
     ];
 
     public function user(): BelongsTo

@@ -56,6 +56,7 @@ class ResidentIdCardController extends Controller
             ],
             'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
             'exclude_printed' => ['nullable', 'boolean'],
+            'reprint_start' => ['nullable', 'integer', 'exists:resident_id_print_batches,id'],
         ], [
             'residents.max' => 'Choose no more than '.self::MAX_BATCH_SIZE.' residents in one print batch.',
             'residents.*.distinct' => 'Each resident may appear only once in a print batch.',
@@ -67,17 +68,17 @@ class ResidentIdCardController extends Controller
         $excludePrinted = (bool) ($validated['exclude_printed'] ?? true);
         $totalResidents = null;
         $openBatch = null;
+        $reprintStart = null;
 
         if ($barangay) {
             $scope = $this->residentScopeQuery($barangay, $status);
             $totalResidents = (clone $scope)->count();
-            $excludedResidentIds = ResidentIdPrintBatchItem::query()
-                ->whereNotNull('resident_id')
-                ->when(
-                    ! $excludePrinted,
-                    fn ($items) => $items->whereNull('printed_at')
-                )
-                ->select('resident_id');
+            if (! $excludePrinted && ! empty($validated['reprint_start'])) {
+                $reprintStart = ResidentIdPrintBatch::where('barangay', $barangay)
+                    ->where('status_filter', $status)->where('exclude_printed', false)
+                    ->findOrFail($validated['reprint_start'])->id;
+            }
+            $excludedResidentIds = $this->excludedResidentIds($excludePrinted, $barangay, $status, $reprintStart);
             $unassigned = (clone $scope)->whereNotIn('id', $excludedResidentIds);
 
             $openBatch = ResidentIdPrintBatch::query()
@@ -86,13 +87,14 @@ class ResidentIdCardController extends Controller
                 ->where('exclude_printed', $excludePrinted)
                 ->where('status', 'generated')
                 ->where('resident_count', '<', self::MAX_BATCH_SIZE)
+                ->when($reprintStart, fn ($batches) => $batches->where('id', '>=', $reprintStart))
                 ->latest('batch_number')
                 ->first();
             $availableSlots = self::MAX_BATCH_SIZE - ($openBatch?->resident_count ?? 0);
             $residents = $unassigned->limit($availableSlots)->get();
 
             if ($residents->isEmpty() && $openBatch) {
-                return redirect()->route('residents.id-cards.batches.print', $openBatch);
+                return redirect()->route('residents.id-cards.batches.print', ['printBatch' => $openBatch, 'reprint_start' => $excludePrinted ? null : ($openBatch->reprint_start_batch_id ?? $reprintStart ?? $openBatch->id)]);
             }
 
             if ($residents->isEmpty()) {
@@ -114,7 +116,7 @@ class ResidentIdCardController extends Controller
             $totalResidents = $residents->count();
         }
 
-        $printBatch = DB::transaction(function () use ($request, $residents, $barangay, $status, $excludePrinted, $batchNumber, $totalResidents, $openBatch) {
+        $printBatch = DB::transaction(function () use ($request, $residents, $barangay, $status, $excludePrinted, $batchNumber, $totalResidents, $openBatch, $reprintStart) {
             $batch = $openBatch ?? ResidentIdPrintBatch::create([
                 'reference_number' => (string) Str::uuid(),
                 'user_id' => $request->user()?->id,
@@ -125,6 +127,7 @@ class ResidentIdCardController extends Controller
                 'total_matching' => $totalResidents,
                 'resident_count' => $residents->count(),
                 'status' => 'generated',
+                'reprint_start_batch_id' => $reprintStart,
             ]);
 
             $batch->items()->createMany($residents->map(fn (Resident $resident) => [
@@ -144,7 +147,7 @@ class ResidentIdCardController extends Controller
             return $batch;
         });
 
-        return redirect()->route('residents.id-cards.batches.print', $printBatch);
+        return redirect()->route('residents.id-cards.batches.print', ['printBatch' => $printBatch, 'reprint_start' => $excludePrinted ? null : ($printBatch->reprint_start_batch_id ?? $reprintStart ?? $printBatch->id)]);
     }
 
     /**
@@ -171,7 +174,10 @@ class ResidentIdCardController extends Controller
     public function batchHistory()
     {
         $printBatches = ResidentIdPrintBatch::with('user')
-            ->withCount(['items as initiated_count' => fn ($items) => $items->whereNotNull('printed_at')])
+            ->withCount([
+                'items as initiated_count' => fn ($items) => $items->whereNotNull('printed_at'),
+                'items as remaining_count' => fn ($items) => $items->whereNull('printed_at')->whereHas('resident'),
+            ])
             ->latest()
             ->paginate(25);
 
@@ -201,17 +207,20 @@ class ResidentIdCardController extends Controller
                 'selected_residents' => ['required', 'array', 'min:1', 'max:'.self::MAX_BATCH_SIZE],
                 'selected_residents.*' => ['integer', 'distinct', Rule::in($residents->pluck('id')->all())],
             ])['selected_residents'])
-            : $residents->pluck('id')->all();
+            : (request()->boolean('remaining')
+                ? $printBatch->items->whereNull('printed_at')->pluck('resident_id')->intersect($residents->pluck('id'))->values()->all()
+                : $residents->pluck('id')->all());
 
         $hasNextBatch = false;
-        if ($printBatch->barangay !== null && $printBatch->exclude_printed) {
-            $excludedResidentIds = ResidentIdPrintBatchItem::query()
-                ->whereNotNull('resident_id')
-                ->when(
-                    ! $printBatch->exclude_printed,
-                    fn ($items) => $items->whereHas('batch', fn ($batch) => $batch->where('status', 'generated'))
-                )
-                ->select('resident_id');
+        $reprintStart = $printBatch->reprint_start_batch_id ?? $printBatch->id;
+        if (! $printBatch->exclude_printed && ! $printBatch->reprint_start_batch_id && request()->filled('reprint_start')) {
+            $input = request()->validate(['reprint_start' => ['integer', 'min:1', 'max:'.$printBatch->id]]);
+            $reprintStart = ResidentIdPrintBatch::where('barangay', $printBatch->barangay)
+                ->where('status_filter', $printBatch->status_filter)->where('exclude_printed', false)
+                ->findOrFail($input['reprint_start'])->id;
+        }
+        if ($printBatch->barangay !== null) {
+            $excludedResidentIds = $this->excludedResidentIds($printBatch->exclude_printed, $printBatch->barangay, $printBatch->status_filter, $reprintStart);
             $hasNextBatch = $this->residentScopeQuery($printBatch->barangay, $printBatch->status_filter)
                 ->whereNotIn('id', $excludedResidentIds)
                 ->exists();
@@ -227,6 +236,7 @@ class ResidentIdCardController extends Controller
             'hasNextBatch' => $hasNextBatch,
             'printBatch' => $printBatch,
             'selectedResidentIds' => $selectedResidentIds,
+            'reprintStart' => $reprintStart,
         ]);
     }
 
@@ -237,6 +247,10 @@ class ResidentIdCardController extends Controller
             'selected_residents.*' => ['required', 'integer', 'distinct',
                 Rule::exists('resident_id_print_batch_items', 'resident_id')->where('print_batch_id', $printBatch->id),
                 Rule::exists('residents', 'id'),
+            ],
+            'reprint_start' => ['nullable', 'integer', 'min:1', 'max:'.$printBatch->id,
+                Rule::exists('resident_id_print_batches', 'id')->where(fn ($query) => $query
+                    ->where('barangay', $printBatch->barangay)->where('status_filter', $printBatch->status_filter)->where('exclude_printed', false)),
             ],
         ], ['selected_residents.required' => 'Select at least one resident to print.']);
         $selectedResidentIds = array_map('intval', $validated['selected_residents']);
@@ -263,6 +277,7 @@ class ResidentIdCardController extends Controller
             'printBatch' => $printBatch,
             'print' => 1,
             'selected_residents' => $selectedResidentIds,
+            'reprint_start' => $validated['reprint_start'] ?? null,
         ]);
     }
 
@@ -275,6 +290,22 @@ class ResidentIdCardController extends Controller
     public function show($id)
     {
         return $this->showLandscape($id);
+    }
+
+    private function excludedResidentIds(bool $excludePrinted, string $barangay, string $status, ?int $reprintStart): Builder
+    {
+        return ResidentIdPrintBatchItem::query()->whereNotNull('resident_id')
+            ->when(! $excludePrinted, function ($items) use ($barangay, $status, $reprintStart) {
+                $items->where(function ($excluded) use ($barangay, $status, $reprintStart) {
+                    $excluded->whereNull('printed_at');
+                    if ($reprintStart !== null) {
+                        // Keep IDs already handled in this reprint sequence out of its next batch.
+                        $excluded->orWhereHas('batch', fn ($batch) => $batch
+                            ->where('barangay', $barangay)->where('status_filter', $status)
+                            ->where('exclude_printed', false)->where('id', '>=', $reprintStart));
+                    }
+                });
+            })->select('resident_id');
     }
 
     private function residentScopeQuery(string $barangay, string $status): Builder
