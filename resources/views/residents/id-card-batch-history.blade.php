@@ -17,7 +17,7 @@
                             @forelse ($printBatches as $batch)
                                 <tr>
                                     <td class="font-mono text-xs">{{ $batch->reference_number }}</td>
-                                    <td>{{ $batch->barangay === 'all' ? 'All Barangays' : ($batch->barangay ?: 'Manual selection') }}<br><span class="text-xs text-gray-500">{{ str($batch->status_filter)->headline() }} · {{ $batch->exclude_printed ? 'Duplicates hidden' : 'Reprint mode' }}</span></td>
+                                    <td>{{ $batch->barangay === 'all' ? 'All Barangays' : ($batch->barangay ?: 'Manual selection') }}<br><span class="text-xs text-gray-500">{{ str($batch->status_filter)->headline() }} · {{ $batch->sector_label }} · {{ $batch->exclude_printed ? 'Duplicates hidden' : 'Reprint mode' }}</span></td>
                                     <td>{{ $batch->batch_number }}</td>
                                     <td>{{ $batch->resident_count }} assigned<br><span class="text-xs text-gray-500">{{ $batch->initiated_count }} print initiated<br>{{ $batch->remaining_count }} remaining available</span></td>
                                     <td><x-mary-badge :value="$batch->status === 'print_initiated' ? 'Print initiated' : 'Generated'" :class="$batch->status === 'print_initiated' ? 'badge-success' : 'badge-warning'" /></td>

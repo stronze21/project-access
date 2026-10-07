@@ -16,6 +16,8 @@ class ResidentIdPrintBatch extends Model
         'user_id',
         'barangay',
         'status_filter',
+        'sector_filter',
+        'alphabetical',
         'exclude_printed',
         'batch_number',
         'total_matching',
@@ -26,10 +28,22 @@ class ResidentIdPrintBatch extends Model
     ];
 
     protected $casts = [
+        'sector_filter' => 'array',
+        'alphabetical' => 'boolean',
         'exclude_printed' => 'boolean',
         'printed_at' => 'datetime',
         'reprint_start_batch_id' => 'integer',
     ];
+
+    public function scopeForSectors(\Illuminate\Database\Eloquent\Builder $query, array $sectors): void
+    {
+        $query->where('sector_filter', $sectors ? json_encode($sectors) : null);
+    }
+
+    public function getSectorLabelAttribute(): string
+    {
+        return $this->sector_filter ? implode(', ', $this->sector_filter) : 'All sectors';
+    }
 
     public function user(): BelongsTo
     {

@@ -55,7 +55,12 @@ class ResidentIdCardController extends Controller
                 ),
             ],
             'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
+            'filter_sectors' => ['nullable', 'boolean'],
+            'sectors' => ['exclude_unless:filter_sectors,1', 'required', 'array', 'min:1', 'max:100'],
+            'sectors.*' => ['required', 'string', 'max:255', 'distinct', Rule::exists('residents', 'special_sector')],
+            'action' => ['nullable', Rule::in(['preview', 'generate'])],
             'exclude_printed' => ['nullable', 'boolean'],
+            'alphabetical' => ['nullable', 'boolean'],
             'reprint_start' => ['nullable', 'integer', 'exists:resident_id_print_batches,id'],
         ], [
             'residents.max' => 'Choose no more than '.self::MAX_BATCH_SIZE.' residents in one print batch.',
@@ -65,26 +70,45 @@ class ResidentIdCardController extends Controller
 
         $barangay = $validated['barangay'] ?? null;
         $status = $validated['status'] ?? 'all';
+        $sectors = $validated['sectors'] ?? [];
+        sort($sectors, SORT_STRING);
         $excludePrinted = (bool) ($validated['exclude_printed'] ?? true);
+        $alphabetical = (bool) ($validated['alphabetical'] ?? true);
         $totalResidents = null;
         $openBatch = null;
         $reprintStart = null;
 
         if ($barangay) {
-            $scope = $this->residentScopeQuery($barangay, $status);
+            $scope = $this->residentScopeQuery($barangay, $status, $sectors, $alphabetical);
             $totalResidents = (clone $scope)->count();
             if (! $excludePrinted && ! empty($validated['reprint_start'])) {
                 $reprintStart = ResidentIdPrintBatch::where('barangay', $barangay)
-                    ->where('status_filter', $status)->where('exclude_printed', false)
+                    ->where('status_filter', $status)->forSectors($sectors)->where('exclude_printed', false)
                     ->findOrFail($validated['reprint_start'])->id;
             }
-            $excludedResidentIds = $this->excludedResidentIds($excludePrinted, $barangay, $status, $reprintStart);
+            $excludedResidentIds = $this->excludedResidentIds($excludePrinted, $barangay, $status, $reprintStart, $sectors);
             $unassigned = (clone $scope)->whereNotIn('id', $excludedResidentIds);
+
+            if (($validated['action'] ?? null) === 'preview') {
+                $eligibleCount = (clone $unassigned)->count();
+
+                return $this->batchForm([
+                    'previewResidents' => $unassigned->limit(self::MAX_BATCH_SIZE)->get(),
+                    'matchingCount' => $totalResidents,
+                    'eligibleCount' => $eligibleCount,
+                    'excludedCount' => $totalResidents - $eligibleCount,
+                    'pendingBatches' => ResidentIdPrintBatchItem::query()
+                        ->whereNull('printed_at')
+                        ->whereIn('resident_id', (clone $scope)->reorder()->select('residents.id'))
+                        ->with('batch')->get()->groupBy('print_batch_id'),
+                ]);
+            }
 
             $openBatch = ResidentIdPrintBatch::query()
                 ->where('barangay', $barangay)
-                ->where('status_filter', $status)
+                ->where('status_filter', $status)->forSectors($sectors)
                 ->where('exclude_printed', $excludePrinted)
+                ->where('alphabetical', $alphabetical)
                 ->where('status', 'generated')
                 ->where('resident_count', '<', self::MAX_BATCH_SIZE)
                 ->when($reprintStart, fn ($batches) => $batches->where('id', '>=', $reprintStart))
@@ -100,28 +124,34 @@ class ResidentIdCardController extends Controller
             if ($residents->isEmpty()) {
                 $barangayLabel = $barangay === 'all' ? 'all barangays' : $barangay;
                 throw ValidationException::withMessages([
-                    'barangay' => "All matching residents for {$barangayLabel} are already assigned to tracked print batches.",
+                    'barangay' => $totalResidents === 0
+                        ? "No residents match the selected filters for {$barangayLabel}."
+                        : "All matching residents for {$barangayLabel} are already assigned to tracked print batches. Choose Preview Residents to open matching pending IDs in their existing batches.",
                 ]);
             }
 
             $batchNumber = $openBatch?->batch_number ?? ((int) ResidentIdPrintBatch::query()
                 ->where('barangay', $barangay)
-                ->where('status_filter', $status)
+                ->where('status_filter', $status)->forSectors($sectors)
                 ->where('exclude_printed', $excludePrinted)
                 ->max('batch_number')) + 1;
         } else {
             $batchNumber = 1;
             $residentIds = $validated['residents'];
-            $residents = Resident::with('household')->whereIn('id', $residentIds)->get();
+            $residents = Resident::with('household')->whereIn('id', $residentIds)
+                ->when($alphabetical, fn ($query) => $query->orderBy('last_name')->orderBy('first_name'))
+                ->orderBy('id')->get();
             $totalResidents = $residents->count();
         }
 
-        $printBatch = DB::transaction(function () use ($request, $residents, $barangay, $status, $excludePrinted, $batchNumber, $totalResidents, $openBatch, $reprintStart) {
+        $printBatch = DB::transaction(function () use ($request, $residents, $barangay, $status, $excludePrinted, $batchNumber, $totalResidents, $openBatch, $reprintStart, $sectors, $alphabetical) {
             $batch = $openBatch ?? ResidentIdPrintBatch::create([
                 'reference_number' => (string) Str::uuid(),
                 'user_id' => $request->user()?->id,
                 'barangay' => $barangay,
                 'status_filter' => $status,
+                'sector_filter' => $sectors ?: null,
+                'alphabetical' => $alphabetical,
                 'exclude_printed' => $excludePrinted,
                 'batch_number' => $batchNumber,
                 'total_matching' => $totalResidents,
@@ -155,7 +185,7 @@ class ResidentIdCardController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function batchForm()
+    public function batchForm(array $preview = [])
     {
         $barangayList = \App\Models\Household::select('barangay')
             ->distinct()
@@ -165,10 +195,15 @@ class ResidentIdCardController extends Controller
 
         return view('residents.id-card-batch-form', [
             'barangayList' => $barangayList,
+            'sectorList' => Resident::query()->whereNotNull('special_sector')->where('special_sector', '!=', '')
+                ->distinct()->orderBy('special_sector')->pluck('special_sector')->all(),
+            'filterSectors' => request()->boolean('filter_sectors'),
+            'selectedSectors' => request('sectors', []),
             'selectedBarangay' => request('barangay'),
             'selectedStatus' => request('status', 'active'),
             'excludePrinted' => request()->boolean('exclude_printed', true),
-        ]);
+            'alphabetical' => request()->boolean('alphabetical', true),
+        ] + $preview);
     }
 
     public function batchHistory()
@@ -198,15 +233,18 @@ class ResidentIdCardController extends Controller
         $residents = $printBatch->items
             ->pluck('resident')
             ->filter()
+            ->sortBy($printBatch->alphabetical
+                ? [['last_name', 'asc'], ['first_name', 'asc'], ['id', 'asc']]
+                : [['id', 'asc']])
             ->values();
 
         abort_if($residents->isEmpty(), 404, 'No current resident records remain in this print batch.');
 
-        $selectedResidentIds = request()->has('selected_residents')
+        $selectedResidentIds = request()->has('selected_residents') || request()->boolean('selection_provided')
             ? array_map('intval', request()->validate([
-                'selected_residents' => ['required', 'array', 'min:1', 'max:'.self::MAX_BATCH_SIZE],
+                'selected_residents' => ['sometimes', 'array', 'max:'.self::MAX_BATCH_SIZE],
                 'selected_residents.*' => ['integer', 'distinct', Rule::in($residents->pluck('id')->all())],
-            ])['selected_residents'])
+            ])['selected_residents'] ?? [])
             : (request()->boolean('remaining')
                 ? $printBatch->items->whereNull('printed_at')->pluck('resident_id')->intersect($residents->pluck('id'))->values()->all()
                 : $residents->pluck('id')->all());
@@ -216,12 +254,12 @@ class ResidentIdCardController extends Controller
         if (! $printBatch->exclude_printed && ! $printBatch->reprint_start_batch_id && request()->filled('reprint_start')) {
             $input = request()->validate(['reprint_start' => ['integer', 'min:1', 'max:'.$printBatch->id]]);
             $reprintStart = ResidentIdPrintBatch::where('barangay', $printBatch->barangay)
-                ->where('status_filter', $printBatch->status_filter)->where('exclude_printed', false)
+                ->where('status_filter', $printBatch->status_filter)->forSectors($printBatch->sector_filter ?? [])->where('exclude_printed', false)
                 ->findOrFail($input['reprint_start'])->id;
         }
         if ($printBatch->barangay !== null) {
-            $excludedResidentIds = $this->excludedResidentIds($printBatch->exclude_printed, $printBatch->barangay, $printBatch->status_filter, $reprintStart);
-            $hasNextBatch = $this->residentScopeQuery($printBatch->barangay, $printBatch->status_filter)
+            $excludedResidentIds = $this->excludedResidentIds($printBatch->exclude_printed, $printBatch->barangay, $printBatch->status_filter, $reprintStart, $printBatch->sector_filter ?? []);
+            $hasNextBatch = $this->residentScopeQuery($printBatch->barangay, $printBatch->status_filter, $printBatch->sector_filter ?? [])
                 ->whereNotIn('id', $excludedResidentIds)
                 ->exists();
         }
@@ -240,6 +278,31 @@ class ResidentIdCardController extends Controller
         ]);
     }
 
+    public function updateOrder(Request $request, ResidentIdPrintBatch $printBatch): RedirectResponse
+    {
+        $validated = $request->validate([
+            'alphabetical' => ['required', 'boolean'],
+            'selected_residents' => ['sometimes', 'array', 'max:'.self::MAX_BATCH_SIZE],
+            'selected_residents.*' => ['integer', 'distinct',
+                Rule::exists('resident_id_print_batch_items', 'resident_id')->where('print_batch_id', $printBatch->id),
+                Rule::exists('residents', 'id'),
+            ],
+            'reprint_start' => ['nullable', 'integer', 'min:1', 'max:'.$printBatch->id,
+                Rule::exists('resident_id_print_batches', 'id')->where(fn ($query) => $query
+                    ->where('barangay', $printBatch->barangay)->where('status_filter', $printBatch->status_filter)->where('sector_filter', $printBatch->getRawOriginal('sector_filter'))->where('exclude_printed', false)),
+            ],
+        ]);
+
+        $printBatch->update(['alphabetical' => $validated['alphabetical']]);
+
+        return redirect()->route('residents.id-cards.batches.print', [
+            'printBatch' => $printBatch,
+            'selection_provided' => 1,
+            'selected_residents' => $validated['selected_residents'] ?? [],
+            'reprint_start' => $validated['reprint_start'] ?? null,
+        ]);
+    }
+
     public function markBatchPrinted(Request $request, ResidentIdPrintBatch $printBatch): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
@@ -250,7 +313,7 @@ class ResidentIdCardController extends Controller
             ],
             'reprint_start' => ['nullable', 'integer', 'min:1', 'max:'.$printBatch->id,
                 Rule::exists('resident_id_print_batches', 'id')->where(fn ($query) => $query
-                    ->where('barangay', $printBatch->barangay)->where('status_filter', $printBatch->status_filter)->where('exclude_printed', false)),
+                    ->where('barangay', $printBatch->barangay)->where('status_filter', $printBatch->status_filter)->where('sector_filter', $printBatch->getRawOriginal('sector_filter'))->where('exclude_printed', false)),
             ],
         ], ['selected_residents.required' => 'Select at least one resident to print.']);
         $selectedResidentIds = array_map('intval', $validated['selected_residents']);
@@ -292,33 +355,33 @@ class ResidentIdCardController extends Controller
         return $this->showLandscape($id);
     }
 
-    private function excludedResidentIds(bool $excludePrinted, string $barangay, string $status, ?int $reprintStart): Builder
+    private function excludedResidentIds(bool $excludePrinted, string $barangay, string $status, ?int $reprintStart, array $sectors = []): Builder
     {
         return ResidentIdPrintBatchItem::query()->whereNotNull('resident_id')
-            ->when(! $excludePrinted, function ($items) use ($barangay, $status, $reprintStart) {
-                $items->where(function ($excluded) use ($barangay, $status, $reprintStart) {
+            ->when(! $excludePrinted, function ($items) use ($barangay, $status, $reprintStart, $sectors) {
+                $items->where(function ($excluded) use ($barangay, $status, $reprintStart, $sectors) {
                     $excluded->whereNull('printed_at');
                     if ($reprintStart !== null) {
                         // Keep IDs already handled in this reprint sequence out of its next batch.
                         $excluded->orWhereHas('batch', fn ($batch) => $batch
-                            ->where('barangay', $barangay)->where('status_filter', $status)
+                            ->where('barangay', $barangay)->where('status_filter', $status)->forSectors($sectors)
                             ->where('exclude_printed', false)->where('id', '>=', $reprintStart));
                     }
                 });
             })->select('resident_id');
     }
 
-    private function residentScopeQuery(string $barangay, string $status): Builder
+    private function residentScopeQuery(string $barangay, string $status, array $sectors = [], bool $alphabetical = true): Builder
     {
         return Resident::with('household')
             ->when(
                 $barangay !== 'all',
                 fn ($residents) => $residents->whereHas('household', fn ($household) => $household->where('barangay', $barangay))
             )
+            ->when($sectors, fn ($residents) => $residents->whereIn('special_sector', $sectors))
             ->when($status === 'active', fn ($residents) => $residents->where('is_active', true))
             ->when($status === 'inactive', fn ($residents) => $residents->where('is_active', false))
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->when($alphabetical, fn ($residents) => $residents->orderBy('last_name')->orderBy('first_name'))
             ->orderBy('id');
     }
 }
