@@ -10,7 +10,7 @@
         <div class="mx-auto max-w-5xl space-y-5 sm:px-6 lg:px-8">
             <x-mary-card>
                 <dl class="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <div><dt class="text-xs text-gray-500">Scope</dt><dd class="font-semibold">{{ $printBatch->barangay === 'all' ? 'All Barangays' : ($printBatch->barangay ?: 'Manual selection') }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">Scope</dt><dd class="font-semibold">{{ $printBatch->barangay === 'all' ? 'All Barangays' : ($printBatch->barangay ?: 'Manual selection') }}<span class="block text-sm font-normal">{{ str($printBatch->status_filter)->headline() }} · {{ $printBatch->sector_label }}</span></dd></div>
                     <div><dt class="text-xs text-gray-500">Batch</dt><dd class="font-semibold">{{ $printBatch->batch_number }}</dd></div>
                     <div><dt class="text-xs text-gray-500">IDs</dt><dd class="font-semibold">{{ $printBatch->resident_count }}</dd></div>
                     <div><dt class="text-xs text-gray-500">Status</dt><dd class="font-semibold">{{ str($printBatch->status)->replace('_', ' ')->headline() }}</dd></div>

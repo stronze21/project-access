@@ -348,6 +348,261 @@ class ResidentPinAndIdBatchTest extends TestCase
             ->assertViewHas('selectedResidentIds', [])->assertSee('Print 0 Selected ID(s)');
     }
 
+    public function test_sector_preview_combines_filters_without_assigning_residents(): void
+    {
+        $household = $this->household('Poblacion');
+        $other = $this->household('San Jose');
+        $included = $this->resident('SECTOR-1', ['household_id' => $household->id, 'special_sector' => 'PWD']);
+        $this->resident('SECTOR-2', ['household_id' => $household->id, 'special_sector' => 'PWD', 'is_active' => false]);
+        $this->resident('SECTOR-3', ['household_id' => $household->id, 'special_sector' => 'Senior Citizen']);
+        $this->resident('SECTOR-4', ['household_id' => $other->id, 'special_sector' => 'PWD']);
+        $this->actingAs($this->staff(['view-residents']));
+        $this->get(route('residents.id-cards.form'))->assertOk()->assertSee('Filter by sector')->assertSee('Preview Residents');
+        $payload = ['barangay' => 'Poblacion', 'status' => 'active', 'filter_sectors' => 1, 'sectors' => ['PWD']];
+        $this->post(route('residents.id-cards.batch'), $payload + ['action' => 'preview'])
+            ->assertOk()->assertViewHas('matchingCount', 1)->assertViewHas('eligibleCount', 1)
+            ->assertViewHas('previewResidents', fn ($residents) => $residents->pluck('id')->all() === [$included->id]);
+        $this->assertSame(0, ResidentIdPrintBatch::count());
+        $this->post(route('residents.id-cards.batch'), $payload)->assertRedirect();
+        $this->post(route('residents.id-cards.batch'), $payload + ['action' => 'preview'])
+            ->assertOk()->assertViewHas('eligibleCount', 0)->assertViewHas('excludedCount', 1);
+        $this->assertSame(1, ResidentIdPrintBatch::count());
+    }
+
+    public function test_sector_toggle_off_ignores_stale_selection_and_includes_residents_without_sector(): void
+    {
+        $household = $this->household('Poblacion');
+        $this->resident('OFF-1', ['household_id' => $household->id, 'special_sector' => 'PWD']);
+        $this->resident('OFF-2', ['household_id' => $household->id, 'special_sector' => null, 'is_active' => false]);
+        $this->actingAs($this->staff(['view-residents']))->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Poblacion', 'status' => 'all', 'filter_sectors' => 0, 'sectors' => ['Unknown'],
+        ])->assertRedirect();
+        $batch = ResidentIdPrintBatch::firstOrFail();
+        $this->assertNull($batch->sector_filter);
+        $this->assertSame(2, $batch->items()->count());
+    }
+
+    public function test_enabled_sector_filter_requires_valid_selection(): void
+    {
+        $this->household('Poblacion');
+        $this->actingAs($this->staff(['view-residents']));
+        $payload = ['barangay' => 'Poblacion', 'filter_sectors' => 1];
+        $this->post(route('residents.id-cards.batch'), $payload)->assertSessionHasErrors('sectors');
+        $this->post(route('residents.id-cards.batch'), $payload + ['sectors' => ['Unknown']])->assertSessionHasErrors('sectors.0');
+        $this->assertSame(0, ResidentIdPrintBatch::count());
+    }
+
+    public function test_sector_scopes_stay_separate_and_protection_applies_across_scopes(): void
+    {
+        $household = $this->household('Poblacion');
+        $first = $this->resident('SCOPE-1', ['household_id' => $household->id, 'special_sector' => 'PWD', 'last_name' => 'Zulu']);
+        $this->actingAs($this->staff(['view-residents']));
+        $base = ['barangay' => 'Poblacion', 'status' => 'active'];
+        $this->post(route('residents.id-cards.batch'), $base)->assertRedirect();
+        $unfiltered = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $second = $this->resident('SCOPE-2', ['household_id' => $household->id, 'special_sector' => 'PWD', 'last_name' => 'Zulu']);
+        $filtered = $base + ['filter_sectors' => 1, 'sectors' => ['PWD']];
+        $this->post(route('residents.id-cards.batch'), $filtered)->assertRedirect();
+        $batch = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertNotSame($unfiltered->id, $batch->id);
+        $this->assertSame([$second->id], $batch->items()->pluck('resident_id')->all());
+        $this->assertSame([$first->id], $unfiltered->items()->pluck('resident_id')->all());
+        $third = $this->resident('SCOPE-3', ['household_id' => $household->id, 'special_sector' => 'PWD', 'last_name' => 'Abad']);
+        $this->post(route('residents.id-cards.batch'), $filtered)->assertRedirect(route('residents.id-cards.batches.print', $batch));
+        $this->get(route('residents.id-cards.batches.print', $batch))->assertOk()
+            ->assertViewHas('residents', fn ($residents) => $residents->pluck('id')->all() === [$third->id, $second->id]);
+        $this->get(route('residents.id-cards.batches.index'))->assertOk()->assertSee('PWD');
+        $this->get(route('residents.id-cards.batches.show', $batch))->assertOk()->assertSee('PWD');
+        $this->postJson(route('residents.id-cards.batches.printed', $batch), ['selected_residents' => [$third->id]])->assertOk();
+        $fourth = $this->resident('SCOPE-4', ['household_id' => $household->id, 'special_sector' => 'PWD']);
+        $this->post(route('residents.id-cards.batch'), $filtered)->assertRedirect();
+        $next = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertNotSame($batch->id, $next->id);
+        $this->assertSame([$fourth->id], $next->items()->pluck('resident_id')->all());
+        $this->get(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'remaining' => 1]))->assertOk()
+            ->assertViewHas('selectedResidentIds', [$second->id]);
+    }
+
+    public function test_multiple_sectors_are_canonical_and_inactive_filter_is_respected(): void
+    {
+        $household = $this->household('Poblacion');
+        foreach (['PWD', 'Senior Citizen', 'Other'] as $index => $sector) {
+            $this->resident('MULTI-'.$index, ['household_id' => $household->id, 'special_sector' => $sector, 'is_active' => false]);
+        }
+        $this->resident('MULTI-ACTIVE', ['household_id' => $household->id, 'special_sector' => 'PWD']);
+        $this->actingAs($this->staff(['view-residents']));
+        $payload = ['barangay' => 'Poblacion', 'status' => 'inactive', 'filter_sectors' => 1];
+        $this->post(route('residents.id-cards.batch'), $payload + ['sectors' => ['Senior Citizen', 'PWD']])->assertRedirect();
+        $batch = ResidentIdPrintBatch::firstOrFail();
+        $this->assertSame(['PWD', 'Senior Citizen'], $batch->sector_filter);
+        $this->assertSame(2, $batch->items()->count());
+        $this->post(route('residents.id-cards.batch'), $payload + ['sectors' => ['PWD', 'Senior Citizen']])
+            ->assertRedirect(route('residents.id-cards.batches.print', $batch));
+        $this->assertSame(1, ResidentIdPrintBatch::count());
+    }
+
+    public function test_sector_batches_and_reprints_continue_within_the_selected_sector(): void
+    {
+        $household = $this->household('Poblacion');
+        foreach (range(1, 101) as $number) {
+            $this->resident('NEXT-'.$number, ['household_id' => $household->id, 'special_sector' => 'PWD']);
+        }
+        $this->resident('NEXT-OTHER', ['household_id' => $household->id, 'special_sector' => 'Other']);
+        $this->actingAs($this->staff(['view-residents']));
+        foreach ([1, 0] as $protect) {
+            $start = null;
+            $seen = [];
+            foreach ([100, 1] as $index => $count) {
+                $payload = ['barangay' => 'Poblacion', 'status' => 'active', 'filter_sectors' => 1,
+                    'sectors' => ['PWD'], 'exclude_printed' => $protect];
+                if ($start !== null) {
+                    $payload['reprint_start'] = $start;
+                }
+                $this->post(route('residents.id-cards.batch'), $payload)->assertRedirect();
+                $batch = ResidentIdPrintBatch::latest('id')->firstOrFail();
+                $start ??= $protect ? null : $batch->id;
+                $ids = $batch->items()->pluck('resident_id')->all();
+                $this->assertCount($count, $ids);
+                $this->assertSame([], array_values(array_intersect($seen, $ids)));
+                $seen = array_merge($seen, $ids);
+                $response = $this->get(route('residents.id-cards.batches.print', $batch))->assertOk()
+                    ->assertViewHas('hasNextBatch', $index === 0)->assertSee('PWD');
+                if ($index === 0) {
+                    $response->assertSee('name="sectors[]" value="PWD"', false);
+                }
+                $this->postJson(route('residents.id-cards.batches.printed', $batch), array_filter([
+                    'selected_residents' => $ids, 'reprint_start' => $start,
+                ]))->assertOk();
+            }
+        }
+    }
+
+    public function test_preview_retains_html_selected_barangay_and_status_for_generation(): void
+    {
+        $household = $this->household('Sta. Maria');
+        $resident = $this->resident('PREVIEW-INACTIVE', ['household_id' => $household->id, 'is_active' => false, 'special_sector' => 'PWD']);
+        $this->actingAs($this->staff(['view-residents']));
+        $response = $this->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Sta. Maria', 'status' => 'inactive', 'filter_sectors' => 1,
+            'sectors' => ['PWD'], 'action' => 'preview',
+        ])->assertOk();
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $payload = ['filter_sectors' => 1, 'sectors' => ['PWD'], 'action' => 'generate'];
+        foreach (['barangay', 'status'] as $field) {
+            $options = $xpath->query("//select[@name='{$field}']/option[@selected]");
+            $this->assertSame(1, $options->length);
+            $payload[$field] = $options->item(0)->getAttribute('value');
+        }
+        $this->assertSame('Sta. Maria', $payload['barangay']);
+        $this->assertSame('inactive', $payload['status']);
+        $this->post(route('residents.id-cards.batch'), $payload)->assertRedirect();
+        $this->assertSame([$resident->id], ResidentIdPrintBatch::firstOrFail()->items()->pluck('resident_id')->all());
+    }
+
+    public function test_preview_links_only_matching_pending_residents_in_all_barangays_batch(): void
+    {
+        $household = $this->household('Pocalpocal');
+        $other = $this->household('Pandan');
+        $resident = $this->resident('PENDING-SCOPE', ['household_id' => $household->id, 'special_sector' => 'PWD']);
+        $this->resident('PENDING-OTHER', ['household_id' => $other->id, 'special_sector' => 'PWD']);
+        $this->actingAs($this->staff(['view-residents']));
+        $this->post(route('residents.id-cards.batch'), ['barangay' => 'all', 'status' => 'active'])->assertRedirect();
+        $batch = ResidentIdPrintBatch::firstOrFail();
+        $response = $this->post(route('residents.id-cards.batch'), [
+            'barangay' => 'Pocalpocal', 'status' => 'active', 'filter_sectors' => 1, 'sectors' => ['PWD'], 'action' => 'preview',
+        ])->assertOk()->assertViewHas('eligibleCount', 0)->assertSee('Open 1 Matching Pending ID(s)');
+        $link = route('residents.id-cards.batches.print', ['printBatch' => $batch->id, 'selected_residents' => [$resident->id]]);
+        $response->assertSee($link);
+        $this->get($link)->assertOk()->assertViewHas('selectedResidentIds', [$resident->id]);
+        $this->assertSame(1, ResidentIdPrintBatch::count());
+        $this->assertNull($batch->fresh()->printed_at);
+    }
+
+    public function test_sorting_is_applied_before_batch_limit_and_retained_for_next_batch(): void
+    {
+        $household = $this->household('Poblacion');
+        $ids = [];
+        foreach (range(101, 1) as $number) {
+            $ids[] = $this->resident('SORT-'.$number, [
+                'household_id' => $household->id,
+                'last_name' => 'Name'.str_pad((string) $number, 3, '0', STR_PAD_LEFT),
+            ])->id;
+        }
+        $this->actingAs($this->staff(['view-residents']));
+        $base = ['barangay' => 'Poblacion', 'status' => 'active'];
+        foreach ([0 => $ids, 1 => array_reverse($ids)] as $order => $expected) {
+            $this->post(route('residents.id-cards.batch'), $base + ['alphabetical' => $order, 'action' => 'preview'])
+                ->assertOk()->assertViewHas('alphabetical', (bool) $order)
+                ->assertViewHas('previewResidents', fn ($rows) => $rows->pluck('id')->all() === array_slice($expected, 0, 100));
+        }
+        $this->post(route('residents.id-cards.batch'), $base + ['alphabetical' => 0])->assertRedirect();
+        $batch = ResidentIdPrintBatch::firstOrFail();
+        $this->assertFalse($batch->alphabetical);
+        $this->assertSame(array_slice($ids, 0, 100), $batch->items()->orderBy('id')->pluck('resident_id')->all());
+        $this->get(route('residents.id-cards.batches.print', $batch))->assertOk()
+            ->assertSee('name="alphabetical" value="0"', false)
+            ->assertViewHas('residents', fn ($rows) => $rows->pluck('id')->all() === array_slice($ids, 0, 100));
+        $this->post(route('residents.id-cards.batch'), $base + ['alphabetical' => 0])->assertRedirect();
+        $next = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertFalse($next->alphabetical);
+        $this->assertSame([$ids[100]], $next->items()->pluck('resident_id')->all());
+    }
+
+    public function test_existing_batch_order_can_change_without_losing_selection_or_print_status(): void
+    {
+        $zulu = $this->resident('ORDER-Z', ['last_name' => 'Zulu']);
+        $bob = $this->resident('ORDER-B', ['last_name' => 'Abad', 'first_name' => 'Bob']);
+        $ana = $this->resident('ORDER-A', ['last_name' => 'Abad', 'first_name' => 'Ana']);
+        $this->actingAs($this->staff(['view-residents']));
+        $ids = [$zulu->id, $bob->id, $ana->id];
+        $this->post(route('residents.id-cards.batch'), ['residents' => $ids])->assertRedirect();
+        $batch = ResidentIdPrintBatch::firstOrFail();
+        $this->assertTrue($batch->alphabetical);
+        $this->get(route('residents.id-cards.batches.print', $batch))->assertOk()
+            ->assertViewHas('residents', fn ($rows) => $rows->pluck('id')->all() === [$ana->id, $bob->id, $zulu->id]);
+        $this->postJson(route('residents.id-cards.batches.printed', $batch), ['selected_residents' => [$zulu->id]])->assertOk();
+        $before = $batch->fresh()->only(['status', 'printed_at', 'resident_count']);
+        $itemsBefore = $batch->items()->orderBy('id')->get()->toArray();
+        $changed = $this->post(route('residents.id-cards.batches.order', $batch), [
+            'alphabetical' => 0, 'selected_residents' => [$ana->id],
+        ])->assertRedirect();
+        $this->get($changed->headers->get('Location'))->assertOk()
+            ->assertViewHas('selectedResidentIds', [$ana->id])
+            ->assertViewHas('residents', fn ($rows) => $rows->pluck('id')->all() === $ids);
+        $this->assertFalse($batch->fresh()->alphabetical);
+        $this->assertEquals($before, $batch->fresh()->only(['status', 'printed_at', 'resident_count']));
+        $this->assertSame($itemsBefore, $batch->items()->orderBy('id')->get()->toArray());
+        $this->get(route('residents.id-cards.batches.print', ['printBatch' => $batch, 'remaining' => 1]))
+            ->assertOk()->assertViewHas('selectedResidentIds', fn ($selected) => collect($selected)->sort()->values()->all() === [$bob->id, $ana->id]);
+        $empty = $this->post(route('residents.id-cards.batches.order', $batch), ['alphabetical' => 1])->assertRedirect();
+        $this->get($empty->headers->get('Location'))->assertOk()->assertViewHas('selectedResidentIds', []);
+        $this->assertTrue($batch->fresh()->alphabetical);
+        $outsider = $this->resident('ORDER-OUTSIDE');
+        $this->post(route('residents.id-cards.batches.order', $batch), [
+            'alphabetical' => 0, 'selected_residents' => [$outsider->id],
+        ])->assertSessionHasErrors('selected_residents.0');
+        $this->assertTrue($batch->fresh()->alphabetical);
+    }
+
+    public function test_different_sorting_settings_do_not_extend_the_same_open_batch(): void
+    {
+        $household = $this->household('Poblacion');
+        $this->resident('OPEN-A', ['household_id' => $household->id]);
+        $this->actingAs($this->staff(['view-residents']));
+        $base = ['barangay' => 'Poblacion', 'status' => 'active'];
+        $this->post(route('residents.id-cards.batch'), $base)->assertRedirect();
+        $first = ResidentIdPrintBatch::firstOrFail();
+        $new = $this->resident('OPEN-B', ['household_id' => $household->id]);
+        $this->post(route('residents.id-cards.batch'), $base + ['alphabetical' => 0])->assertRedirect();
+        $second = ResidentIdPrintBatch::latest('id')->firstOrFail();
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertSame(1, $first->items()->count());
+        $this->assertSame([$new->id], $second->items()->pluck('resident_id')->all());
+        $this->assertFalse($second->alphabetical);
+    }
+
     private function staff(array $permissions): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

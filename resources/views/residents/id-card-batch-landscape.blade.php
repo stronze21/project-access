@@ -21,13 +21,18 @@
                 <a href="{{ route('residents.id-cards.batches.index') }}">Print History / Pending IDs</a>
                 <button type="button" data-select-all="true">Select All</button>
                 <button type="button" data-select-all="false">Deselect All</button>
-                <a href="{{ route('residents.id-cards.form', array_filter(['barangay' => $barangay ?? null, 'status' => $status ?? null])) }}">Back to Selection</a>
+                <a href="{{ route('residents.id-cards.form', array_filter(['barangay' => $barangay ?? null, 'status' => $status ?? null, 'filter_sectors' => (bool) $printBatch->sector_filter, 'sectors' => $printBatch->sector_filter, 'exclude_printed' => (int) $printBatch->exclude_printed, 'alphabetical' => (int) $printBatch->alphabetical], fn ($value) => $value !== null)) }}">Back to Selection</a>
             </div>
             @if ($hasNextBatch ?? false)
                 <form action="{{ route('residents.id-cards.batch') }}" method="POST">
                     @csrf
+                    <input type="hidden" name="alphabetical" value="{{ (int) $printBatch->alphabetical }}">
                     <input type="hidden" name="barangay" value="{{ $barangay }}">
                     <input type="hidden" name="status" value="{{ $status }}">
+                    <input type="hidden" name="filter_sectors" value="{{ $printBatch->sector_filter ? 1 : 0 }}">
+                    @foreach ($printBatch->sector_filter ?? [] as $sector)
+                        <input type="hidden" name="sectors[]" value="{{ $sector }}">
+                    @endforeach
                     <input type="hidden" name="exclude_printed" value="{{ $printBatch->exclude_printed ? 1 : 0 }}">
                     @unless ($printBatch->exclude_printed)
                         <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
@@ -36,12 +41,28 @@
                 </form>
             @endif
         </div>
+        <form id="batch-order-form" action="{{ route('residents.id-cards.batches.order', $printBatch) }}" method="POST" class="batch-toolbar-actions">
+            @csrf
+            <input type="hidden" name="alphabetical" value="0">
+            @unless ($printBatch->exclude_printed)
+                <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
+            @endunless
+            <label><input type="checkbox" name="alphabetical" value="1" @checked($printBatch->alphabetical)> Arrange alphabetically (A–Z by surname)</label>
+            <button type="submit">Apply order</button>
+            <span>Order: {{ $printBatch->alphabetical ? 'Surname A–Z' : 'Resident record ID' }}</span>
+            <div id="order-selection-inputs">
+                @foreach ($selectedResidentIds as $residentId)
+                    <input type="hidden" name="selected_residents[]" value="{{ $residentId }}">
+                @endforeach
+            </div>
+        </form>
         <div class="batch-toolbar-meta">
             @if ($barangay ?? null)
                 <span class="batch-toolbar-chip">{{ $barangay === 'all' ? 'All Barangays' : $barangay }}</span>
                 <span class="batch-toolbar-chip">Batch {{ $batchNumber }}</span>
                 <span class="batch-toolbar-chip">{{ $residents->count() }} assigned ID(s)</span>
             @endif
+            <span class="batch-toolbar-chip">{{ str($status)->headline() }} · {{ $printBatch->sector_label }}</span>
             <span class="batch-toolbar-chip batch-toolbar-reference">Reference: {{ $printBatch->reference_number }}</span>
             @unless ($printBatch->exclude_printed)
                 <span class="batch-toolbar-chip batch-toolbar-warning">Reprint mode enabled</span>
@@ -69,7 +90,7 @@
         @endforeach
     </main>
     <script>
-        const choices = [...document.querySelectorAll('[name="selected_residents[]"]')];
+        const choices = [...document.querySelectorAll('.resident-print-selection [name="selected_residents[]"]')];
         const printButton = document.getElementById('print-selected');
         function updateSelection() {
             const selected = choices.filter(choice => choice.checked);
@@ -93,6 +114,17 @@
         });
         document.getElementById('batch-print-form').addEventListener('submit', event => {
             if (!choices.some(choice => choice.checked)) event.preventDefault();
+        });
+        document.getElementById('batch-order-form').addEventListener('submit', () => {
+            const inputs = document.getElementById('order-selection-inputs');
+            inputs.replaceChildren();
+            choices.filter(choice => choice.checked).forEach(choice => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_residents[]';
+                input.value = choice.value;
+                inputs.append(input);
+            });
         });
         window.addEventListener('beforeprint', updateSelection);
         window.addEventListener('pageshow', updateSelection);
