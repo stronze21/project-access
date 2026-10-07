@@ -9,20 +9,25 @@
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
             <x-mary-card>
+                <p class="mb-4 text-sm text-gray-500">Print initiation records opening the print dialog, not successful physical printing. Remaining counts include only residents still available to print.</p>
                 <div class="overflow-x-auto">
                     <table class="table">
-                        <thead><tr><th>Reference</th><th>Scope</th><th>Batch</th><th>IDs</th><th>Status</th><th>Prepared/Printed By</th><th>Date</th><th></th></tr></thead>
+                        <thead><tr><th>Reference</th><th>Scope</th><th>Batch</th><th>Assigned / Initiated / Remaining</th><th>Status</th><th>Prepared/Printed By</th><th>Date</th><th></th></tr></thead>
                         <tbody>
                             @forelse ($printBatches as $batch)
                                 <tr>
                                     <td class="font-mono text-xs">{{ $batch->reference_number }}</td>
                                     <td>{{ $batch->barangay === 'all' ? 'All Barangays' : ($batch->barangay ?: 'Manual selection') }}<br><span class="text-xs text-gray-500">{{ str($batch->status_filter)->headline() }} · {{ $batch->exclude_printed ? 'Duplicates hidden' : 'Reprint mode' }}</span></td>
                                     <td>{{ $batch->batch_number }}</td>
-                                    <td>{{ $batch->resident_count }}<br><span class="text-xs text-gray-500">{{ $batch->initiated_count }} print initiated</span></td>
+                                    <td>{{ $batch->resident_count }} assigned<br><span class="text-xs text-gray-500">{{ $batch->initiated_count }} print initiated<br>{{ $batch->remaining_count }} remaining available</span></td>
                                     <td><x-mary-badge :value="$batch->status === 'print_initiated' ? 'Print initiated' : 'Generated'" :class="$batch->status === 'print_initiated' ? 'badge-success' : 'badge-warning'" /></td>
                                     <td>{{ $batch->user?->name ?: 'Unknown user' }}</td>
                                     <td>{{ ($batch->printed_at ?: $batch->created_at)->format('M d, Y h:i A') }}</td>
-                                    <td><x-mary-button link="{{ route('residents.id-cards.batches.show', $batch) }}" size="sm" class="btn-outline">View IDs</x-mary-button></td>
+                                    <td><x-mary-button link="{{ route('residents.id-cards.batches.show', $batch) }}" size="sm" class="btn-outline">View IDs</x-mary-button>
+                                        @if ($batch->remaining_count > 0)
+                                            <x-mary-button link="{{ route('residents.id-cards.batches.print', ['printBatch' => $batch, 'remaining' => 1]) }}" size="sm" class="btn-primary">Print Remaining ({{ $batch->remaining_count }})</x-mary-button>
+                                        @endif
+                                    </td>
                                 </tr>
                             @empty
                                 <tr><td colspan="8" class="py-8 text-center text-gray-500">No ID print batches have been generated yet.</td></tr>
