@@ -15,7 +15,7 @@
                     @unless ($printBatch->exclude_printed)
                         <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
                     @endunless
-                    <button id="print-selected" type="submit">Print {{ count($selectedResidentIds) }} Selected ID(s)</button>
+                    <button id="print-selected" type="submit" disabled>Print {{ count($selectedResidentIds) }} Selected ID(s)</button>
                 </form>
                 <a href="{{ route('residents.id-cards.batches.print', ['printBatch' => $printBatch, 'remaining' => 1, 'reprint_start' => $printBatch->exclude_printed ? null : $reprintStart]) }}">Print Remaining</a>
                 <a href="{{ route('residents.id-cards.batches.index') }}">Print History / Pending IDs</a>
@@ -68,16 +68,28 @@
                 <span class="batch-toolbar-chip batch-toolbar-warning">Reprint mode enabled</span>
             @endunless
         </div>
-        <p class="selection-summary">{{ $printBatch->items->whereNotNull('printed_at')->count() }} print initiated; {{ $printBatch->items->whereNull('printed_at')->whereNotNull('resident')->count() }} remaining available in this batch. Print initiation does not confirm physical printing. Pending IDs stay in their original batches; open Print History to resume them.</p>
+        <p class="selection-summary" id="print-tracking-summary">{{ $printBatch->items->whereNotNull('printed_at')->count() }} print initiated; {{ $printBatch->items->whereNull('printed_at')->whereNotNull('resident')->count() }} remaining available in this batch. Print initiation does not confirm physical printing. Pending IDs stay in their original batches; open Print History to resume them.</p>
         <p class="selection-summary" id="selection-summary" aria-live="polite">Uncheck any resident to exclude both sides from printing.</p>
+        <p class="selection-summary" id="image-status" role="status" aria-live="polite">Loading print images…</p>
+        <button type="button" id="retry-images" hidden>Retry failed images</button>
+        <p class="selection-summary" id="print-error" role="alert"></p>
+        <noscript>Enable JavaScript to check images and print this batch safely.</noscript>
         @if (isset($errors) && $errors->any())
             <p role="alert">{{ $errors->first() }}</p>
         @endif
     </nav>
 
+    <p class="print-not-ready">Printing blocked: selected ID images are not ready. Close this dialog and use the page's Print button after all images have loaded.</p>
+    <style>
+        .print-not-ready { display: none; }
+        @media print {
+            body:not(.batch-images-ready) .batch-sheet { display: none !important; }
+            body:not(.batch-images-ready) .print-not-ready { display: block; }
+        }
+    </style>
     <main class="card-sheet batch-sheet" aria-label="Batch ACCESS identification cards">
         @foreach ($residents as $resident)
-            <div class="resident-print-group {{ in_array($resident->id, $selectedResidentIds) ? '' : 'print-excluded' }}">
+            <div data-print-initiated="{{ $printBatch->items->firstWhere('resident_id', $resident->id)?->printed_at ? '1' : '0' }}" class="resident-print-group {{ in_array($resident->id, $selectedResidentIds) ? '' : 'print-excluded' }}">
                 <label class="resident-print-selection">
                     <input type="checkbox" name="selected_residents[]" value="{{ $resident->id }}"
                         form="batch-print-form" @checked(in_array($resident->id, $selectedResidentIds))>
@@ -100,7 +112,7 @@
                 group.classList.remove('last-print-group');
             });
             selected.at(-1)?.closest('.resident-print-group').classList.add('last-print-group');
-            printButton.disabled = selected.length === 0;
+            updateImageStatus();
             printButton.textContent = `Print ${selected.length} Selected ID(s)`;
             document.getElementById('selection-summary').textContent =
                 `${selected.length} of ${choices.length} selected. Unchecked residents will not print (front and back).`;
@@ -112,8 +124,118 @@
                 updateSelection();
             });
         });
-        document.getElementById('batch-print-form').addEventListener('submit', event => {
-            if (!choices.some(choice => choice.checked)) event.preventDefault();
+        const imageStatus = document.getElementById('image-status');
+        const retryButton = document.getElementById('retry-images');
+        const printError = document.getElementById('print-error');
+        const images = [...document.querySelectorAll('.resident-print-group img')];
+        const states = new Map();
+        let printing = false;
+
+        function selectedImages() {
+            return choices.filter(choice => choice.checked)
+                .flatMap(choice => [...choice.closest('.resident-print-group').querySelectorAll('img')]);
+        }
+
+        function updateImageStatus() {
+            const selected = selectedImages();
+            const failed = selected.filter(img => states.get(img)?.status === 'failed');
+            const readyCount = selected.filter(img => states.get(img)?.status === 'ready' && img.complete && img.naturalWidth > 0).length;
+            const ready = selected.length > 0 && readyCount === selected.length;
+            document.body.classList.toggle('batch-images-ready', ready);
+            printButton.disabled = printing || !ready;
+            retryButton.hidden = failed.length === 0;
+            retryButton.disabled = printing;
+            imageStatus.textContent = selected.length === 0 ? 'Select at least one ID to print.'
+                : failed.length ? readyCount + ' of ' + selected.length + ' images ready. Failed: ' +
+                    [...new Set(failed.map(img => img.alt || 'ID card background'))].join('; ') + '. Retry before printing.'
+                : ready ? 'All ' + selected.length + ' selected ID images are ready to print.'
+                : 'Loading print images: ' + readyCount + ' of ' + selected.length + ' ready. Please wait.';
+            return ready;
+        }
+
+        function watchImage(img, reload = false) {
+            const previous = states.get(img);
+            previous?.cleanup();
+            const state = { status: 'loading', cleanup: () => {} };
+            states.set(img, state);
+            const finish = status => {
+                if (states.get(img) !== state) return;
+                state.status = status;
+                clearTimeout(timer);
+                updateImageStatus();
+            };
+            const loaded = async () => {
+                try {
+                    if (!img.complete || img.naturalWidth === 0) throw new Error('Image unavailable');
+                    if (img.decode) await img.decode();
+                    finish('ready');
+                } catch { finish('failed'); }
+            };
+            const failed = () => finish('failed');
+            const timer = setTimeout(failed, 30000);
+            state.cleanup = () => {
+                clearTimeout(timer);
+                img.removeEventListener('load', loaded);
+                img.removeEventListener('error', failed);
+            };
+            img.addEventListener('load', loaded);
+            img.addEventListener('error', failed);
+            if (reload) {
+                const url = new URL(img.src, window.location.href);
+                if (url.protocol === 'http:' || url.protocol === 'https:') url.searchParams.set('_print_retry', Date.now());
+                img.src = url.href;
+            } else if (img.complete) {
+                loaded();
+            }
+        }
+
+        retryButton.addEventListener('click', () => {
+            selectedImages().filter(img => states.get(img)?.status === 'failed').forEach(img => watchImage(img, true));
+            updateImageStatus();
+        });
+
+        document.getElementById('batch-print-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            if (printing || !updateImageStatus()) return;
+            const form = event.currentTarget;
+            const payload = new FormData(form);
+            printing = true;
+            printError.textContent = '';
+            const controls = [...document.querySelectorAll('.batch-toolbar button, .batch-toolbar input, .resident-print-selection input')];
+            controls.forEach(control => { control.disabled = true; });
+            updateImageStatus();
+            const requestController = new AbortController();
+            const requestTimer = setTimeout(() => requestController.abort(), 30000);
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', body: payload, credentials: 'same-origin', signal: requestController.signal,
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok || response.redirected || !response.headers.get('content-type')?.includes('application/json')) {
+                    throw new Error('Could not record print initiation. Check your connection or session, then try again.');
+                }
+                await response.json();
+                clearTimeout(requestTimer);
+                choices.filter(choice => choice.checked).forEach(choice => {
+                    const group = choice.closest('.resident-print-group');
+                    group.dataset.printInitiated = '1';
+                    group.querySelector('small').textContent = 'Print previously initiated';
+                });
+                const initiated = choices.filter(choice => choice.closest('.resident-print-group').dataset.printInitiated === '1').length;
+                document.getElementById('print-tracking-summary').textContent =
+                    initiated + ' print initiated; ' + (choices.length - initiated) + ' remaining available in this batch. Print initiation does not confirm physical printing. Pending IDs stay in their original batches; open Print History to resume them.';
+                if (!updateImageStatus()) throw new Error('Some images are no longer ready. Retry them before printing.');
+                window.print();
+            } catch (error) {
+                printError.textContent = error.name === 'AbortError'
+                    ? 'The print request timed out. Check your connection and try again. Print initiation may already have been recorded.'
+                    : error.message || 'Printing could not start. Please try again.';
+            } finally {
+                clearTimeout(requestTimer);
+                printing = false;
+                controls.forEach(control => { control.disabled = false; });
+                updateSelection();
+            }
         });
         document.getElementById('batch-order-form').addEventListener('submit', () => {
             const inputs = document.getElementById('order-selection-inputs');
@@ -128,10 +250,8 @@
         });
         window.addEventListener('beforeprint', updateSelection);
         window.addEventListener('pageshow', updateSelection);
+        images.forEach(img => watchImage(img));
         updateSelection();
-        @if (request()->boolean('print'))
-            window.addEventListener('load', () => window.print());
-        @endif
     </script>
 </body>
 </html>
