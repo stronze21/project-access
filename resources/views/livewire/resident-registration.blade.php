@@ -545,7 +545,13 @@
                         <div class="mb-6">
                             <h4 class="mb-2 text-sm font-medium text-gray-700">Location</h4>
                             <livewire:address-selector :initialRegionCode="$regionCode" :initialProvinceCode="$provinceCode" :initialCityCode="$cityMunicipalityCode"
-                                :initialBarangayCode="$barangayCode" />
+                                :initialBarangayCode="$barangayCode" :dispatchInitialAddress="! $isEdit" />
+                            @if ($isEdit && filled($barangay) && blank($barangayCode))
+                                <p class="mt-2 text-sm text-gray-600">Saved barangay: {{ $barangay }}. This will be kept unless you select a different barangay.</p>
+                            @endif
+                            @error('barangay')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
 

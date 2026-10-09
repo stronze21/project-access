@@ -33,7 +33,7 @@ class AddressSelector extends Component
     protected $defaultProvinceCode = '0155'; // PANGASINAN code
     protected $defaultCityCode = '015503';   // CITY OF ALAMINOS code
 
-    public function mount($initialRegionCode = null, $initialProvinceCode = null, $initialCityCode = null, $initialBarangayCode = null)
+    public function mount($initialRegionCode = null, $initialProvinceCode = null, $initialCityCode = null, $initialBarangayCode = null, $dispatchInitialAddress = true)
     {
 
         $this->regionCode = $initialRegionCode ?? SystemSetting::get('region_code');
@@ -87,6 +87,11 @@ class AddressSelector extends Component
                     }
                 }
             }
+        }
+
+        // Resident edits already own the saved address, including legacy names.
+        if (! $dispatchInitialAddress) {
+            return;
         }
 
         // Dispatch the initial values to the parent component

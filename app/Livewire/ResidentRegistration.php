@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Barangay;
 use App\Models\CityMunicipality;
 use App\Models\CivilStatus;
 use App\Models\EducationalAttainment;
@@ -134,6 +135,7 @@ class ResidentRegistration extends Component
     public $address = '';
 
     // Location data from the AddressSelector
+    #[Validate('required|string|max:255', message: 'Please select a barangay before saving.')]
     public $barangay = '';
 
     public $cityMunicipality = '';
@@ -285,6 +287,9 @@ class ResidentRegistration extends Component
     {
         if ($residentId) {
             $this->loadResident($residentId);
+            $this->resolveExistingBarangay();
+
+            return;
         } else {
             $this->birthDate = now()->subYears(18)->format('Y-m-d');
             $this->dateIssue = now()->format('Y-m-d');
@@ -324,6 +329,27 @@ class ResidentRegistration extends Component
             $this->cityMunicipalityCode = $household->city_municipality_code;
             $this->barangayCode = $household->barangay_code;
         }
+    }
+
+    /**
+     * Match legacy names only within the stored municipality; never guess a barangay.
+     */
+    private function resolveExistingBarangay(): void
+    {
+        if (blank($this->barangay) || blank($this->cityMunicipalityCode)) {
+            return;
+        }
+
+        $barangays = Barangay::where('citymunCode', $this->cityMunicipalityCode)->get();
+        if ($barangays->contains(fn ($barangay) => (string) $barangay->brgyCode === (string) $this->barangayCode)) {
+            return;
+        }
+
+        $matches = $barangays->filter(fn ($barangay) => mb_strtolower(trim($barangay->brgyDesc)) === mb_strtolower(trim($this->barangay))
+        );
+
+        // Keep the saved name even when its code cannot be resolved.
+        $this->barangayCode = $matches->count() === 1 ? $matches->first()->brgyCode : null;
     }
 
     /**
