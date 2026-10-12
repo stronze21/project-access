@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Resident;
 use App\Services\ResidentMediaStagingService;
 use App\Services\ResidentPhotoProcessor;
+use App\Services\ResidentSignatureProcessor;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
@@ -101,7 +102,7 @@ class ResidentPhotoSignatureManager extends Component
         $this->notifyImportResult($imported, 'photo', $this->photoResults);
     }
 
-    public function importSignatures(ResidentMediaStagingService $mediaStagingService): void
+    public function importSignatures(ResidentMediaStagingService $mediaStagingService, ResidentSignatureProcessor $signatureProcessor): void
     {
         $this->authorizeImport();
         if (! $this->validateBatchLimits($this->signatureFiles, 'signatureFiles', 'signature')) {
@@ -118,11 +119,10 @@ class ResidentPhotoSignatureManager extends Component
             try {
                 if ($result['resident_db_id']) {
                     $resident = Resident::findOrFail($result['resident_db_id']);
-                    $contents = file_get_contents($this->signatureFiles[$index]->getRealPath());
-                    $this->signatureFiles[$index]->storeAs(
+                    $contents = $signatureProcessor->store(
+                        $this->signatureFiles[$index],
                         'resident-signatures',
-                        $result['file_name'],
-                        'public'
+                        $result['resident_id']
                     );
                     $resident->update([
                         'signature' => 'data:image/png;base64,'.base64_encode($contents),
@@ -178,22 +178,28 @@ class ResidentPhotoSignatureManager extends Component
             $valid = true;
             $message = 'Ready to import';
 
-            $rules = $type === 'photo'
-                ? ['file' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:10240']]
-                : ['file' => ['required', 'image', 'mimes:png', 'max:10240']];
+            $rules = ['file' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:10240']];
             $validator = Validator::make(['file' => $file], $rules);
 
             if ($validator->fails()) {
                 $valid = false;
                 $message = $type === 'photo'
                     ? 'Photo must be a JPG, JPEG, or PNG image up to 10 MB.'
-                    : 'Signature must be a PNG image up to 10 MB.';
+                    : 'Signature must be a JPG, JPEG, or PNG image up to 10 MB.';
             } elseif ($type === 'photo' && ! in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
                 $valid = false;
                 $message = 'Photo filename must end in .jpg, .jpeg, or .png.';
-            } elseif ($type === 'signature' && ($extension !== 'png' || ! str_ends_with(strtolower($baseName), '_signature'))) {
+            } elseif ($type === 'signature' && (! in_array($extension, ['jpg', 'jpeg', 'png'], true) || ! str_ends_with(strtolower($baseName), '_signature'))) {
                 $valid = false;
-                $message = 'Signature filename must be {resident_id}_signature.png.';
+                $message = 'Signature filename must be {resident_id}_signature.jpg, .jpeg, or .png.';
+            }
+
+            if ($valid && $type === 'signature') {
+                $imageInfo = @getimagesize($file->getRealPath());
+                if (! $imageInfo || ! in_array($imageInfo[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG], true)) {
+                    $valid = false;
+                    $message = 'Signature must be a readable JPG, JPEG, or PNG image.';
+                }
             }
 
             $resident = $valid ? Resident::where('resident_id', $residentId)->first() : null;
@@ -208,7 +214,9 @@ class ResidentPhotoSignatureManager extends Component
                 $message = 'Duplicate file for this resident in the current batch.';
             }
 
-            $residentIdsSeen[] = $residentId;
+            if ($valid) {
+                $residentIdsSeen[] = $residentId;
+            }
             $wasImported = ($existing[$index]['file_name'] ?? null) === $fileName
                 && ($existing[$index]['imported'] ?? false);
 
@@ -220,8 +228,8 @@ class ResidentPhotoSignatureManager extends Component
                 'previewable' => str_starts_with((string) $file->getMimeType(), 'image/'),
                 'valid' => $valid,
                 'imported' => $wasImported,
-                'status' => $wasImported ? 'imported' : ($valid ? 'ready' : 'failed'),
-                'message' => $wasImported ? 'Imported successfully' : $message,
+                'status' => $wasImported ? ($existing[$index]['status'] ?? 'imported') : ($valid ? 'ready' : 'failed'),
+                'message' => $wasImported ? ($existing[$index]['message'] ?? 'Imported successfully') : $message,
             ];
         }
 
@@ -246,7 +254,7 @@ class ResidentPhotoSignatureManager extends Component
     {
         $staged = collect($results)->where('status', 'staged')->count();
         $failed = collect($results)->where('status', 'failed')->count();
-        $saved = max(0, $imported - $staged);
+        $saved = collect($results)->where('status', 'imported')->count();
 
         if ($imported > 0) {
             $this->success(ucfirst($type)." batch complete: {$saved} imported, {$staged} staged, {$failed} failed.");

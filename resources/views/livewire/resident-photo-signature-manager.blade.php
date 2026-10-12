@@ -96,7 +96,7 @@
             @endif
         </x-mary-card>
 
-        <x-mary-card title="Resident Signatures" subtitle="Required filename: {resident_id}_signature.png">
+        <x-mary-card title="Resident Signatures" subtitle="Required filename: {resident_id}_signature.jpg, .jpeg, or .png">
             <div x-data="{
                     uploading: false,
                     progress: 0,
@@ -131,9 +131,10 @@
                     x-on:drop.prevent="if (validateSelection($event.dataTransfer.files, $refs.signatureInput)) { $refs.signatureInput.files = $event.dataTransfer.files; $refs.signatureInput.dispatchEvent(new Event('change', { bubbles: true })) }">
                     <x-mary-icon name="o-pencil-square" class="w-10 h-10 text-teal-600" />
                     <strong class="mt-3 text-gray-800">Drop resident signatures here</strong>
-                    <span class="mt-1 text-sm text-gray-500">or click to select up to {{ \App\Livewire\ResidentPhotoSignatureManager::MAX_FILES_PER_BATCH }} PNG files (10 MB each, {{ \App\Livewire\ResidentPhotoSignatureManager::MAX_BATCH_SIZE_MB }} MB total)</span>
+                    <span class="mt-1 text-sm text-gray-500">Automatically converted to PNG with near-white backgrounds removed.</span>
+                    <span class="mt-1 text-sm text-gray-500">or click to select up to {{ \App\Livewire\ResidentPhotoSignatureManager::MAX_FILES_PER_BATCH }} JPG, JPEG, or PNG files (10 MB each, {{ \App\Livewire\ResidentPhotoSignatureManager::MAX_BATCH_SIZE_MB }} MB total)</span>
                     <input x-ref="signatureInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        type="file" accept="image/png" multiple wire:model.live="signatureFiles"
+                        type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" multiple wire:model.live="signatureFiles"
                         x-on:change.capture="if (!validateSelection($event.target.files, $event.target)) { $event.stopImmediatePropagation() }">
                 </label>
                 <div x-cloak x-show="error" class="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">
