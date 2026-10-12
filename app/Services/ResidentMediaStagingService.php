@@ -9,7 +9,7 @@ use RuntimeException;
 
 class ResidentMediaStagingService
 {
-    public function __construct(private ResidentPhotoProcessor $photoProcessor) {}
+    public function __construct(private ResidentPhotoProcessor $photoProcessor, private ResidentSignatureProcessor $signatureProcessor) {}
 
     public const PHOTO_DIRECTORY = 'resident-media-staging/photos';
 
@@ -34,11 +34,9 @@ class ResidentMediaStagingService
 
     public function stageSignature(UploadedFile $file, string $residentId): string
     {
-        return $this->storeUploadedFile(
-            $file,
-            self::SIGNATURE_DIRECTORY,
-            "{$residentId}_signature.png"
-        );
+        $this->signatureProcessor->store($file, self::SIGNATURE_DIRECTORY, $residentId);
+
+        return self::SIGNATURE_DIRECTORY."/{$residentId}_signature.png";
     }
 
     /**
@@ -98,17 +96,6 @@ class ResidentMediaStagingService
             fn (string $extension) => self::PHOTO_DIRECTORY."/{$residentId}.{$extension}",
             self::PHOTO_EXTENSIONS
         );
-    }
-
-    private function storeUploadedFile(UploadedFile $file, string $directory, string $filename): string
-    {
-        $path = $file->storeAs($directory, $filename, 'public');
-
-        if (! is_string($path)) {
-            throw new RuntimeException('The resident media file could not be staged.');
-        }
-
-        return $path;
     }
 
     private function copyOrFail(string $source, string $destination): void
