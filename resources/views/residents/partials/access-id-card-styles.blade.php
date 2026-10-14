@@ -104,8 +104,29 @@
     .batch-toolbar-reference { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; white-space: normal; }
     .batch-toolbar-warning { background: #fff7ed; color: #9a3412; }
 
+    .batch-options summary { cursor: pointer; font-size: .875rem; font-weight: 700; padding: .35rem 0; }
+    .batch-options-content { display: flex; flex-direction: column; gap: .75rem; padding-top: .75rem; }
+    .batch-toolbar .selection-summary { overflow-wrap: anywhere; }
+    .batch-toolbar #print-error:empty { display: none; }
+    .batch-toolbar :focus-visible { outline: 2px solid #0284c7; outline-offset: 3px; }
+
+    @media screen {
+        .batch-options-content { max-height: 35dvh; overflow-y: auto; padding: .75rem .25rem .25rem; }
+        body.batch-print-preview .batch-toolbar { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+        html.dark body.batch-print-preview { background: #0f172a; color: #e2e8f0; }
+        html.dark .batch-toolbar { background: rgb(30 41 59 / 98%); border-color: #475569; }
+        html.dark .batch-toolbar-meta { color: #cbd5e1; }
+        html.dark .batch-toolbar-chip { background: #334155; }
+        html.dark .batch-toolbar-warning { background: #431407; color: #fed7aa; }
+        html.dark .resident-print-selection { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+        html.dark .resident-print-selection small { color: #cbd5e1; }
+        html.dark .batch-toolbar :focus-visible { outline-color: #7dd3fc; }
+        .batch-print-preview .print-page { color-scheme: light; color: #111827; }
+    }
+
     @media (max-width: 760px) {
         body.batch-print-preview { padding-top: 1rem; }
+        body.batch-print-preview .batch-toolbar { position: relative; top: 0; left: auto; right: auto; }
         .batch-toolbar-row { align-items: stretch; flex-direction: column; }
         .batch-toolbar-actions > *, .batch-toolbar-actions form { flex: 1 1 auto; }
     }

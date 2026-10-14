@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Batch ACCESS ID Cards</title>
+    @include('components.theme-script')
     @include('residents.partials.access-id-card-styles')
 </head>
 <body class="batch-print-preview">
@@ -41,35 +42,41 @@
                 </form>
             @endif
         </div>
-        <form id="batch-order-form" action="{{ route('residents.id-cards.batches.order', $printBatch) }}" method="POST" class="batch-toolbar-actions">
-            @csrf
-            <input type="hidden" name="alphabetical" value="0">
-            @unless ($printBatch->exclude_printed)
-                <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
-            @endunless
-            <label><input type="checkbox" name="alphabetical" value="1" @checked($printBatch->alphabetical)> Arrange alphabetically (A–Z by surname)</label>
-            <button type="submit">Apply order</button>
-            <span>Order: {{ $printBatch->alphabetical ? 'Surname A–Z' : 'Resident record ID' }}</span>
-            <div id="order-selection-inputs">
-                @foreach ($selectedResidentIds as $residentId)
-                    <input type="hidden" name="selected_residents[]" value="{{ $residentId }}">
-                @endforeach
+        <p class="selection-summary" id="selection-summary" aria-live="polite">{{ count($selectedResidentIds) }} of {{ $residents->count() }} selected.</p>
+        <details class="batch-options">
+            <summary>Print options &amp; batch details</summary>
+            <div class="batch-options-content">
+                <form id="batch-order-form" action="{{ route('residents.id-cards.batches.order', $printBatch) }}" method="POST" class="batch-toolbar-actions">
+                    @csrf
+                    <input type="hidden" name="alphabetical" value="0">
+                    @unless ($printBatch->exclude_printed)
+                        <input type="hidden" name="reprint_start" value="{{ $reprintStart }}">
+                    @endunless
+                    <label><input type="checkbox" name="alphabetical" value="1" @checked($printBatch->alphabetical)> Arrange alphabetically (A–Z by surname)</label>
+                    <button type="submit">Apply order</button>
+                    <span>Order: {{ $printBatch->alphabetical ? 'Surname A–Z' : 'Resident record ID' }}</span>
+                    <div id="order-selection-inputs">
+                        @foreach ($selectedResidentIds as $residentId)
+                            <input type="hidden" name="selected_residents[]" value="{{ $residentId }}">
+                        @endforeach
+                    </div>
+                </form>
+                <div class="batch-toolbar-meta">
+                    @if ($barangay ?? null)
+                        <span class="batch-toolbar-chip">{{ $barangay === 'all' ? 'All Barangays' : $barangay }}</span>
+                        <span class="batch-toolbar-chip">Batch {{ $batchNumber }}</span>
+                        <span class="batch-toolbar-chip">{{ $residents->count() }} assigned ID(s)</span>
+                    @endif
+                    <span class="batch-toolbar-chip">{{ str($status)->headline() }} · {{ $printBatch->sector_label }}</span>
+                    <span class="batch-toolbar-chip batch-toolbar-reference">Reference: {{ $printBatch->reference_number }}</span>
+                    @unless ($printBatch->exclude_printed)
+                        <span class="batch-toolbar-chip batch-toolbar-warning">Reprint mode enabled</span>
+                    @endunless
+                </div>
+                <p class="selection-summary" id="print-tracking-summary">{{ $printBatch->items->whereNotNull('printed_at')->count() }} print initiated; {{ $printBatch->items->whereNull('printed_at')->whereNotNull('resident')->count() }} remaining available in this batch. Print initiation does not confirm physical printing. Pending IDs stay in their original batches; open Print History to resume them.</p>
+                <p class="selection-summary">Unchecked residents will not print (front and back).</p>
             </div>
-        </form>
-        <div class="batch-toolbar-meta">
-            @if ($barangay ?? null)
-                <span class="batch-toolbar-chip">{{ $barangay === 'all' ? 'All Barangays' : $barangay }}</span>
-                <span class="batch-toolbar-chip">Batch {{ $batchNumber }}</span>
-                <span class="batch-toolbar-chip">{{ $residents->count() }} assigned ID(s)</span>
-            @endif
-            <span class="batch-toolbar-chip">{{ str($status)->headline() }} · {{ $printBatch->sector_label }}</span>
-            <span class="batch-toolbar-chip batch-toolbar-reference">Reference: {{ $printBatch->reference_number }}</span>
-            @unless ($printBatch->exclude_printed)
-                <span class="batch-toolbar-chip batch-toolbar-warning">Reprint mode enabled</span>
-            @endunless
-        </div>
-        <p class="selection-summary" id="print-tracking-summary">{{ $printBatch->items->whereNotNull('printed_at')->count() }} print initiated; {{ $printBatch->items->whereNull('printed_at')->whereNotNull('resident')->count() }} remaining available in this batch. Print initiation does not confirm physical printing. Pending IDs stay in their original batches; open Print History to resume them.</p>
-        <p class="selection-summary" id="selection-summary" aria-live="polite">Uncheck any resident to exclude both sides from printing.</p>
+        </details>
         <p class="selection-summary" id="image-status" role="status" aria-live="polite">Loading print images…</p>
         <button type="button" id="retry-images" hidden>Retry failed images</button>
         <p class="selection-summary" id="print-error" role="alert"></p>
@@ -115,7 +122,7 @@
             updateImageStatus();
             printButton.textContent = `Print ${selected.length} Selected ID(s)`;
             document.getElementById('selection-summary').textContent =
-                `${selected.length} of ${choices.length} selected. Unchecked residents will not print (front and back).`;
+                `${selected.length} of ${choices.length} selected.`;
         }
         choices.forEach(choice => choice.addEventListener('change', updateSelection));
         document.querySelectorAll('[data-select-all]').forEach(button => {
