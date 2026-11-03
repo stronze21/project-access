@@ -75,6 +75,13 @@ require __DIR__.'/resident_portal.php';
 
 require __DIR__.'/bosesmoto.php';
 
+Route::prefix('biometrics')->middleware(['auth', 'verified', 'throttle:120,1'])->group(function () {
+    Route::post('/sessions', [\App\Http\Controllers\BiometricController::class, 'store']);
+    Route::get('/sessions/{id}', [\App\Http\Controllers\BiometricController::class, 'show']);
+    Route::delete('/sessions/{id}', [\App\Http\Controllers\BiometricController::class, 'cancel']);
+    Route::delete('/residents/{resident}', [\App\Http\Controllers\BiometricController::class, 'destroy']);
+});
+
 Route::get('/privacy-policy', [AccountDeletionRequestController::class, 'privacyPolicy'])->name('legal.privacy');
 Route::get('/terms', [AccountDeletionRequestController::class, 'terms'])->name('legal.terms');
 Route::get('/support', [AccountDeletionRequestController::class, 'support'])->name('legal.support');

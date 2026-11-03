@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-semibold text-gray-900">Residents</h1>
             <p class="mt-1 text-sm text-gray-600">Manage resident information and households</p>
         </div>
-        <div class="flex flex-col gap-1 md:space-x-2 md:flex-row md:items-center">
+        <div class="flex flex-wrap items-center gap-2 md:justify-end">
             <x-mary-button link="{{ route('residents.create') }}" icon="o-plus" label="New Resident" class="btn-primary" />
 
             <x-mary-dropdown>
@@ -48,6 +48,8 @@
             <x-mary-button wire:click="$toggle('showQrScanner')" class="tagged-color" icon="o-qr-code">
                 {{ $showQrScanner ? 'Hide Scanner' : 'Scan QR/RFID' }}
             </x-mary-button>
+
+            <x-fingerprint-control purpose="registry" />
 
             @role('system-administrator')
                 <x-mary-dropdown>

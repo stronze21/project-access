@@ -91,6 +91,14 @@ class ResidentList extends Component
         $this->loadSpecialSectorList();
     }
 
+    public function fingerprintMatched(string $sessionId)
+    {
+        $resident = app(\App\Services\Biometrics\BiometricSessions::class)
+            ->consume(auth()->user(), $sessionId, 'registry');
+
+        return $this->redirectRoute('residents.show', $resident->id);
+    }
+
     /**
      * Load the list of barangays for the filter dropdown
      */

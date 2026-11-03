@@ -1,4 +1,5 @@
 import './bootstrap';
+import './fingerprint';
 import './sigweb';
 import './topaz-integration';
 import { Html5Qrcode } from "html5-qrcode";

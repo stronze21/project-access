@@ -333,8 +333,8 @@
             </x-mary-card>
         </div>
 
-        <!-- Household Info Card -->
-        <div>
+        <!-- Household and resident biometrics -->
+        <div class="min-w-0 space-y-6">
             <x-mary-card title="Household Information">
                 @if ($resident->household)
                     <div class="mb-4">
@@ -379,6 +379,11 @@
                     </div>
                 @endif
             </x-mary-card>
+            @can('manage-resident-fingerprints')
+                @can('edit-residents')
+                    <x-fingerprint-control purpose="enroll" :resident-id="$resident->id" />
+                @endcan
+            @endcan
         </div>
     </div>
 

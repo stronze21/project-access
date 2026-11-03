@@ -42,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete-households',
             'generate-qr-codes',
             'manage-rfid',
+            'manage-resident-fingerprints',
             'export-residents',
             'import-residents',
             'manage-resident-pins',

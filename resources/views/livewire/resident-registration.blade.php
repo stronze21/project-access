@@ -569,6 +569,14 @@
                             error="{{ $errors->first('notes') }}" />
                     </div>
 
+                    @can('manage-resident-fingerprints')
+                        @can('edit-residents')
+                            <div class="mt-6" data-testid="resident-registration-biometrics">
+                                <x-fingerprint-control purpose="enroll" :resident-id="$isEdit ? $residentId : null" :in-form="true" />
+                            </div>
+                        @endcan
+                    @endcan
+
                     <!-- Signature Modal Trigger Button -->
                     <div class="mt-6">
                         <h3 class="mb-4 text-lg font-semibold">Resident Signature</h3>

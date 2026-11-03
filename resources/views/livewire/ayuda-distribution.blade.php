@@ -111,12 +111,12 @@
 
             <div class="p-4">
                 <div class="flex flex-col gap-4 mb-2 md:flex-row">
-                    <div class="flex-1">
+                    <div class="flex-1 min-w-0">
                         <x-mary-input x-ref="residentSearch" label="Search Resident" wire:model="searchQuery"
                             placeholder="Enter name, ID or scan QR/RFID..." wire:keydown.enter="searchResident"
                             :disabled="(bool) $selectedResident" />
                     </div>
-                    <div class="flex items-end space-x-2">
+                    <div class="flex flex-wrap items-end gap-2">
                         <x-mary-button wire:click="searchResident" icon="o-magnifying-glass"
                             :disabled="(bool) $selectedResident">Search</x-mary-button>
                         <x-mary-button wire:click="$toggle('showScanner')"
@@ -124,6 +124,9 @@
                             :disabled="(bool) $selectedResident">
                             {{ $showScanner ? 'Hide Scanner' : 'Scan QR/RFID' }}
                         </x-mary-button>
+                        @if (! $selectedResident)
+                            <x-fingerprint-control purpose="ayuda" />
+                        @endif
                         <x-mary-button wire:click="distribute"
                             label="{{ $isVerificationRequired ? 'Submit for Verification' : 'Complete Distribution' }}"
                             icon="o-check-circle" :disabled="!$selectedResident || (!$isEligible && !$isVerificationRequired)"

@@ -51,6 +51,50 @@ class ResidentBarangayEditTest extends TestCase
         ]);
     }
 
+    public function test_create_shows_biometrics_and_save_first_guidance_even_when_setup_is_pending(): void
+    {
+        $this->actingAs($this->fingerprintOperator());
+        foreach ([false, true] as $enabled) {
+            config(['biometrics.enabled' => $enabled]);
+            Livewire::test(ResidentRegistration::class)
+                ->assertSee('Resident Biometrics')
+                ->assertSee('Save resident first')
+                ->assertSee('enroll one finger on the Resident Details page.')
+                ->assertDontSee('The resident agrees to storing their fingerprint template');
+        }
+    }
+
+    public function test_edit_shows_fingerprint_controls_for_the_saved_resident(): void
+    {
+        $this->actingAs($this->fingerprintOperator());
+        config(['biometrics.enabled' => true]);
+        $resident = $this->resident(['barangay' => 'Poblacion', 'barangay_code' => '015503001']);
+        Livewire::test(ResidentRegistration::class, ['residentId' => $resident->id])
+            ->assertSee('Resident Biometrics')
+            ->assertSee('Fingerprint changes are saved separately from this form.')
+            ->assertSee('The resident agrees to storing their fingerprint template')
+            ->assertDontSee('Save resident first');
+    }
+
+    public function test_biometric_management_is_hidden_without_its_permission(): void
+    {
+        $user = $this->fingerprintOperator();
+        $user->revokePermissionTo('manage-resident-fingerprints');
+        $this->actingAs($user);
+        Livewire::test(ResidentRegistration::class)->assertDontSee('Resident Biometrics');
+    }
+
+    private function fingerprintOperator(): \App\Models\User
+    {
+        $user = \App\Models\User::factory()->create();
+        foreach (['view-residents', 'create-residents', 'edit-residents', 'manage-resident-fingerprints'] as $name) {
+            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+            $user->givePermissionTo($name);
+        }
+
+        return $user;
+    }
+
     public function test_edit_preserves_saved_location_and_resolves_name_without_guessing_another_city(): void
     {
         $resident = $this->resident(['barangay' => ' POBLACION ', 'barangay_code' => null]);

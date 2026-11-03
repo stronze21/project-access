@@ -133,6 +133,18 @@ class AyudaDistribution extends Component
         $this->loadProgramDetails();
     }
 
+    public function fingerprintMatched(string $sessionId): void
+    {
+        if ($this->selectedResident) {
+            return;
+        }
+        $resident = app(\App\Services\Biometrics\BiometricSessions::class)
+            ->consume(auth()->user(), $sessionId, 'ayuda');
+        $this->handleScanResult([
+            'found' => true, 'type' => 'resident', 'object' => ['id' => $resident->id],
+        ]);
+    }
+
     /**
      * Load available active ayuda programs.
      */

@@ -32,6 +32,13 @@ use App\Http\Controllers\Api\SystemSettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Workstation credentials are validated in the controller; these endpoints
+// deliberately have no browser/session authentication or CSRF exemption.
+Route::prefix('biometric-device')->middleware('throttle:240,1')->group(function () {
+    Route::post('/sessions/{id}/claim', [\App\Http\Controllers\BiometricDeviceController::class, 'claim']);
+    Route::post('/sessions/{id}/complete', [\App\Http\Controllers\BiometricDeviceController::class, 'complete']);
+});
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
