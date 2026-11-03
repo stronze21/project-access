@@ -20,6 +20,21 @@ window.fingerprintControl = (options) => ({
     confirmRemove: false,
     run: 0,
     modalClosing: false,
+    readers: [],
+    readerSerial: '',
+    readerSelectedManually: false,
+
+    async refreshReaders() {
+        const inventory = await this.request('/readers', 'GET', null, true);
+        this.readers = Array.isArray(inventory.readers) ? inventory.readers : [];
+        if (this.readers.length === 1) {
+            this.readerSerial = this.readers[0].serial;
+            this.readerSelectedManually = false;
+        } else if (!this.readerSelectedManually || !this.readers.some(reader => reader.serial === this.readerSerial)) {
+            this.readerSerial = '';
+            this.readerSelectedManually = false;
+        }
+    },
 
     openModal(autoStart = false) {
         this.confirmRemove = false;
@@ -49,7 +64,7 @@ window.fingerprintControl = (options) => ({
     },
 
     get stageTitle() {
-        return ({ connecting: 'Connecting', opening: 'Preparing reader', waiting: 'Place your finger', captured: 'Sample captured',
+        return ({ connecting: 'Connecting', selecting: 'Choose a reader', opening: 'Preparing reader', waiting: 'Place your finger', captured: 'Sample captured',
             extracting: 'Reading fingerprint', lift: 'Lift your finger', retry: 'Try that scan again', matching: 'Finding resident',
             saving: 'Confirming result', success: 'Scan complete', error: 'Scan needs attention', cancelled: 'Scan cancelled' })[this.stage] || 'Fingerprint scan';
     },
@@ -131,6 +146,16 @@ window.fingerprintControl = (options) => ({
             const health = await this.request('/health', 'GET', null, true);
             if (run !== this.run) return;
             if (!health.ready) throw new Error(messages.sdk_unavailable);
+            if (health.reader_selection_supported) {
+                await this.refreshReaders();
+                if (run !== this.run) return;
+                if (!this.readers.length) throw new Error('No fingerprint reader detected. Connect a reader and try again.');
+                if (this.readers.length > 1 && !this.readerSerial) {
+                    this.stage = 'selecting';
+                    this.message = 'Multiple readers are connected. Choose one below, then start the scan again.';
+                    return;
+                }
+            }
             const session = await this.request('/sessions', 'POST', {
                 purpose: this.purpose, workstation_id: health.workstation_id,
                 resident_id: this.residentId, finger_position: this.finger, consent: this.consent,
@@ -142,7 +167,9 @@ window.fingerprintControl = (options) => ({
                 return;
             }
             this.sessionId = session.id;
-            await this.request('/capture', 'POST', { session_id: session.id }, true);
+            await this.request('/capture', 'POST', { session_id: session.id,
+                ...(health.reader_selection_supported ? { reader_serial: this.readerSerial } : {}),
+            }, true);
             if (run !== this.run) return;
             this.message = this.purpose === 'enroll'
                 ? 'Place the selected finger on the reader. Lift and place the same finger again several times until enrollment completes.'

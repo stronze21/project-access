@@ -66,6 +66,16 @@
                 </header>
 
                 <div class="mt-5 space-y-4">
+                    <label class="block" x-show="readers.length > 1" x-cloak>
+                        <span class="block mb-2 text-sm font-medium">Fingerprint reader</span>
+                        <select class="w-full select select-bordered min-h-11" x-model="readerSerial"
+                            :disabled="busy" @change="readerSelectedManually = true">
+                            <option value="">Choose a connected reader</option>
+                            <template x-for="reader in readers" :key="reader.serial">
+                                <option :value="reader.serial" x-text="`${reader.name} · ${reader.serial}`"></option>
+                            </template>
+                        </select>
+                    </label>
                     @if ($purpose === 'enroll')
                         @if ($inForm)
                             <p class="text-sm leading-relaxed text-base-content/70">Fingerprint changes are saved separately from this form.</p>
