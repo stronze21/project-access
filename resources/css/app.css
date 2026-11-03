@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+.fingerprint-feedback {
+    padding: 1rem;
+    border-radius: .75rem;
+    background: color-mix(in srgb, currentColor 4%, transparent);
+    color: inherit;
+}
+.fingerprint-sensor {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 3.5rem;
+    height: 4rem;
+    overflow: hidden;
+    border: 1px solid currentColor;
+    border-radius: .75rem;
+    color: var(--brand-primary);
+}
+.fingerprint-mark { width: 2.25rem; height: 2.25rem; }
+.fingerprint-sweep {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: currentColor;
+    animation: fingerprint-sweep 1.6s ease-in-out infinite alternate;
+}
+.fingerprint-capture-glow { position: absolute; inset: 0; opacity: 0; background: currentColor; pointer-events: none; }
+.fingerprint-feedback[data-stage="success"] .fingerprint-sensor { color: #16814b; }
+.fingerprint-feedback[data-stage="error"] .fingerprint-sensor { color: #c34040; }
+.fingerprint-dialog {
+    width: min(32rem, calc(100vw - 2rem));
+    max-width: none;
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 0;
+    overflow-y: auto;
+    border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+    border-radius: 1rem;
+    background: oklch(var(--b1));
+    color: oklch(var(--bc));
+    box-shadow: 0 20px 60px rgb(0 0 0 / .2);
+}
+.fingerprint-dialog::backdrop { background: rgb(15 23 42 / .5); }
+body:has(.fingerprint-dialog[open]) { overflow: hidden; }
+@keyframes fingerprint-sweep { from { transform: translateY(5px); } to { transform: translateY(57px); } }
+@media (prefers-reduced-motion: reduce) { .fingerprint-sweep { animation: none; transform: translateY(30px); } }
+
 @layer base {
     :root {
         --brand-primary: #2f6b9f;
