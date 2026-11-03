@@ -74,7 +74,7 @@ class BiometricDeviceController extends Controller
         // Device-only endpoint: templates never pass through browser forms or
         // their validation redirect/session flash mechanism.
         $data = $request->validate([
-            'outcome' => ['required', Rule::in(['matched', 'enrolled', 'no_match', 'ambiguous', 'poor_capture', 'cancelled', 'reader_unavailable', 'sdk_unavailable'])],
+            'outcome' => ['required', Rule::in(['matched', 'enrolled', 'no_match', 'no_enrollments', 'ambiguous', 'poor_capture', 'cancelled', 'reader_unavailable', 'sdk_unavailable'])],
             'resident_id' => ['required_if:outcome,matched', 'nullable', 'integer'],
             'template' => ['required_if:outcome,enrolled', 'nullable', 'string', 'max:32768'],
             'format' => ['required_if:outcome,enrolled', 'nullable', Rule::in([config('biometrics.template_format')])],
@@ -86,6 +86,9 @@ class BiometricDeviceController extends Controller
             abort_unless($session->status === 'capturing', 409, 'Session already completed or cancelled.');
             $user = User::findOrFail($session->user_id);
             $access = app(BiometricAccess::class);
+            if ($data['outcome'] === 'no_enrollments') {
+                abort_if($session->purpose === 'enroll' || ! empty($session->candidates), 422, 'This session is not an empty fingerprint lookup.');
+            }
             if ($data['outcome'] === 'enrolled') {
                 abort_unless($session->purpose === 'enroll', 422);
                 $access->residents($user)->lockForUpdate()->findOrFail($session->resident_id);

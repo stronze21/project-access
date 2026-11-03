@@ -1,5 +1,6 @@
 const messages = {
     no_match: 'No enrolled resident matched. Try again, or use QR, RFID or search.',
+    no_enrollments: 'No enrolled fingerprints are available for lookup. Enroll a fingerprint on an active resident record first. No finger was scanned.',
     ambiguous: 'The scan did not identify one resident clearly. Retry or use another lookup option.',
     poor_capture: 'The finger could not be read clearly. Clean the reader, reposition the finger and retry.',
     cancelled: 'Scan cancelled. The existing enrollment was kept.',
