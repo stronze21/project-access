@@ -199,7 +199,14 @@ window.fingerprintControl = (options) => ({
                             if (run !== this.run) return;
                         }
                         this.busy = false;
-                        await this.$wire.fingerprintMatched(session.id);
+                        const match = await this.$wire.fingerprintMatched(session.id);
+                        if (run !== this.run) return;
+                        if (match?.error) {
+                            this.stage = 'error';
+                            this.message = match.error;
+                        } else if (match?.message) {
+                            this.message = match.message;
+                        }
                     } else {
                         this.stage = result.outcome === 'cancelled' ? 'cancelled' : 'error';
                         this.message = messages[result.outcome] || 'Scan failed. Please retry.';

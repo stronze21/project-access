@@ -106,7 +106,7 @@
         <div class="mb-6 overflow-hidden border rounded-lg">
             <div class="px-4 py-3 border-b bg-base-50">
                 <h3 class="font-medium">Beneficiary Identification</h3>
-                <p class="text-sm text-gray-600">Scan QR code, RFID or search for resident</p>
+                <p class="text-sm text-gray-600">Search for a resident or scan a QR code, RFID card, or enrolled fingerprint.</p>
             </div>
 
             <div class="p-4">

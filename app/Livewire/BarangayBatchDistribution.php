@@ -6,6 +6,7 @@ use App\Models\AyudaProgram;
 use App\Models\Distribution;
 use App\Models\DistributionBatch;
 use App\Models\Resident;
+use App\Services\Biometrics\BiometricSessions;
 use Livewire\Component;
 use Mary\Traits\Toast;
 use Illuminate\Support\Facades\DB;
@@ -115,6 +116,27 @@ class BarangayBatchDistribution extends Component
         $this->resetPage();
     }
 
+    public function fingerprintMatched(string $sessionId): array
+    {
+        abort_unless(auth()->user()?->can('manage-distribution-batches'), 403);
+
+        if (empty($this->barangay)) {
+            return ['error' => 'Select a barangay before scanning.'];
+        }
+
+        $resident = app(BiometricSessions::class)->consume(auth()->user(), $sessionId, 'ayuda');
+
+        if (! $this->filteredResidentsQuery(includeSearch: false)->whereKey($resident->id)->exists()) {
+            return ['error' => 'The matched resident is outside the selected barangay or filters.'];
+        }
+
+        $this->search = $resident->resident_id;
+        $this->selectAll = false;
+        $this->resetPage();
+
+        return ['message' => 'Resident found. Close this window to review and select them.'];
+    }
+
     public function updatedSelectAll()
     {
         if ($this->selectAll) {
@@ -140,7 +162,7 @@ class BarangayBatchDistribution extends Component
     //     }
     // }
 
-    protected function filteredResidentsQuery()
+    protected function filteredResidentsQuery(bool $includeSearch = true)
     {
         if (empty($this->barangay)) {
             return collect();
@@ -152,7 +174,7 @@ class BarangayBatchDistribution extends Component
             ->where('is_active', true)
             ->with(['household']);
 
-        if (!empty($this->search)) {
+        if ($includeSearch && !empty($this->search)) {
             $query->where(function ($q) {
                 $q->where('first_name', 'like', '%' . $this->search . '%')
                     ->orWhere('last_name', 'like', '%' . $this->search . '%')

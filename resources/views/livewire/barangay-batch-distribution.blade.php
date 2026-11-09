@@ -95,9 +95,14 @@
                                 placeholder="Choose a barangay" :options="collect($barangayList)->map(fn($b) => ['key' => $b, 'id' => $b])->toArray()" option-value="key"
                                 option-label="id" />
                         </div>
-                        <div>
-                            <x-mary-input label="Search Residents" wire:model.live.debounce.300ms="search"
-                                placeholder="Search by name or ID" />
+                        <div class="flex flex-wrap items-end gap-2">
+                            <div class="min-w-0 flex-1">
+                                <x-mary-input label="Search Residents" wire:model.live.debounce.300ms="search"
+                                    placeholder="Search by name or ID" />
+                            </div>
+                            @if (!empty($barangay) && config('biometrics.enabled') && auth()->user()->can('view-residents') && auth()->user()->can('create-distributions'))
+                                <x-fingerprint-control purpose="ayuda" />
+                            @endif
                         </div>
                     </div>
 
